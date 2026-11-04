@@ -1,0 +1,23 @@
+RewriteEngine On
+
+# Check if the request is for one of the specified domains
+RewriteCond %{HTTP_HOST} ^(srvwebde\.rhbrasil\.com\.br|rhbrasil\.com\.br)$ [NC]
+
+# Redirect /login to /login.html
+RewriteRule ^login$ login.html [L]
+
+# Check if the request is not for an existing file or directory
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+# Redirect all other requests to add .html
+RewriteRule ^(.+)$ $1.html [L]
+
+# If the .html version doesn't exist, redirect back to the original URL
+# This prevents redirect loops for genuinely missing pages
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^(.+)\.html$ /$1 [L,R=302]
+
+# For all other domains, don't apply any rewrite rules
+RewriteCond %{HTTP_HOST} !^(srvwebde\.rhbrasil\.com\.br|rhbrasil\.com\.br)$ [NC]
+RewriteRule ^ - [L]

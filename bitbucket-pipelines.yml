@@ -1,0 +1,36 @@
+pipelines:
+  custom:
+    manual-deploy:
+      - step:
+         name: Testing
+         runs-on:
+           - self.hosted
+           - linux.shell
+           - hostname.srvwebde
+         script:
+           - echo "This is a manually triggered deployment step for non-homolog and non-master branches"
+           - yes | cp -u -r $BITBUCKET_CLONE_DIR/homolog/* /var/www/html/saas
+           - sudo chown -R 1001:1001 /var/www/html/saas
+  branches:
+    homolog:
+     - step:
+         name: Deploy to homolog server
+         deployment: homolog
+         runs-on:
+           - self.hosted
+           - linux.shell
+           - hostname.srvwebde
+         script:
+           - yes | cp -u -r $BITBUCKET_CLONE_DIR/homolog/* /var/www/html/saas
+           - sudo chown -R 1001:1001 /var/www/html/saas
+    master:
+     - step:
+         name: Deploy to master server
+         deployment: production
+         runs-on:
+           - self.hosted
+           - linux.shell
+           - hostname.srvweb01
+         script:
+           - yes | cp -u -r $BITBUCKET_CLONE_DIR/production/* /var/www/html/saas
+           - sudo chown -R 1001:1001 /var/www/html/saas
