@@ -17,6 +17,26 @@ localStorageService.registerDefault(
   () => getMockPreparedInvoices()
 );
 
+// ==========================================
+// Mutex Queue para Serialização de Mutações
+// ==========================================
+let preparedMutationQueue = Promise.resolve();
+
+/**
+ * Enfileira uma mutação assíncrona para garantir execução serializada e atômica.
+ * @template T
+ * @param {() => Promise<T>} fn
+ * @returns {Promise<T>}
+ */
+function withMutationLock(fn) {
+  const resultPromise = preparedMutationQueue.then(
+    () => fn(),
+    () => fn()
+  );
+  preparedMutationQueue = resultPromise.catch(() => {});
+  return resultPromise;
+}
+
 /**
  * Clona profundamente um valor.
  */
@@ -104,25 +124,27 @@ export const preparedInvoiceRepository = {
    * @returns {Promise<Object>}
    */
   async create(preparedInvoice) {
-    if (!preparedInvoice) {
-      throw new Error('Dados da nota preparada são obrigatórios');
-    }
+    return withMutationLock(async () => {
+      if (!preparedInvoice) {
+        throw new Error('Dados da nota preparada são obrigatórios');
+      }
 
-    const list = await getAllPrepared();
-    const id =
-      preparedInvoice.id ||
-      `prep-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+      const list = await getAllPrepared();
+      const id =
+        preparedInvoice.id ||
+        `prep-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
 
-    const newEntry = {
-      ...preparedInvoice,
-      id,
-      status: preparedInvoice.status || 'preparado',
-      dataCriacao: preparedInvoice.dataCriacao || new Date().toISOString(),
-    };
+      const newEntry = {
+        ...preparedInvoice,
+        id,
+        status: preparedInvoice.status || 'preparado',
+        dataCriacao: preparedInvoice.dataCriacao || new Date().toISOString(),
+      };
 
-    const updated = [newEntry, ...list];
-    await saveAllPrepared(updated);
-    return deepClone(newEntry);
+      const updated = [newEntry, ...list];
+      await saveAllPrepared(updated);
+      return deepClone(newEntry);
+    });
   },
 
   /**
@@ -131,14 +153,16 @@ export const preparedInvoiceRepository = {
    * @returns {Promise<boolean>} true se foi removida, false se não encontrada
    */
   async delete(id) {
-    if (!id) return false;
-    const list = await getAllPrepared();
-    const filtered = list.filter((p) => p.id !== id);
-    const wasRemoved = filtered.length !== list.length;
-    if (wasRemoved) {
-      await saveAllPrepared(filtered);
-    }
-    return wasRemoved;
+    return withMutationLock(async () => {
+      if (!id) return false;
+      const list = await getAllPrepared();
+      const filtered = list.filter((p) => p.id !== id);
+      const wasRemoved = filtered.length !== list.length;
+      if (wasRemoved) {
+        await saveAllPrepared(filtered);
+      }
+      return wasRemoved;
+    });
   },
 
   /**
@@ -148,22 +172,24 @@ export const preparedInvoiceRepository = {
    * @returns {Promise<Object>}
    */
   async update(id, partialData) {
-    const list = await getAllPrepared();
-    const index = list.findIndex((p) => p.id === id);
-    if (index === -1) {
-      throw new Error(`Nota preparada não encontrada: ${id}`);
-    }
+    return withMutationLock(async () => {
+      const list = await getAllPrepared();
+      const index = list.findIndex((p) => p.id === id);
+      if (index === -1) {
+        throw new Error(`Nota preparada não encontrada: ${id}`);
+      }
 
-    const updated = {
-      ...list[index],
-      ...partialData,
-      id: list[index].id,
-      atualizadoEm: new Date().toISOString(),
-    };
+      const updated = {
+        ...list[index],
+        ...partialData,
+        id: list[index].id,
+        atualizadoEm: new Date().toISOString(),
+      };
 
-    list[index] = updated;
-    await saveAllPrepared(list);
-    return deepClone(updated);
+      list[index] = updated;
+      await saveAllPrepared(list);
+      return deepClone(updated);
+    });
   },
 
   /**
@@ -171,7 +197,9 @@ export const preparedInvoiceRepository = {
    * @returns {Promise<void>}
    */
   async resetDemoData() {
-    localStorageService.reset(STORAGE_KEYS.PREPARED_INVOICES);
+    return withMutationLock(async () => {
+      localStorageService.reset(STORAGE_KEYS.PREPARED_INVOICES);
+    });
   },
 };
 

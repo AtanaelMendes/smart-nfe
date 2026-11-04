@@ -713,4 +713,17 @@ describe('M2 Components: DataTable Null Safety Protection', () => {
     assert.match(html, /Item Teste/);
     assert.match(html, /Exibindo 1 de 1 registros/);
   });
+
+  it('DataTable não quebra com elementos esparsos null ou undefined no array data', () => {
+    assert.doesNotThrow(() => {
+      const html = renderToStaticMarkup(
+        React.createElement(DataTable, {
+          data: [null, undefined, { id: 'item-1', nome: 'Item Válido' }],
+          columns: [{ key: 'nome', label: 'Nome' }],
+        })
+      );
+      assert.match(html, /Item Válido/);
+      assert.match(html, /Exibindo 1 de 1 registros/);
+    });
+  });
 });

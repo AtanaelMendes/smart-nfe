@@ -45,6 +45,7 @@ const defaultRegistry = new Map();
  * Backend ativo de storage.
  */
 let activeBackend = null;
+let quotaExceeded = false;
 
 function getBackend() {
   if (activeBackend) return activeBackend;
@@ -122,9 +123,15 @@ export function save(key, data) {
     const serialized = JSON.stringify(envelope);
     const backend = getBackend();
     backend.setItem(key, serialized);
+    // Limpa cópia em memória caso tenha sido resolvida no storage primário
+    if (backend !== memoryStore) {
+      memoryStore.removeItem(key);
+    }
+    quotaExceeded = false;
     return true;
   } catch {
     // Tratamento de QuotaExceededError ou falha de escrita
+    quotaExceeded = true;
     memoryStore.setItem(key, JSON.stringify(envelope));
     return false;
   }
@@ -145,7 +152,19 @@ export function load(key, fallback = null) {
   try {
     raw = backend.getItem(key);
   } catch {
-    raw = memoryStore.getItem(key);
+    raw = null;
+  }
+
+  // Se o backend primário não for memoryStore, verifica se há dados salvos sob fallback
+  if (backend !== memoryStore) {
+    try {
+      const memRaw = memoryStore.getItem(key);
+      if (memRaw !== null && memRaw !== undefined) {
+        raw = memRaw;
+      }
+    } catch {
+      // ignore
+    }
   }
 
   // 1. Caso a chave não exista no storage
@@ -251,6 +270,7 @@ export function resetAll() {
   }
 
   memoryStore.clear();
+  quotaExceeded = false;
 }
 
 /**
@@ -261,7 +281,14 @@ export function resetAll() {
 export function has(key) {
   if (!key) return false;
   try {
-    const raw = getBackend().getItem(key);
+    const backend = getBackend();
+    let raw = backend.getItem(key);
+    if (backend !== memoryStore) {
+      const memRaw = memoryStore.getItem(key);
+      if (memRaw !== null && memRaw !== undefined) {
+        raw = memRaw;
+      }
+    }
     if (!raw) return false;
     const parsed = JSON.parse(raw);
     return Boolean(parsed && parsed.version === STORAGE_SCHEMA_VERSION);
@@ -277,7 +304,14 @@ export function has(key) {
  */
 export function getInfo(key) {
   try {
-    const raw = getBackend().getItem(key);
+    const backend = getBackend();
+    let raw = backend.getItem(key);
+    if (backend !== memoryStore) {
+      const memRaw = memoryStore.getItem(key);
+      if (memRaw !== null && memRaw !== undefined) {
+        raw = memRaw;
+      }
+    }
     if (!raw) return { exists: false };
     const parsed = JSON.parse(raw);
     return {
@@ -306,6 +340,15 @@ export function isAvailable() {
  */
 export function setCustomStorage(custom) {
   activeBackend = custom;
+  quotaExceeded = false;
+}
+
+/**
+ * Informa se o armazenamento em fallback de memória está ativo devido a erro de quota.
+ * @returns {boolean}
+ */
+export function isQuotaExceeded() {
+  return quotaExceeded;
 }
 
 /**
@@ -322,6 +365,7 @@ export const localStorageService = {
   has,
   getInfo,
   isAvailable,
+  isQuotaExceeded,
   registerDefault,
   setCustomStorage,
 };

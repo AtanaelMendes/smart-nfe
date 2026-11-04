@@ -13,9 +13,31 @@
 import { localStorageService, STORAGE_KEYS } from '../lib/storage/localStorageService.js';
 import { getMockInvoices } from '../lib/data/mockInvoices.js';
 import { calculateItemTotal, calculateInvoiceTotals } from '../lib/calculations/invoiceTotals.js';
+import { cleanDecimalString } from '../lib/calculations/decimal.js';
 
 // Registro automático da fábrica de mocks para autorrecuperação e reset
 localStorageService.registerDefault(STORAGE_KEYS.INVOICES, () => getMockInvoices());
+
+// ==========================================
+// Mutex Queue para Serialização de Mutações
+// ==========================================
+let mutationQueue = Promise.resolve();
+
+/**
+ * Enfileira uma mutação assíncrona para garantir execução serializada e atômica.
+ * Evita race conditions (lost updates) causadas por escritas concorrentes.
+ * @template T
+ * @param {() => Promise<T>} fn
+ * @returns {Promise<T>}
+ */
+function withMutationLock(fn) {
+  const resultPromise = mutationQueue.then(
+    () => fn(),
+    () => fn()
+  );
+  mutationQueue = resultPromise.catch(() => {});
+  return resultPromise;
+}
 
 /**
  * Clona profundamente um objeto.
@@ -161,32 +183,34 @@ export const invoiceRepository = {
    * @returns {Promise<Object>} Documento atualizado
    */
   async update(id, partialData) {
-    const invoices = await getAllInvoices();
-    const index = invoices.findIndex((inv) => inv.id === id);
-    if (index === -1) {
-      throw new Error(`Documento fiscal não encontrado: ${id}`);
-    }
+    return withMutationLock(async () => {
+      const invoices = await getAllInvoices();
+      const index = invoices.findIndex((inv) => inv.id === id);
+      if (index === -1) {
+        throw new Error(`Documento fiscal não encontrado: ${id}`);
+      }
 
-    const existing = invoices[index];
-    const updated = {
-      ...existing,
-      ...partialData,
-      id: existing.id, // preserva ID original
-      atualizadoEm: new Date().toISOString(),
-    };
-
-    // Recalcula totais caso a lista de itens tenha sido alterada sem novos totais
-    if (partialData.itens && !partialData.totais) {
-      const totals = calculateInvoiceTotals(updated.itens, existing.totais || {});
-      updated.totais = {
-        ...existing.totais,
-        ...totals,
+      const existing = invoices[index];
+      const updated = {
+        ...existing,
+        ...partialData,
+        id: existing.id, // preserva ID original
+        atualizadoEm: new Date().toISOString(),
       };
-    }
 
-    invoices[index] = updated;
-    await saveAllInvoices(invoices);
-    return deepClone(updated);
+      // Recalcula totais caso a lista de itens tenha sido alterada sem novos totais
+      if (partialData.itens && !partialData.totais) {
+        const totals = calculateInvoiceTotals(updated.itens, existing.totais || {});
+        updated.totais = {
+          ...existing.totais,
+          ...totals,
+        };
+      }
+
+      invoices[index] = updated;
+      await saveAllInvoices(invoices);
+      return deepClone(updated);
+    });
   },
 
   /**
@@ -197,176 +221,278 @@ export const invoiceRepository = {
    * @returns {Promise<Object>} Documento fiscal atualizado
    */
   async updateItem(invoiceId, itemId, partialItemData) {
-    const invoices = await getAllInvoices();
-    const invoice = invoices.find((inv) => inv.id === invoiceId);
-    if (!invoice) {
-      throw new Error(`Documento fiscal não encontrado: ${invoiceId}`);
-    }
+    return withMutationLock(async () => {
+      const invoices = await getAllInvoices();
+      const invoice = invoices.find((inv) => inv.id === invoiceId);
+      if (!invoice) {
+        throw new Error(`Documento fiscal não encontrado: ${invoiceId}`);
+      }
 
-    if (!Array.isArray(invoice.itens)) {
-      invoice.itens = [];
-    }
+      if (!Array.isArray(invoice.itens)) {
+        invoice.itens = [];
+      }
 
-    const itemIndex = invoice.itens.findIndex(
-      (it) => it.id === itemId || String(it.item) === String(itemId)
-    );
-    if (itemIndex === -1) {
-      throw new Error(`Item "${itemId}" não encontrado no documento "${invoiceId}"`);
-    }
+      const itemIndex = invoice.itens.findIndex(
+        (it) => it.id === itemId || String(it.item) === String(itemId)
+      );
+      if (itemIndex === -1) {
+        throw new Error(`Item "${itemId}" não encontrado no documento "${invoiceId}"`);
+      }
 
-    const currentItem = invoice.itens[itemIndex];
+      const currentItem = invoice.itens[itemIndex];
 
-    // Cria snapshot imutável do valor original na primeira alteração
-    if (!currentItem.valorOriginal) {
-      currentItem.valorOriginal = {
-        codigo: currentItem.codigo,
-        descricao: currentItem.descricao,
-        ncm: currentItem.ncm,
-        cfop: currentItem.cfop,
-        unidade: currentItem.unidade,
-        quantidade: currentItem.quantidade,
-        valorUnitario: currentItem.valorUnitario,
-        valorTotal: currentItem.valorTotal,
+      // Cria snapshot imutável do valor original na primeira alteração
+      if (!currentItem.valorOriginal) {
+        currentItem.valorOriginal = {
+          codigo: currentItem.codigo,
+          descricao: currentItem.descricao,
+          ncm: currentItem.ncm,
+          cfop: currentItem.cfop,
+          unidade: currentItem.unidade,
+          quantidade: currentItem.quantidade,
+          valorUnitario: currentItem.valorUnitario,
+          valorTotal: currentItem.valorTotal,
+        };
+      }
+
+      const updatedItem = {
+        ...currentItem,
+        ...partialItemData,
+        id: currentItem.id,
+        item: currentItem.item,
+        modificado: true,
       };
-    }
 
-    const updatedItem = {
-      ...currentItem,
-      ...partialItemData,
-      id: currentItem.id,
-      item: currentItem.item,
-      modificado: true,
-    };
+      // Recalcula o valor total da linha com precisão decimal se preço ou quantidade mudaram
+      const qty = updatedItem.quantidade;
+      const unitPrice = updatedItem.valorUnitario;
+      updatedItem.valorTotal = calculateItemTotal(unitPrice, qty);
 
-    // Recalcula o valor total da linha com precisão decimal se preço ou quantidade mudaram
-    const qty = updatedItem.quantidade;
-    const unitPrice = updatedItem.valorUnitario;
-    updatedItem.valorTotal = calculateItemTotal(unitPrice, qty);
+      // Sincroniza inconsistências e situação do item modificado
+      const isExport = Boolean(
+        invoice.destinatario?.pais &&
+        invoice.destinatario?.pais.toLowerCase() !== 'brasil' &&
+        invoice.destinatario?.paisCodigo !== 'BR'
+      );
+      const cleanCfop = String(updatedItem.cfop || '').trim();
+      const cleanNcm = String(updatedItem.ncm || '').replace(/\D/g, '');
+      const expectedTotal = calculateItemTotal(updatedItem.valorUnitario, updatedItem.quantidade);
+      const cleanRec = cleanDecimalString(updatedItem.valorTotal);
+      const recordedTotal = cleanRec ? parseFloat(cleanRec).toFixed(2) : '0.00';
+      const hasMathDiff = Math.abs(parseFloat(expectedTotal) - parseFloat(recordedTotal)) > 0.01;
 
-    invoice.itens[itemIndex] = updatedItem;
+      if (Array.isArray(updatedItem.inconsistencias)) {
+        updatedItem.inconsistencias = updatedItem.inconsistencias.filter((inc) => {
+          if (inc.campo === 'cfop') {
+            return isExport ? !cleanCfop.startsWith('7') : cleanCfop.startsWith('7');
+          }
+          if (inc.campo === 'ncm') {
+            return cleanNcm.length !== 8;
+          }
+          if (inc.campo === 'valorTotal') {
+            return hasMathDiff;
+          }
+          if (inc.campo === 'unidade') {
+            const expectedUnit = (inc.esperado || 'PAR').trim().toUpperCase();
+            return String(updatedItem.unidade || '').trim().toUpperCase() !== expectedUnit;
+          }
+          if (inc.esperado) {
+            return String(updatedItem[inc.campo] || '').trim() !== String(inc.esperado).trim();
+          }
+          return true;
+        });
 
-    // Recalcula totais consolidados da nota
-    const newTotals = calculateInvoiceTotals(invoice.itens, invoice.totais || {});
-    invoice.totais = {
-      ...invoice.totais,
-      ...newTotals,
-    };
-    invoice.atualizadoEm = new Date().toISOString();
+        if (updatedItem.inconsistencias.length === 0) {
+          updatedItem.situacao = 'conferido';
+        }
+      }
 
-    // Se a nota estava recém importada, transiciona para 'em_conferencia'
-    if (invoice.status === 'importado') {
-      invoice.status = 'em_conferencia';
-    }
+      // Se o usuário introduziu um erro fiscal em item previamente sem inconsistências
+      const hasIntroducedError =
+        (isExport && cleanCfop && !cleanCfop.startsWith('7')) ||
+        (cleanNcm.length > 0 && cleanNcm.length !== 8) ||
+        hasMathDiff;
+      if (hasIntroducedError) {
+        updatedItem.situacao = 'inconsistente';
+      }
 
-    await saveAllInvoices(invoices);
-    return deepClone(invoice);
+      invoice.itens[itemIndex] = updatedItem;
+
+      // Recalcula totais consolidados da nota
+      const newTotals = calculateInvoiceTotals(invoice.itens, invoice.totais || {});
+      invoice.totais = {
+        ...invoice.totais,
+        ...newTotals,
+      };
+      invoice.atualizadoEm = new Date().toISOString();
+
+      // Se a nota estava recém importada, transiciona para 'em_conferencia'
+      if (invoice.status === 'importado') {
+        invoice.status = 'em_conferencia';
+      }
+
+      await saveAllInvoices(invoices);
+      return deepClone(invoice);
+    });
   },
 
   /**
    * Obtém os apontamentos fiscais (erros e avisos) de um documento.
-   * Consolida inconsistências mockadas e executa regras dinâmicas de conferência.
+   * Consolida regras dinâmicas de conferência e metadados de inconsistências mockadas.
    * @param {string} id ID do documento
    * @returns {Promise<Array<Object>>}
    */
   async getValidationIssues(id) {
     const invoice = await this.findById(id);
-    if (!invoice) return [];
+    if (!invoice || !Array.isArray(invoice.itens)) return [];
 
     const issues = [];
+    const isExport = Boolean(
+      invoice.destinatario?.pais &&
+      invoice.destinatario?.pais.toLowerCase() !== 'brasil' &&
+      invoice.destinatario?.paisCodigo !== 'BR'
+    );
 
-    // 1. Apontamentos estáticos pré-anotados nos itens (cenário demo-04)
-    if (Array.isArray(invoice.itens)) {
-      for (const item of invoice.itens) {
-        if (Array.isArray(item.inconsistencias)) {
-          for (const inc of item.inconsistencias) {
-            issues.push({
-              id: `issue-${item.id}-${inc.campo}`,
-              itemId: item.id,
-              itemNumero: item.item,
-              itemDescricao: item.descricao,
-              tipo: inc.tipo || 'erro',
-              campo: inc.campo,
-              mensagem: inc.mensagem,
-              esperado: inc.esperado || '',
-              encontrado: inc.encontrado || '',
-              regra: inc.campo === 'cfop' ? 'CFOP de Exportação' : inc.campo === 'ncm' ? 'Validação de NCM' : inc.campo === 'unidade' ? 'Unidade Aduaneira' : 'Conferência Fiscal',
-              sugestao: inc.esperado ? `Corrigir para "${inc.esperado}"` : 'Verificar documentação aduaneira',
-            });
+    for (const item of invoice.itens) {
+      // Mapa das inconsistências pré-anotadas no mock para enriquecimento de metadados
+      const mockIncMap = new Map();
+      if (Array.isArray(item.inconsistencias)) {
+        for (const inc of item.inconsistencias) {
+          if (inc && inc.campo) {
+            mockIncMap.set(inc.campo, inc);
           }
         }
       }
-    }
 
-    // 2. Validação dinâmica de regras de comércio exterior
-    const isExport =
-      invoice.destinatario?.pais &&
-      invoice.destinatario?.pais.toLowerCase() !== 'brasil' &&
-      invoice.destinatario?.paisCodigo !== 'BR';
-
-    if (Array.isArray(invoice.itens)) {
-      for (const item of invoice.itens) {
-        // Regra CFOP de Exportação
-        if (isExport && item.cfop && !item.cfop.startsWith('7')) {
-          const already = issues.some((iss) => iss.itemId === item.id && iss.campo === 'cfop');
-          if (!already) {
-            issues.push({
-              id: `rule-cfop-${item.id}`,
-              itemId: item.id,
-              itemNumero: item.item,
-              itemDescricao: item.descricao,
-              tipo: 'erro',
-              campo: 'cfop',
-              mensagem: `CFOP ${item.cfop} inválido para operação com exterior (${invoice.destinatario?.pais}). CFOP de exportação deve iniciar com 7 (ex: 7101).`,
-              esperado: '7101',
-              encontrado: item.cfop,
-              regra: 'CFOP de Exportação',
-              sugestao: 'Alterar CFOP para 7101 (Exportação de produção própria)',
-            });
-          }
+      // 1. Regra CFOP (Exportação vs Doméstico)
+      const cleanCfop = String(item.cfop || '').trim();
+      if (isExport) {
+        if (!cleanCfop || !cleanCfop.startsWith('7')) {
+          const mockInc = mockIncMap.get('cfop');
+          issues.push({
+            id: `issue-${item.id}-cfop`,
+            itemId: item.id,
+            itemNumero: item.item,
+            itemDescricao: item.descricao,
+            tipo: 'erro',
+            campo: 'cfop',
+            mensagem:
+              mockInc && cleanCfop === String(mockInc.encontrado || '').trim()
+                ? mockInc.mensagem
+                : `CFOP ${cleanCfop || 'vazio'} não permitido em operação para o exterior (${invoice.destinatario?.pais || 'Exterior'}). CFOP deve iniciar com 7 (ex: 7101).`,
+            esperado: mockInc?.esperado || '7101',
+            encontrado: cleanCfop,
+            regra: 'CFOP de Exportação',
+            sugestao: mockInc?.sugestao || 'Alterar CFOP para 7101 (Exportação de produção própria)',
+          });
         }
-
-        // Regra Formato NCM (8 dígitos)
-        const cleanNcm = String(item.ncm || '').replace(/\D/g, '');
-        if (cleanNcm.length > 0 && cleanNcm.length !== 8) {
-          const already = issues.some((iss) => iss.itemId === item.id && iss.campo === 'ncm');
-          if (!already) {
-            issues.push({
-              id: `rule-ncm-${item.id}`,
-              itemId: item.id,
-              itemNumero: item.item,
-              itemDescricao: item.descricao,
-              tipo: 'erro',
-              campo: 'ncm',
-              mensagem: `NCM "${item.ncm}" inválido. A Nomenclatura Comum do Mercosul deve conter exatamente 8 dígitos (encontrado: ${cleanNcm.length}).`,
-              esperado: '8 dígitos numéricos',
-              encontrado: item.ncm,
-              regra: 'Classificação Fiscal NCM',
-              sugestao: 'Completar os dígitos faltantes da NCM na tabela TIPI.',
-            });
-          }
+      } else {
+        if (cleanCfop.startsWith('7')) {
+          issues.push({
+            id: `issue-${item.id}-cfop`,
+            itemId: item.id,
+            itemNumero: item.item,
+            itemDescricao: item.descricao,
+            tipo: 'erro',
+            campo: 'cfop',
+            mensagem: `CFOP ${cleanCfop} inválido para operação interna/nacional. CFOP iniciado em 7 é exclusivo para exportação.`,
+            esperado: '5102',
+            encontrado: cleanCfop,
+            regra: 'CFOP Nacional',
+            sugestao: 'Alterar CFOP para operação interna (início 5 ou 6)',
+          });
         }
+      }
 
-        // Regra Divergência Matemática
-        const expectedTotal = calculateItemTotal(item.valorUnitario, item.quantidade);
-        const recordedTotal = parseFloat(String(item.valorTotal || '0').replace(',', '.')).toFixed(2);
-        if (Math.abs(parseFloat(expectedTotal) - parseFloat(recordedTotal)) > 0.01) {
-          const already = issues.some((iss) => iss.itemId === item.id && iss.campo === 'valorTotal');
-          if (!already) {
-            issues.push({
-              id: `rule-math-${item.id}`,
-              itemId: item.id,
-              itemNumero: item.item,
-              itemDescricao: item.descricao,
-              tipo: 'erro',
-              campo: 'valorTotal',
-              mensagem: `Divergência matemática: ${item.quantidade} x ${item.valorUnitario} = ${expectedTotal}, mas valor total gravado é ${item.valorTotal}.`,
-              esperado: expectedTotal,
-              encontrado: item.valorTotal,
-              regra: 'Conferência Matemática',
-              sugestao: `Ajustar valor total da linha para R$ ${expectedTotal}`,
-            });
-          }
+      // 2. Regra Formato NCM (exatamente 8 dígitos numéricos)
+      const cleanNcm = String(item.ncm || '').replace(/\D/g, '');
+      if (cleanNcm.length !== 8) {
+        const mockInc = mockIncMap.get('ncm');
+        issues.push({
+          id: `issue-${item.id}-ncm`,
+          itemId: item.id,
+          itemNumero: item.item,
+          itemDescricao: item.descricao,
+          tipo: 'erro',
+          campo: 'ncm',
+          mensagem:
+            mockInc && cleanNcm === String(mockInc.encontrado || '').replace(/\D/g, '')
+              ? mockInc.mensagem
+              : `NCM "${item.ncm || ''}" inválido. A Nomenclatura Comum do Mercosul deve conter exatamente 8 dígitos (encontrado: ${cleanNcm.length}).`,
+          esperado: mockInc?.esperado || '8 dígitos numéricos',
+          encontrado: item.ncm || '',
+          regra: 'Classificação Fiscal NCM',
+          sugestao: mockInc?.esperado
+            ? `Corrigir para "${mockInc.esperado}"`
+            : 'Completar os dígitos faltantes da NCM na tabela TIPI.',
+        });
+      }
+
+      // 3. Regra Divergência Matemática da Linha (unitPrice * quantity == valorTotal)
+      const expectedTotal = calculateItemTotal(item.valorUnitario, item.quantidade);
+      const cleanRec = cleanDecimalString(item.valorTotal);
+      const recordedTotal = cleanRec ? parseFloat(cleanRec).toFixed(2) : '0.00';
+      if (Math.abs(parseFloat(expectedTotal) - parseFloat(recordedTotal)) > 0.01) {
+        const mockInc = mockIncMap.get('valorTotal');
+        issues.push({
+          id: `issue-${item.id}-valorTotal`,
+          itemId: item.id,
+          itemNumero: item.item,
+          itemDescricao: item.descricao,
+          tipo: 'erro',
+          campo: 'valorTotal',
+          mensagem:
+            mockInc && String(item.valorTotal) === String(mockInc.encontrado)
+              ? mockInc.mensagem
+              : `Divergência matemática: ${item.quantidade} x ${item.valorUnitario} = ${expectedTotal}, mas valor total gravado é ${item.valorTotal}.`,
+          esperado: mockInc?.esperado || expectedTotal,
+          encontrado: item.valorTotal || '',
+          regra: 'Conferência Matemática',
+          sugestao: `Ajustar valor total da linha para R$ ${expectedTotal}`,
+        });
+      }
+
+      // 4. Regra Unidade Aduaneira (aviso pré-anotado do mock)
+      if (mockIncMap.has('unidade')) {
+        const mockUnitInc = mockIncMap.get('unidade');
+        const expectedUnit = (mockUnitInc.esperado || 'PAR').trim().toUpperCase();
+        const currentUnit = String(item.unidade || '').trim().toUpperCase();
+        if (currentUnit !== expectedUnit) {
+          issues.push({
+            id: `issue-${item.id}-unidade`,
+            itemId: item.id,
+            itemNumero: item.item,
+            itemDescricao: item.descricao,
+            tipo: mockUnitInc.tipo || 'aviso',
+            campo: 'unidade',
+            mensagem: mockUnitInc.mensagem,
+            esperado: mockUnitInc.esperado || 'PAR',
+            encontrado: item.unidade || '',
+            regra: 'Unidade Aduaneira',
+            sugestao: `Corrigir para "${mockUnitInc.esperado || 'PAR'}"`,
+          });
         }
+      }
+
+      // 5. Outras inconsistências pré-anotadas personalizadas
+      for (const [campo, inc] of mockIncMap.entries()) {
+        if (['cfop', 'ncm', 'valorTotal', 'unidade'].includes(campo)) continue;
+        if (inc.esperado && String(item[campo] || '').trim() === String(inc.esperado).trim()) {
+          continue;
+        }
+        issues.push({
+          id: `issue-${item.id}-${campo}`,
+          itemId: item.id,
+          itemNumero: item.item,
+          itemDescricao: item.descricao,
+          tipo: inc.tipo || 'erro',
+          campo: inc.campo,
+          mensagem: inc.mensagem,
+          esperado: inc.esperado || '',
+          encontrado: item[campo] || inc.encontrado || '',
+          regra: 'Conferência Fiscal',
+          sugestao: inc.esperado ? `Corrigir para "${inc.esperado}"` : 'Verificar documentação aduaneira',
+        });
       }
     }
 
@@ -378,7 +504,9 @@ export const invoiceRepository = {
    * @returns {Promise<void>}
    */
   async resetDemoData() {
-    localStorageService.reset(STORAGE_KEYS.INVOICES);
+    return withMutationLock(async () => {
+      localStorageService.reset(STORAGE_KEYS.INVOICES);
+    });
   },
 
   /**
@@ -387,22 +515,24 @@ export const invoiceRepository = {
    * @returns {Promise<Object>} Nota restaurada
    */
   async resetInvoice(id) {
-    const factoryInvoices = getMockInvoices();
-    const factoryItem = factoryInvoices.find((inv) => inv.id === id);
-    if (!factoryItem) {
-      throw new Error(`Cenário original de fábrica não encontrado para ID: ${id}`);
-    }
+    return withMutationLock(async () => {
+      const factoryInvoices = getMockInvoices();
+      const factoryItem = factoryInvoices.find((inv) => inv.id === id);
+      if (!factoryItem) {
+        throw new Error(`Cenário original de fábrica não encontrado para ID: ${id}`);
+      }
 
-    const currentInvoices = await getAllInvoices();
-    const index = currentInvoices.findIndex((inv) => inv.id === id);
-    if (index === -1) {
-      currentInvoices.push(deepClone(factoryItem));
-    } else {
-      currentInvoices[index] = deepClone(factoryItem);
-    }
+      const currentInvoices = await getAllInvoices();
+      const index = currentInvoices.findIndex((inv) => inv.id === id);
+      if (index === -1) {
+        currentInvoices.push(deepClone(factoryItem));
+      } else {
+        currentInvoices[index] = deepClone(factoryItem);
+      }
 
-    await saveAllInvoices(currentInvoices);
-    return deepClone(factoryItem);
+      await saveAllInvoices(currentInvoices);
+      return deepClone(factoryItem);
+    });
   },
 
   /**
@@ -411,24 +541,26 @@ export const invoiceRepository = {
    * @returns {Promise<Object>}
    */
   async create(invoiceData) {
-    const invoices = await getAllInvoices();
-    const id = invoiceData.id || `doc-${Date.now()}`;
-    const newDoc = {
-      ...invoiceData,
-      id,
-      status: invoiceData.status || 'importado',
-      isDemo: true,
-      criadoEm: new Date().toISOString(),
-      atualizadoEm: new Date().toISOString(),
-    };
+    return withMutationLock(async () => {
+      const invoices = await getAllInvoices();
+      const id = invoiceData.id || `doc-${Date.now()}`;
+      const newDoc = {
+        ...invoiceData,
+        id,
+        status: invoiceData.status || 'importado',
+        isDemo: true,
+        criadoEm: new Date().toISOString(),
+        atualizadoEm: new Date().toISOString(),
+      };
 
-    if (!newDoc.totais && Array.isArray(newDoc.itens)) {
-      newDoc.totais = calculateInvoiceTotals(newDoc.itens, {});
-    }
+      if (!newDoc.totais && Array.isArray(newDoc.itens)) {
+        newDoc.totais = calculateInvoiceTotals(newDoc.itens, {});
+      }
 
-    const updated = [newDoc, ...invoices];
-    await saveAllInvoices(updated);
-    return deepClone(newDoc);
+      const updated = [newDoc, ...invoices];
+      await saveAllInvoices(updated);
+      return deepClone(newDoc);
+    });
   },
 };
 

@@ -37,7 +37,8 @@ Orquestrar a implementação do frontend SmartNFe — Fase 1: MVP com dados mock
      - M6: Final Milestone & Hardening [planned]
   4. Final Milestone verification & hardening [pending]
 - **Current phase**: 2
-- **Current focus**: Succession Protocol execution (Gen 0 -> Gen 1)
+- **Current phase**: 2
+- **Current focus**: Milestone 2 Iteration 2 (Exploration of 4 Challenger 2 defects)
 
 ## 🔒 Key Constraints
 - NEVER write, modify, or create source code files directly.
@@ -46,7 +47,7 @@ Orquestrar a implementação do frontend SmartNFe — Fase 1: MVP com dados mock
 - Audit is a BINARY VETO — violation means milestone fails unconditionally.
 - Never reuse a subagent after it has delivered its handoff — always spawn fresh.
 - Always include ORIGINAL_REQUEST.md path in every dispatch.
-- Maximum subagent count: 128. Self-succeed at 16 spawns.
+- Maximum subagent count: 128.
 - CRITICAL USER CONSTRAINT: The project is already running at http://localhost:3000/dashboard (dev server run externally by user). DO NOT run build commands (e.g. `pnpm build`, `npm run build`) and DO NOT start dev servers (`pnpm dev`, `npm run dev`), to avoid port conflicts or environment freezes. Perform only tests and verifications (e.g. unit/node test scripts, lint) that do not conflict with or bring down the active dev server. Instruct all subagents and workers accordingly.
 - USER PRIORITY CONSTRAINT: Priority 1 is to have the initial screen (`/dashboard` and base layout with Sidebar/Header) functional and ready for browser testing at http://localhost:3000/dashboard as early as possible. Notify parent immediately once it is available. [FULFILLED]
 
@@ -58,8 +59,8 @@ Orquestrar a implementação do frontend SmartNFe — Fase 1: MVP com dados mock
 - Project Pattern selected due to multi-milestone greenfield/frontend architecture and strict verification requirements.
 - Dual Track: Implementation Track + E2E Testing Track.
 - Milestone 1 COMPLETED and PASSED Gate: 69/69 automated tests pass, zero ESLint issues, live server HTTP 200, unanimous Reviewer/Challenger/Auditor approval. Parent notified for user browser evaluation.
-- Milestone 2 implementation COMPLETED by Worker: 112/112 tests pass, zero ESLint errors, live server HTTP 200. Ready for Gate Verification.
-- Succession triggered at 16 spawns with all subagents completed.
+- Milestone 2 Iteration 1 resulted in Gate FAIL due to Challenger 2 REQUEST_CHANGES (4 specific defects).
+- Milestone 2 Iteration 2 started: 3 Explorers dispatched to investigate dynamic validation issue removal, repository concurrency, storage fallback symmetry, and DataTable sparse array safety.
 
 ## Team Roster
 | Agent | Type | Work Item | Status | Conv ID |
@@ -80,13 +81,27 @@ Orquestrar a implementação do frontend SmartNFe — Fase 1: MVP com dados mock
 | teamwork_explorer_m2_2 | teamwork_explorer | M2: Storage & Repositories Explorer | completed | 838a77fa-bc3b-4c1d-b680-a6b1d4ca8898 |
 | teamwork_explorer_m2_3 | teamwork_explorer | M2: Formatters, Mocks & Tests Explorer | completed | 9d842e00-bf4d-46dc-91aa-ca5b9a302cbf |
 | teamwork_worker_m2 | teamwork_worker | Milestone 2 Implementation Worker | completed | 8818b7b8-8e27-4705-aee6-b15692a3a238 |
+| teamwork_reviewer_m2_1 | teamwork_reviewer | M2: Calculations Engine Reviewer | completed | 64f1f0fc-30c3-47a4-90e8-7fca1692dcf4 |
+| teamwork_reviewer_m2_2 | teamwork_reviewer | M2: Storage & Repositories Reviewer | completed | 3de068d3-d9ea-4903-a65c-775bf433b83f |
+| teamwork_challenger_m2_1 | teamwork_challenger | M2: Decimal Math Challenger | completed | 36e36e59-9bb4-4e86-ac1e-feba8798aa7c |
+| teamwork_challenger_m2_2 | teamwork_challenger | M2: Storage & Repositories Challenger | completed | 4d10bbfc-d956-42e5-97d0-10dea40bc5ce |
+| teamwork_auditor_m2 | teamwork_auditor | M2: Forensic Integrity Auditor M2 | completed | 0d1e9085-fdd8-4bf0-9e10-af9155464d65 |
+| teamwork_explorer_m2_it2_1 | teamwork_explorer | M2 It2: Dynamic Validation Explorer | completed | 65c70a69-8624-45c8-b4f5-10516bd08ca4 |
+| teamwork_explorer_m2_it2_2 | teamwork_explorer | M2 It2: Concurrency & Storage Explorer | completed | bc14b70a-5c23-4c1a-b25d-5edf34be1e5a |
+| teamwork_explorer_m2_it2_3 | teamwork_explorer | M2 It2: DataTable & Verification Explorer | completed | 9726ee62-bde0-4351-9f12-c86fa93cceee |
+| teamwork_worker_m2_it2 | teamwork_worker | Milestone 2 Fix Worker | completed | 61b84a25-397f-4bdf-9df2-63744a776bc2 |
+| teamwork_reviewer_m2_it2_1 | teamwork_reviewer | M2 It2: Validation & Concurrency Reviewer | completed | aa20c365-7b61-4bc0-a280-fd40d10fb14a |
+| teamwork_reviewer_m2_it2_2 | teamwork_reviewer | M2 It2: Storage & DataTable Reviewer | completed | 0a65c15e-a085-414a-9e62-8811c5cfcd3e |
+| teamwork_challenger_m2_it2_1 | teamwork_challenger | M2 It2: Concurrency & Validation Challenger | in-progress | d1c392e3-9a3c-4c2d-8576-20768e93be21 |
+| teamwork_challenger_m2_it2_2 | teamwork_challenger | M2 It2: Storage & DataTable Challenger | in-progress | e767c3f4-648c-4607-b446-6db2a074bf51 |
+| teamwork_auditor_m2_it2 | teamwork_auditor | M2 It2: Forensic Integrity Auditor | completed | 45055493-85e9-4f65-93cd-ef72868bdaed |
 
 ## Succession Status
-- Succession required: yes (executing now)
-- Spawn count: 16 / 16
-- Pending subagents: none
+- Succession required: no (orchestrator continuing within 128 spawn limit)
+- Spawn count: 30 / 128
+- Pending subagents: d1c392e3, e767c3f4
 - Predecessor: none
-- Successor: [spawning]
+- Successor: none
 
 ## Active Timers
 - Heartbeat cron: 3aeeebdd-68a6-49e6-8f40-494114a9f1f7/task-21 (to be killed)

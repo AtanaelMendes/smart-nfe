@@ -38,21 +38,40 @@ export default function DataTable({
 }) {
   const [filterText, setFilterText] = useState('');
 
-  const safeData = useMemo(() => (Array.isArray(data) ? data : []), [data]);
-  const useExplicitColumns = Array.isArray(columns) && columns.length > 0;
+  const safeData = useMemo(
+    () =>
+      Array.isArray(data)
+        ? data.filter(
+            (item) => item != null && typeof item === 'object' && !Array.isArray(item)
+          )
+        : [],
+    [data]
+  );
+
+  const safeColumns = useMemo(
+    () =>
+      Array.isArray(columns)
+        ? columns.filter((col) => col != null && typeof col === 'object')
+        : [],
+    [columns]
+  );
+  const useExplicitColumns = safeColumns.length > 0;
 
   // Derivação de colunas com memoização
   const effectiveColumns = useMemo(() => {
     if (useExplicitColumns) {
-      return columns;
+      return safeColumns;
     }
-    return header.map((h, index) => ({
+    const safeHeader = Array.isArray(header)
+      ? header.filter((h) => h != null && typeof h === 'object')
+      : [];
+    return safeHeader.map((h, index) => ({
       key: `col_${index}`,
-      label: h.label,
-      align: h.align || 'left',
-      title: h.title,
+      label: h?.label || '',
+      align: h?.align || 'left',
+      title: h?.title || '',
     }));
-  }, [columns, header, useExplicitColumns]);
+  }, [safeColumns, header, useExplicitColumns]);
 
   // Filtragem reativa instantânea sem useEffect
   const filteredData = useMemo(() => {
@@ -129,11 +148,11 @@ export default function DataTable({
             ) : (
               filteredData.map((row, rowIndex) => (
                 <tr
-                  key={row.id || `row_${rowIndex}`}
+                  key={row?.id || row?.key || row?.codigo || `row_${rowIndex}`}
                   className="odd:bg-white even:bg-slate-50/50 dark:odd:bg-slate-900 dark:even:bg-slate-800/40 hover:bg-blue-50/60 dark:hover:bg-slate-800/80 transition-colors"
                 >
                   {useExplicitColumns
-                    ? columns.map((col, colIndex) => {
+                    ? effectiveColumns.map((col, colIndex) => {
                         const alignClass = ALIGN_MAP[col.align] || 'text-left';
                         return (
                           <td

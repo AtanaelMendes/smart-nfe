@@ -168,7 +168,7 @@ describe('ADVERSARIAL SUITE 2: Storage Exhaustion & Fallback Simulation', () => 
     // CHALLENGE: O load() consegue recuperar os dados de memoryStore?
     const loaded = load('ephemeral_key', null);
     console.log('[CHALLENGE LOG] 2.2 loaded value under QuotaExceeded:', loaded);
-    // Verificamos o comportamento real
+    assert.deepStrictEqual(loaded, { resilient: true }, 'load() deve ler fallback de memória sob quota excedida');
   });
 });
 
@@ -196,6 +196,7 @@ describe('ADVERSARIAL SUITE 3: Repository Concurrency & Missing Entities', () =>
     // Verifica se ambas as atualizações persistiram ou se uma sobrescreveu a outra
     const raceLost = item1?.descricao !== 'PRODUTO 1 CONCORRENTE' || item2?.descricao !== 'PRODUTO 2 CONCORRENTE';
     console.log('[CHALLENGE LOG] 3.1 Concurrency race condition detected?:', raceLost);
+    assert.strictEqual(raceLost, false, 'Chamadas concorrentes de updateItem() não devem sofrer race condition');
   });
 
   it('3.2: Atualizar item não existente em documento existente', async () => {
@@ -282,6 +283,7 @@ describe('ADVERSARIAL SUITE 4: Dynamic Validation Engine (demo-04 & Fiscal Rules
     const afterIssues = await invoiceRepository.getValidationIssues('demo-04');
     const mathAfter = afterIssues.find((i) => i.itemId === 'd4-5' && i.campo === 'valorTotal');
     console.log('[CHALLENGE LOG] 4.3 Math divergence issue after updateItem:', mathAfter);
+    assert.strictEqual(mathAfter, undefined, 'A correção da divergência matemática no item d4-5 DEVERIA remover o erro');
   });
 });
 
@@ -352,20 +354,17 @@ describe('ADVERSARIAL SUITE 5: DataTable Resiliência & Edge Cases', () => {
     });
   });
 
-  it('5.4: DataTable com array contendo elementos null/undefined (verificação de vulnerabilidade)', () => {
-    // Documenta a vulnerabilidade encontrada:
-    assert.throws(
-      () => {
-        renderToStaticMarkup(
-          React.createElement(DataTable, {
-            data: [null, undefined, { id: 'valid', nome: 'Linha Válida' }],
-            columns: [{ key: 'nome', label: 'Nome' }],
-          })
-        );
-      },
-      /Cannot read properties of null/,
-      'Vulnerabilidade confirmada: DataTable falha quando elementos internos do array são null/undefined'
-    );
+  it('5.4: DataTable com array contendo elementos null/undefined (resiliência confirmada)', () => {
+    assert.doesNotThrow(() => {
+      const html = renderToStaticMarkup(
+        React.createElement(DataTable, {
+          data: [null, undefined, { id: 'valid', nome: 'Linha Válida' }],
+          columns: [{ key: 'nome', label: 'Nome' }],
+        })
+      );
+      assert.match(html, /Linha Válida/);
+      assert.match(html, /Exibindo 1 de 1 registros/);
+    });
   });
 });
 
