@@ -278,20 +278,23 @@ export const invoiceRepository = {
       const cleanNcm = String(updatedItem.ncm || '').replace(/\D/g, '');
       const expectedTotal = calculateItemTotal(updatedItem.valorUnitario, updatedItem.quantidade);
       const cleanRec = cleanDecimalString(updatedItem.valorTotal);
-      const recordedTotal = cleanRec ? parseFloat(cleanRec).toFixed(2) : '0.00';
+      const recordedTotal = Number.isFinite(parseFloat(cleanRec))
+        ? parseFloat(cleanRec).toFixed(2)
+        : '0.00';
       const hasMathDiff = Math.abs(parseFloat(expectedTotal) - parseFloat(recordedTotal)) > 0.01;
+
+      // Validação fiscal unificada do item (sincronizada com getValidationIssues)
+      const hasCfopError = isExport
+        ? (!cleanCfop || !cleanCfop.startsWith('7'))
+        : cleanCfop.startsWith('7');
+      const hasNcmError = cleanNcm.length !== 8;
+      const hasFiscalError = hasCfopError || hasNcmError || hasMathDiff;
 
       if (Array.isArray(updatedItem.inconsistencias)) {
         updatedItem.inconsistencias = updatedItem.inconsistencias.filter((inc) => {
-          if (inc.campo === 'cfop') {
-            return isExport ? !cleanCfop.startsWith('7') : cleanCfop.startsWith('7');
-          }
-          if (inc.campo === 'ncm') {
-            return cleanNcm.length !== 8;
-          }
-          if (inc.campo === 'valorTotal') {
-            return hasMathDiff;
-          }
+          if (inc.campo === 'cfop') return hasCfopError;
+          if (inc.campo === 'ncm') return hasNcmError;
+          if (inc.campo === 'valorTotal') return hasMathDiff;
           if (inc.campo === 'unidade') {
             const expectedUnit = (inc.esperado || 'PAR').trim().toUpperCase();
             return String(updatedItem.unidade || '').trim().toUpperCase() !== expectedUnit;
@@ -301,19 +304,17 @@ export const invoiceRepository = {
           }
           return true;
         });
-
-        if (updatedItem.inconsistencias.length === 0) {
-          updatedItem.situacao = 'conferido';
-        }
       }
 
-      // Se o usuário introduziu um erro fiscal em item previamente sem inconsistências
-      const hasIntroducedError =
-        (isExport && cleanCfop && !cleanCfop.startsWith('7')) ||
-        (cleanNcm.length > 0 && cleanNcm.length !== 8) ||
-        hasMathDiff;
-      if (hasIntroducedError) {
+      const hasRemainingMockErrors =
+        Array.isArray(updatedItem.inconsistencias) && updatedItem.inconsistencias.length > 0;
+
+      const hasAnyError = hasFiscalError || hasRemainingMockErrors;
+
+      if (hasAnyError) {
         updatedItem.situacao = 'inconsistente';
+      } else {
+        updatedItem.situacao = 'conferido';
       }
 
       invoice.itens[itemIndex] = updatedItem;

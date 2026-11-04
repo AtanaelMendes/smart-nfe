@@ -82,10 +82,10 @@ c:\www\smart-nfe\
 | # | Name | Scope | Dependencies | Status |
 |---|------|-------|-------------|--------|
 | M1 | M1_Foundation_Dashboard | R1 foundation fixes, AppLayout, Sidebar (root Importar), DemoBadge ("Modo Demonstração"), AppContext toasts, `/dashboard` operational screen (USER PRIORITY 1) | none | DONE |
-| M2 | M2_Core_Domain_Services | R2: 5 demo scenarios, decimal calculations, formatters, localStorage 1.0.0, async repositories | M1 | IN_PROGRESS |
-| M3 | M3_Document_Management_Screens | R3: `/documentos/importar`, `/documentos` list with filters/pagination, `/configuracoes` UI preferences | M2 | PLANNED |
-| M4 | M4_Conference_Validation_Screens | R3: `/documentos/[id]/conferencia` (dense table, inline edit, Tab/Enter, recalc), `/documentos/[id]/validacao` (inconsistency assistant) | M2 | PLANNED |
-| M5 | M5_Splitting_Prepared_Invoices_Screens | R3: `/documentos/[id]/divisao` (multi-note balance distribution), `/notas-preparadas` management | M2, M4 | PLANNED |
+| M2 | M2_Core_Domain_Services | R2: 5 demo scenarios, decimal calculations, formatters, localStorage 1.0.0, async repositories | M1 | DONE |
+| M3 | M3_Document_Management_Screens | R3: `/documentos/importar`, `/documentos` list with filters/pagination, `/configuracoes` UI preferences | M2 | DONE |
+| M4 | M4_Conference_Validation_Screens | R3: `/documentos/[id]/conferencia` (dense table, inline edit, Tab/Enter, recalc), `/documentos/[id]/validacao` (inconsistency assistant) | M2 | DONE |
+| M5 | M5_Splitting_Prepared_Invoices_Screens | R3: `/documentos/[id]/divisao` (multi-note balance distribution), `/notas-preparadas` management | M2, M4 | DONE |
 | M6 | M6_Final_Integration_E2E | Final Milestone: 100% E2E tests pass (Tiers 1-4) + Tier 5 adversarial hardening | M1-M5, TEST_READY.md | PLANNED |
 
 ## Parallel E2E Testing Track

@@ -1,0 +1,32 @@
+--- a/app/features/invoiceRepository.js
++++ b/app/features/invoiceRepository.js
+@@ -303,17 +303,19 @@
+           return true;
+         });
+-
+-        if (updatedItem.inconsistencias.length === 0) {
+-          updatedItem.situacao = 'conferido';
+-        }
+       }
+ 
+-      // Se o usuário introduziu um erro fiscal em item previamente sem inconsistências
+-      const hasIntroducedError =
+-        (isExport && cleanCfop && !cleanCfop.startsWith('7')) ||
+-        (cleanNcm.length > 0 && cleanNcm.length !== 8) ||
+-        hasMathDiff;
+-      if (hasIntroducedError) {
++      // Validação fiscal unificada do item (sincronizada com getValidationIssues)
++      const hasCfopError = isExport
++        ? (!cleanCfop || !cleanCfop.startsWith('7'))
++        : cleanCfop.startsWith('7');
++      const hasNcmError = cleanNcm.length !== 8;
++      const hasRemainingMockErrors =
++        Array.isArray(updatedItem.inconsistencias) && updatedItem.inconsistencias.length > 0;
++
++      const hasAnyError = hasCfopError || hasNcmError || hasMathDiff || hasRemainingMockErrors;
++
++      if (hasAnyError) {
+         updatedItem.situacao = 'inconsistente';
++      } else {
++        updatedItem.situacao = 'conferido';
+       }

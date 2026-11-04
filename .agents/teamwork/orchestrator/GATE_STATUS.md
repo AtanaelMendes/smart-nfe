@@ -31,8 +31,21 @@ Gate Result: **FAIL** (teamwork_challenger_m2_2 REQUEST_CHANGES: dynamic validat
 | teamwork_worker_m2_it2 | teamwork_worker | DONE (138/138 tests pass, lint 0, HTTP 200) | handoff.md |
 | teamwork_reviewer_m2_it2_1 | teamwork_reviewer | APPROVE | handoff.md |
 | teamwork_reviewer_m2_it2_2 | teamwork_reviewer | APPROVE | handoff.md |
-| teamwork_challenger_m2_it2_1 | teamwork_challenger | PENDING | handoff.md |
-| teamwork_challenger_m2_it2_2 | teamwork_challenger | PENDING | handoff.md |
+| teamwork_challenger_m2_it2_1 | teamwork_challenger | REQUEST_CHANGES | handoff.md |
+| teamwork_challenger_m2_it2_2 | teamwork_challenger | APPROVE | handoff.md |
 | teamwork_auditor_m2_it2 | teamwork_auditor | CLEAN | handoff.md |
 
-Gate Result: **IN_PROGRESS**
+Gate Result: **FAIL** (teamwork_challenger_m2_it2_1 REQUEST_CHANGES: situacao transition on clean items and empty field checks in updateItem)
+
+## Gate — Iteration 3 (Milestone 2: M2_Core_Domain_Services Situacao Parity)
+
+| Agent | Role | Verdict | Source |
+|-------|------|---------|--------|
+| teamwork_worker_m2_it3 | teamwork_worker | DONE (151/151 tests pass, lint 0, HTTP 200) | handoff.md |
+| teamwork_reviewer_m2_it3_1 | teamwork_reviewer | APPROVE | handoff.md |
+| teamwork_reviewer_m2_it3_2 | teamwork_reviewer | APPROVE | handoff.md |
+| teamwork_challenger_m2_it3_1 | teamwork_challenger | APPROVE | handoff.md |
+| teamwork_challenger_m2_it3_2 | teamwork_challenger | APPROVE | handoff.md |
+| teamwork_auditor_m2_it3 | teamwork_auditor | CLEAN | handoff.md |
+
+Gate Result: **PASS**

@@ -100,3 +100,10 @@ Apenas crie, edite arquivos e realize testes ou verificações que não derrubem
 SOLICITAÇÃO DO USUÁRIO — PRIORIDADE:
 O usuário solicitou ser avisado assim que a tela inicial (`/dashboard` e layout base com Sidebar/Header) estiver funcional e pronta para visualização no navegador (em http://localhost:3000/dashboard).
 Por favor, priorize deixar a tela inicial pronta e funcional o quanto antes, e avise imediatamente assim que ela estiver disponível para teste no navegador, para que eu possa notificar o usuário.
+
+## Follow-up — 2026-11-04T19:05:29Z
+
+DIRETIVA IMPORTANTE DO USUÁRIO:
+1. Limite a equipe a no máximo 2 agentes concorrentes para não esgotar cotas de IA nem gerar sobrecarga.
+2. Foque 100% na entrega e acabamento das TELAS MVP no navegador (Dashboard, Importar, Documentos, Conferência, Divisão, Preparadas, Configurações). Esqueça testes pesados e validações formais extensivas por hora.
+A tela /documentos e /documentos/[id]/conferencia já foram criadas na raiz. Prossiga com as telas restantes mantendo no máximo 2 agentes.
