@@ -31,3 +31,8 @@ OUTPUT:
 - Write full strategy to: c:\www\smart-nfe\.agents\teamwork\teamwork_explorer_m2_3\strategy_formatters_mocks_tests.md
 - Write standard handoff to: c:\www\smart-nfe\.agents\teamwork\teamwork_explorer_m2_3\handoff.md
 - Notify caller via send_message.
+
+## 2026-11-04T15:21:03Z
+**Context**: Milestone 2 Formatters, Mocks & Test Suite Strategy
+**Content**: Status check: Explorer 2 has completed its report on storage and repositories, and Explorer 1 is writing its report on decimal calculations. Please report your progress on formatters (numbers.js, currency/dates fixes), mock refinements (demo-02, demo-04, demo-05), DataTable protection, and the M2 test suite.
+**Action**: Update progress.md and finalize strategy_formatters_mocks_tests.md and handoff.md.

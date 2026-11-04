@@ -38,6 +38,7 @@ export default function DataTable({
 }) {
   const [filterText, setFilterText] = useState('');
 
+  const safeData = useMemo(() => (Array.isArray(data) ? data : []), [data]);
   const useExplicitColumns = Array.isArray(columns) && columns.length > 0;
 
   // Derivação de colunas com memoização
@@ -55,18 +56,17 @@ export default function DataTable({
 
   // Filtragem reativa instantânea sem useEffect
   const filteredData = useMemo(() => {
-    if (!Array.isArray(data)) return [];
-    if (!filterText.trim()) return data;
+    if (!filterText.trim()) return safeData;
 
     const term = filterText.toLowerCase().trim();
-    return data.filter((item) => {
+    return safeData.filter((item) => {
       if (!item || typeof item !== 'object') return false;
       return Object.values(item).some((val) => {
         if (val === null || val === undefined) return false;
         return String(val).toLowerCase().includes(term);
       });
     });
-  }, [data, filterText]);
+  }, [safeData, filterText]);
 
   const cellPadding = dense ? 'px-2.5 py-1 text-xs' : 'px-4 py-2.5 text-sm';
   const headerPadding = dense ? 'px-2.5 py-1.5 text-xs' : 'px-4 py-2 text-xs';
@@ -168,7 +168,7 @@ export default function DataTable({
                 colSpan={effectiveColumns.length || 1}
                 className={cellPadding}
               >
-                Exibindo {filteredData.length} de {data.length} registros
+                Exibindo {filteredData.length} de {safeData.length} registros
               </td>
             </tr>
           </tfoot>

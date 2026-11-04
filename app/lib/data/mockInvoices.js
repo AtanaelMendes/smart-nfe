@@ -80,8 +80,9 @@ export const MOCK_INVOICES = [
     },
     itens: Array.from({ length: 25 }, (_, idx) => {
       const num = idx + 1;
-      const unit = (5000 + (num * 75)).toFixed(4);
-      const total = (5950.00).toFixed(2);
+      const price = 5950 + (num - 13) * 50;
+      const unit = price.toFixed(4);
+      const total = price.toFixed(2);
       return {
         id: `d2-${num}`,
         item: num,
@@ -251,25 +252,30 @@ export const MOCK_INVOICES = [
     },
     itens: [
       // 3 produtos repetidos em 5 lotes cada (15 itens)
+      // Lote L01 (prep-01)
       { id: 'd5-1', item: 1, codigo: 'SOJA-GR-01', descricao: 'Soja em Grãos - Lote L01', ncm: '12019000', cfop: '7101', unidade: 'TON', quantidade: '50.0000', valorUnitario: '400.0000', valorTotal: '20000.00', situacao: 'conferido', modificado: false },
       { id: 'd5-2', item: 2, codigo: 'MILHO-GR-02', descricao: 'Milho em Grãos - Lote L01', ncm: '10059010', cfop: '7101', unidade: 'TON', quantidade: '60.0000', valorUnitario: '350.0000', valorTotal: '21000.00', situacao: 'conferido', modificado: false },
-      { id: 'd5-3', item: 3, codigo: 'SORGO-GR-03', descricao: 'Sorgo em Grãos - Lote L01', ncm: '10079000', cfop: '7101', unidade: 'TON', quantidade: '70.0000', valorUnitario: '380.0000', valorTotal: '26600.00', situacao: 'conferido', modificado: false },
+      { id: 'd5-3', item: 3, codigo: 'SORGO-GR-03', descricao: 'Sorgo em Grãos - Lote L01', ncm: '10079000', cfop: '7101', unidade: 'TON', quantidade: '55.0000', valorUnitario: '380.0000', valorTotal: '20900.00', situacao: 'conferido', modificado: false },
 
-      { id: 'd5-4', item: 4, codigo: 'SOJA-GR-01', descricao: 'Soja em Grãos - Lote L02', ncm: '12019000', cfop: '7101', unidade: 'TON', quantidade: '55.0000', valorUnitario: '400.0000', valorTotal: '22000.00', situacao: 'conferido', modificado: false },
+      // Lote L02 (prep-01)
+      { id: 'd5-4', item: 4, codigo: 'SOJA-GR-01', descricao: 'Soja em Grãos - Lote L02', ncm: '12019000', cfop: '7101', unidade: 'TON', quantidade: '54.0000', valorUnitario: '400.0000', valorTotal: '21600.00', situacao: 'conferido', modificado: false },
       { id: 'd5-5', item: 5, codigo: 'MILHO-GR-02', descricao: 'Milho em Grãos - Lote L02', ncm: '10059010', cfop: '7101', unidade: 'TON', quantidade: '65.0000', valorUnitario: '350.0000', valorTotal: '22750.00', situacao: 'conferido', modificado: false },
       { id: 'd5-6', item: 6, codigo: 'SORGO-GR-03', descricao: 'Sorgo em Grãos - Lote L02', ncm: '10079000', cfop: '7101', unidade: 'TON', quantidade: '75.0000', valorUnitario: '380.0000', valorTotal: '28500.00', situacao: 'conferido', modificado: false },
 
-      { id: 'd5-7', item: 7, codigo: 'SOJA-GR-01', descricao: 'Soja em Grãos - Lote L03', ncm: '12019000', cfop: '7101', unidade: 'TON', quantidade: '52.0000', valorUnitario: '400.0000', valorTotal: '20800.00', situacao: 'conferido', modificado: false },
-      { id: 'd5-8', item: 8, codigo: 'MILHO-GR-02', descricao: 'Milho em Grãos - Lote L03', ncm: '10059010', cfop: '7101', unidade: 'TON', quantidade: '62.0000', valorUnitario: '350.0000', valorTotal: '21700.00', situacao: 'conferido', modificado: false },
-      { id: 'd5-9', item: 9, codigo: 'SORGO-GR-03', descricao: 'Sorgo em Grãos - Lote L03', ncm: '10079000', cfop: '7101', unidade: 'TON', quantidade: '72.0000', valorUnitario: '380.0000', valorTotal: '27360.00', situacao: 'conferido', modificado: false },
+      // Lote L03 (prep-02)
+      { id: 'd5-7', item: 7, codigo: 'SOJA-GR-01', descricao: 'Soja em Grãos - Lote L03', ncm: '12019000', cfop: '7101', unidade: 'TON', quantidade: '49.0000', valorUnitario: '400.0000', valorTotal: '19600.00', situacao: 'conferido', modificado: false },
+      { id: 'd5-8', item: 8, codigo: 'MILHO-GR-02', descricao: 'Milho em Grãos - Lote L03', ncm: '10059010', cfop: '7101', unidade: 'TON', quantidade: '51.0000', valorUnitario: '350.0000', valorTotal: '17850.00', situacao: 'conferido', modificado: false },
+      { id: 'd5-9', item: 9, codigo: 'SORGO-GR-03', descricao: 'Sorgo em Grãos - Lote L03', ncm: '10079000', cfop: '7101', unidade: 'TON', quantidade: '64.0000', valorUnitario: '380.0000', valorTotal: '24320.00', situacao: 'conferido', modificado: false },
 
-      { id: 'd5-10', item: 10, codigo: 'SOJA-GR-01', descricao: 'Soja em Grãos - Lote L04', ncm: '12019000', cfop: '7101', unidade: 'TON', quantidade: '58.0000', valorUnitario: '400.0000', valorTotal: '23200.00', situacao: 'conferido', modificado: false },
-      { id: 'd5-11', item: 11, codigo: 'MILHO-GR-02', descricao: 'Milho em Grãos - Lote L04', ncm: '10059010', cfop: '7101', unidade: 'TON', quantidade: '68.0000', valorUnitario: '350.0000', valorTotal: '23800.00', situacao: 'conferido', modificado: false },
-      { id: 'd5-12', item: 12, codigo: 'SORGO-GR-03', descricao: 'Sorgo em Grãos - Lote L04', ncm: '10079000', cfop: '7101', unidade: 'TON', quantidade: '78.0000', valorUnitario: '380.0000', valorTotal: '29640.00', situacao: 'conferido', modificado: false },
+      // Lote L04 (prep-02)
+      { id: 'd5-10', item: 10, codigo: 'SOJA-GR-01', descricao: 'Soja em Grãos - Lote L04', ncm: '12019000', cfop: '7101', unidade: 'TON', quantidade: '53.0000', valorUnitario: '400.0000', valorTotal: '21200.00', situacao: 'conferido', modificado: false },
+      { id: 'd5-11', item: 11, codigo: 'MILHO-GR-02', descricao: 'Milho em Grãos - Lote L04', ncm: '10059010', cfop: '7101', unidade: 'TON', quantidade: '58.0000', valorUnitario: '350.0000', valorTotal: '20300.00', situacao: 'conferido', modificado: false },
+      { id: 'd5-12', item: 12, codigo: 'SORGO-GR-03', descricao: 'Sorgo em Grãos - Lote L04', ncm: '10079000', cfop: '7101', unidade: 'TON', quantidade: '72.0000', valorUnitario: '380.0000', valorTotal: '27360.00', situacao: 'conferido', modificado: false },
 
+      // Lote L05 (prep-02)
       { id: 'd5-13', item: 13, codigo: 'SOJA-GR-01', descricao: 'Soja em Grãos - Lote L05', ncm: '12019000', cfop: '7101', unidade: 'TON', quantidade: '60.0000', valorUnitario: '400.0000', valorTotal: '24000.00', situacao: 'conferido', modificado: false },
       { id: 'd5-14', item: 14, codigo: 'MILHO-GR-02', descricao: 'Milho em Grãos - Lote L05', ncm: '10059010', cfop: '7101', unidade: 'TON', quantidade: '70.0000', valorUnitario: '350.0000', valorTotal: '24500.00', situacao: 'conferido', modificado: false },
-      { id: 'd5-15', item: 15, codigo: 'SORGO-GR-03', descricao: 'Sorgo em Grãos - Lote L05', ncm: '10079000', cfop: '7101', unidade: 'TON', quantidade: '74.0000', valorUnitario: '380.0000', valorTotal: '28150.00', situacao: 'conferido', modificado: false },
+      { id: 'd5-15', item: 15, codigo: 'SORGO-GR-03', descricao: 'Sorgo em Grãos - Lote L05', ncm: '10079000', cfop: '7101', unidade: 'TON', quantidade: '74.0000', valorUnitario: '380.0000', valorTotal: '28120.00', situacao: 'conferido', modificado: false },
     ],
     totais: {
       valorProdutos: '342000.00',
@@ -278,8 +284,8 @@ export const MOCK_INVOICES = [
       valorDesconto: '0.00',
       outrasDespesas: '0.00',
       valorTotalNota: '342000.00',
-      pesoLiquido: '964.000',
-      pesoBruto: '985.000',
+      pesoLiquido: '910000.000',
+      pesoBruto: '928000.000',
     },
   },
 ];

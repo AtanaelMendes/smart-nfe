@@ -135,14 +135,12 @@ describe('Adversarial Challenger: formatters/currency.js', async () => {
     assert.strictEqual(parseBRL('texto_invalido'), 0);
     assert.strictEqual(parseBRL(2500), 2500);
 
-    // VULNERABILIDADE EMPÍRICA DOCUMENTADA:
-    // parseBRL remove todos os pontos (.replace(/\./g, '')) assumindo que são separadores de milhar.
-    // Portanto, uma string decimal simples '1250.50' é convertida em 125050 em vez de 1250.5!
+    // Resolução M2: parseBRL agora suporta formato decimal simples sem inflacionar por 100
     const parsedDotDecimal = parseBRL('1250.50');
     assert.strictEqual(
       parsedDotDecimal,
-      125050,
-      'parseBRL("1250.50") converte para 125050 porque remove o ponto decimal'
+      1250.5,
+      'parseBRL("1250.50") converte com precisão para 1250.5'
     );
   });
 
@@ -217,13 +215,12 @@ describe('Adversarial Challenger: formatters/dates.js', async () => {
       });
     }
 
-    // COMPORTAMENTO EMPÍRICO DOCUMENTADO:
-    // Regex /^\d{4}-\d{2}-\d{2}$/ casa '2026-99-99', e Date.UTC faz rollover para 2034!
+    // Resolução M2: Prevenção estrita de rollover em datas inválidas (2026-99-99 retorna "-")
     const rolloverResult = formatDateBR('2026-99-99');
     assert.strictEqual(
       rolloverResult,
-      '07/06/2034',
-      'Date.UTC faz rollover sem validar limites de mês e dia'
+      '-',
+      'formatDateBR valida limites estritos de calendário e não faz rollover'
     );
   });
 
@@ -495,15 +492,11 @@ describe('Adversarial Challenger: DataTable.jsx Render & Search Suite', () => {
       errorMessage = err.message;
     }
 
-    // Registra como finding empírico: se data={null}, o componente quebra devido a `data.length`
-    assert.ok(
+    // Resolução M2: DataTable agora é resiliente a data={null} graças a safeData
+    assert.strictEqual(
       threwError,
-      'DataTable deve lançar exceção ao receber data={null} devido à leitura direta de data.length'
-    );
-    assert.match(
-      errorMessage,
-      /Cannot read propert.*null.*length/i,
-      'Bug empírico confirmado: data.length em tfoot quebra com data={null}'
+      false,
+      'DataTable não deve lançar exceção ao receber data={null}'
     );
   });
 });
@@ -583,13 +576,11 @@ describe('Adversarial Challenger: mockInvoices.js Mathematical Audit Suite', asy
       sumProdutos += total;
     }
 
-    // Constatação crítica de discrepância em demo-02:
-    // A fórmula unit = 5000 + num*75 varia de 5075 a 6875, mas total é fixo em 5950.00
-    // Portanto todos os 25 itens divergem entre unit*qtd e valorTotal!
+    // Resolução M2: Preços de demo-02 foram calibrados de forma simétrica garantindo unit * qtd = total
     assert.strictEqual(
       unitQtyMismatches,
-      25,
-      'Todos os 25 itens de demo-02 possuem divergência matemática entre unitário e total'
+      0,
+      'Todos os 25 itens de demo-02 possuem integridade matemática exata entre unitário e total'
     );
 
     // O total da nota 25 * 5950 = 148750.00 está consistente com a soma dos totais individuais:
@@ -660,9 +651,9 @@ describe('Adversarial Challenger: mockInvoices.js Mathematical Audit Suite', asy
     assert.ok(d5, 'demo-05 deve existir');
     assert.strictEqual(d5.itens.length, 15);
 
-    // Item 15 possui discrepância sutil: 74 * 380 = 28120, mas gravado 28150
+    // Resolução M2: Item 15 calibrado: 74 * 380 = 28120.00
     const item15 = d5.itens.find((i) => i.id === 'd5-15');
-    assert.strictEqual(item15.valorTotal, '28150.00');
+    assert.strictEqual(item15.valorTotal, '28120.00');
     const calc15 = parseFloat(item15.quantidade) * parseFloat(item15.valorUnitario);
     assert.strictEqual(calc15, 28120);
 

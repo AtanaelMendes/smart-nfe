@@ -35,7 +35,8 @@ export function formatBRL(value) {
 }
 
 /**
- * Converte valor formatado em reais (ex: "R$ 1.250,50" ou "1.250,50") para número de ponto flutuante.
+ * Converte valor formatado em reais (ex: "R$ 1.250,50" ou "1.250,50" ou "1250.50") para número de ponto flutuante.
+ * Suporta formatos brasileiro com vírgula e decimal padrão com ponto sem inflacionar o valor por 100.
  * @param {string|number} strVal
  * @returns {number} Valor numérico (ex: 1250.5)
  */
@@ -48,10 +49,36 @@ export function parseBRL(strVal) {
     return Number.isFinite(strVal) ? strVal : 0;
   }
 
-  const cleaned = String(strVal)
+  let cleaned = String(strVal)
     .replace(/[R$\s]/g, '')
-    .replace(/\./g, '')
-    .replace(',', '.');
+    .trim();
+
+  if (!cleaned) return 0;
+
+  const hasComma = cleaned.includes(',');
+  const hasDot = cleaned.includes('.');
+
+  if (hasComma && hasDot) {
+    const lastCommaIndex = cleaned.lastIndexOf(',');
+    const lastDotIndex = cleaned.lastIndexOf('.');
+    if (lastCommaIndex > lastDotIndex) {
+      // Padrão brasileiro: "1.250,50"
+      cleaned = cleaned.replace(/\./g, '').replace(',', '.');
+    } else {
+      // Padrão americano: "1,250.50"
+      cleaned = cleaned.replace(/,/g, '');
+    }
+  } else if (hasComma) {
+    // Apenas vírgula: "1250,50"
+    cleaned = cleaned.replace(',', '.');
+  } else if (hasDot) {
+    const dotCount = (cleaned.match(/\./g) || []).length;
+    if (dotCount > 1) {
+      // Múltiplos pontos: "1.000.000"
+      cleaned = cleaned.replace(/\./g, '');
+    }
+    // Único ponto: "1250.50" -> mantém o ponto
+  }
 
   const parsed = parseFloat(cleaned);
   return Number.isNaN(parsed) || !Number.isFinite(parsed) ? 0 : parsed;

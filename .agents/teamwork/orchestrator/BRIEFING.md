@@ -1,4 +1,4 @@
-# BRIEFING — 2026-11-04T15:13:00Z
+# BRIEFING — 2026-11-04T15:44:00Z
 
 ## Mission
 Orquestrar a implementação do frontend SmartNFe — Fase 1: MVP com dados mockados, atendendo a R1 (fundação), R2 (mocks/cálculos/persistência), R3 (8 telas) e R4 (restrições), com testes E2E e aprovação integral de reviewers, challengers e auditoria forense.
@@ -29,7 +29,7 @@ Orquestrar a implementação do frontend SmartNFe — Fase 1: MVP com dados mock
   2. PROJECT.md & TEST_INFRA.md decomposition [done]
   3. Milestone Execution & E2E Track [in-progress]
      - M1: Foundation & Dashboard (USER PRIORITY 1) [DONE - Gate Passed - Parent Notified]
-     - M2: Core Domain Services [in-progress]
+     - M2: Core Domain Services [IMPLEMENTATION COMPLETE — READY FOR GATE VERIFICATION]
      - E2E Testing Track [planned]
      - M3: Document Management Screens [planned]
      - M4: Conference & Validation Screens [planned]
@@ -37,7 +37,7 @@ Orquestrar a implementação do frontend SmartNFe — Fase 1: MVP com dados mock
      - M6: Final Milestone & Hardening [planned]
   4. Final Milestone verification & hardening [pending]
 - **Current phase**: 2
-- **Current focus**: Milestone 2 Execution (Domain Services, Decimal Math, Storage, Repositories)
+- **Current focus**: Succession Protocol execution (Gen 0 -> Gen 1)
 
 ## 🔒 Key Constraints
 - NEVER write, modify, or create source code files directly.
@@ -58,7 +58,8 @@ Orquestrar a implementação do frontend SmartNFe — Fase 1: MVP com dados mock
 - Project Pattern selected due to multi-milestone greenfield/frontend architecture and strict verification requirements.
 - Dual Track: Implementation Track + E2E Testing Track.
 - Milestone 1 COMPLETED and PASSED Gate: 69/69 automated tests pass, zero ESLint issues, live server HTTP 200, unanimous Reviewer/Challenger/Auditor approval. Parent notified for user browser evaluation.
-- Milestone 2 started: 3 Explorers dispatched to formulate strategies for Decimal Calculations Engine, Versioned Local Storage (schema 1.0.0), Async Repositories (`invoiceRepository`, `preparedInvoiceRepository`), and Formatters/Mock Refinements.
+- Milestone 2 implementation COMPLETED by Worker: 112/112 tests pass, zero ESLint errors, live server HTTP 200. Ready for Gate Verification.
+- Succession triggered at 16 spawns with all subagents completed.
 
 ## Team Roster
 | Agent | Type | Work Item | Status | Conv ID |
@@ -75,29 +76,30 @@ Orquestrar a implementação do frontend SmartNFe — Fase 1: MVP com dados mock
 | teamwork_challenger_m1_1 | teamwork_challenger | M1: Empirical Logic Challenger | completed | 9b4c262d-d7f5-46cd-be48-b1a05050fccd |
 | teamwork_challenger_m1_2 | teamwork_challenger | M1: Live Server & UI Challenger | completed | f06de215-688b-42d2-a315-1036c4c8fe96 |
 | teamwork_auditor_m1 | teamwork_auditor | M1: Forensic Integrity Auditor | completed | c027f4f9-7237-4d32-b764-f8b25c535626 |
-| teamwork_explorer_m2_1 | teamwork_explorer | M2: Calculations Engine Explorer | in-progress | 4e75cd79-dc5b-4d1f-a1b8-22f2c9e7faaf |
-| teamwork_explorer_m2_2 | teamwork_explorer | M2: Storage & Repositories Explorer | in-progress | 838a77fa-bc3b-4c1d-b680-a6b1d4ca8898 |
-| teamwork_explorer_m2_3 | teamwork_explorer | M2: Formatters, Mocks & Tests Explorer | in-progress | 9d842e00-bf4d-46dc-91aa-ca5b9a302cbf |
+| teamwork_explorer_m2_1 | teamwork_explorer | M2: Calculations Engine Explorer | completed | 4e75cd79-dc5b-4d1f-a1b8-22f2c9e7faaf |
+| teamwork_explorer_m2_2 | teamwork_explorer | M2: Storage & Repositories Explorer | completed | 838a77fa-bc3b-4c1d-b680-a6b1d4ca8898 |
+| teamwork_explorer_m2_3 | teamwork_explorer | M2: Formatters, Mocks & Tests Explorer | completed | 9d842e00-bf4d-46dc-91aa-ca5b9a302cbf |
+| teamwork_worker_m2 | teamwork_worker | Milestone 2 Implementation Worker | completed | 8818b7b8-8e27-4705-aee6-b15692a3a238 |
 
 ## Succession Status
-- Succession required: no
-- Spawn count: 15 / 16
-- Pending subagents: 4e75cd79-dc5b-4d1f-a1b8-22f2c9e7faaf, 838a77fa-bc3b-4c1d-b680-a6b1d4ca8898, 9d842e00-bf4d-46dc-91aa-ca5b9a302cbf
+- Succession required: yes (executing now)
+- Spawn count: 16 / 16
+- Pending subagents: none
 - Predecessor: none
-- Successor: not yet spawned
+- Successor: [spawning]
 
 ## Active Timers
-- Heartbeat cron: 3aeeebdd-68a6-49e6-8f40-494114a9f1f7/task-21
-- Safety timer: 3aeeebdd-68a6-49e6-8f40-494114a9f1f7/task-279
-- On succession: kill all timers before spawning successor
-- On context truncation: handle timers as step 4 of the State Recovery section of your prompt says
+- Heartbeat cron: 3aeeebdd-68a6-49e6-8f40-494114a9f1f7/task-21 (to be killed)
+- Safety timer: none
 
 ## Artifact Index
 - c:\www\smart-nfe\.agents\teamwork\ORIGINAL_REQUEST.md — Original user request
 - c:\www\smart-nfe\.agents\teamwork\orchestrator\DISPATCH.md — Incoming dispatch log
 - c:\www\smart-nfe\.agents\teamwork\orchestrator\BRIEFING.md — Persistent working memory
 - c:\www\smart-nfe\.agents\teamwork\orchestrator\progress.md — Liveness & status tracking
+- c:\www\smart-nfe\.agents\teamwork\orchestrator\handoff.md — Soft handoff for Gen 1 Successor
 - c:\www\smart-nfe\.agents\teamwork\orchestrator\GATE_STATUS.md — Gate verdicts tracking
 - c:\www\smart-nfe\PROJECT.md — Global architecture, milestones, feature inventory
 - c:\www\smart-nfe\.agents\teamwork\sub_orch_m1_foundation\SCOPE.md — Milestone 1 Scope
 - c:\www\smart-nfe\.agents\teamwork\sub_orch_m2_core\SCOPE.md — Milestone 2 Scope
+- c:\www\smart-nfe\.agents\teamwork\teamwork_worker_m2\handoff.md — M2 Worker handoff report

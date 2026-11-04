@@ -10,3 +10,16 @@
 | teamwork_auditor_m1 | teamwork_auditor | CLEAN | handoff.md |
 
 Gate Result: **PASS**
+
+## Gate — Iteration 1 (Milestone 2: M2_Core_Domain_Services)
+
+| Agent | Role | Verdict | Source |
+|-------|------|---------|--------|
+| teamwork_worker_m2 | teamwork_worker | DONE (112/112 tests pass, lint 0, HTTP 200) | handoff.md |
+| teamwork_reviewer_m2_1 | teamwork_reviewer | PENDING | handoff.md |
+| teamwork_reviewer_m2_2 | teamwork_reviewer | APPROVE | handoff.md |
+| teamwork_challenger_m2_1 | teamwork_challenger | PENDING | handoff.md |
+| teamwork_challenger_m2_2 | teamwork_challenger | PENDING | handoff.md |
+| teamwork_auditor_m2 | teamwork_auditor | PENDING | handoff.md |
+
+Gate Result: **IN_PROGRESS**
