@@ -1,17 +1,18 @@
 import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
-import nextTs from "eslint-config-next/typescript";
 
 const eslintConfig = defineConfig([
   ...nextVitals,
-  ...nextTs,
-  // Override default ignores of eslint-config-next.
   globalIgnores([
-    // Default ignores of eslint-config-next:
+    // Padrões de compilação Next.js
     ".next/**",
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Código legado e dead code herdado do template RH anterior
+    "app/dev/**",
+    "app/assets/photo-modal.js",
+    "plugins/**",
   ]),
 ]);
 

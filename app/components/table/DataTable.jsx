@@ -1,100 +1,179 @@
-import { useCallback, useEffect, useState } from "react";
+'use client';
+
+import { useState, useMemo } from 'react';
 import InputText from '@/components/inputs/InputText';
 
-const DataTable = ({ data, header, dense, mainText, action }) => {
-    const [tableBody, setTableBody] = useState([]);
-    const [thead, setThead] = useState([]);
-    const [tableData, setTableData] = useState([]);
-    const [filter, setFilter] = useState({
-        filtra_table: ""
+// Mapeamento estático obrigatório para detecção correta de classes no Tailwind 4
+const ALIGN_MAP = {
+  left: 'text-left',
+  center: 'text-center',
+  right: 'text-right',
+};
+
+/**
+ * DataTable — Tabela de alta performance para o SmartNFe.
+ *
+ * Suporta colunas explícitas (SmartNFe), modo compacto (conferência fiscal),
+ * renderizador customizado de células, filtro em tempo real e tema escuro.
+ *
+ * Props:
+ *   data        — Array de objetos com os registros
+ *   columns     — Array de { key, label, align?, render?, width?, title? } (modo preferencial)
+ *   header      — Array de { label, align?, title? } (modo legado de compatibilidade)
+ *   dense       — Boolean para tabela compacta (reduz padding e tipografia)
+ *   mainText    — Título descritivo exibido na barra superior
+ *   action      — Slot JSX para botões de ação adicionais
+ *   emptyText   — Mensagem personalizada quando não houver dados
+ *   searchable  — Boolean indicando se o campo de busca deve ser exibido (default: true)
+ */
+export default function DataTable({
+  data = [],
+  columns,
+  header = [],
+  dense = false,
+  mainText,
+  action,
+  emptyText = 'Não há dados para exibir...',
+  searchable = true,
+}) {
+  const [filterText, setFilterText] = useState('');
+
+  const useExplicitColumns = Array.isArray(columns) && columns.length > 0;
+
+  // Derivação de colunas com memoização
+  const effectiveColumns = useMemo(() => {
+    if (useExplicitColumns) {
+      return columns;
+    }
+    return header.map((h, index) => ({
+      key: `col_${index}`,
+      label: h.label,
+      align: h.align || 'left',
+      title: h.title,
+    }));
+  }, [columns, header, useExplicitColumns]);
+
+  // Filtragem reativa instantânea sem useEffect
+  const filteredData = useMemo(() => {
+    if (!Array.isArray(data)) return [];
+    if (!filterText.trim()) return data;
+
+    const term = filterText.toLowerCase().trim();
+    return data.filter((item) => {
+      if (!item || typeof item !== 'object') return false;
+      return Object.values(item).some((val) => {
+        if (val === null || val === undefined) return false;
+        return String(val).toLowerCase().includes(term);
+      });
     });
+  }, [data, filterText]);
 
-    useEffect(() => {
-        theadToHtml();
-    }, [header]);
+  const cellPadding = dense ? 'px-2.5 py-1 text-xs' : 'px-4 py-2.5 text-sm';
+  const headerPadding = dense ? 'px-2.5 py-1.5 text-xs' : 'px-4 py-2 text-xs';
 
-    useEffect(() => {
-        setTableData(data);
-    }, [data]);
-
-    useEffect(() => {
-        dataToHtml();
-    }, [tableData]);
-
-    useEffect(() => {   
-        if (data) {
-            setTableData(data.filter(item =>
-                Object.values(item).some(v =>
-                    typeof v === 'string' && v.toLowerCase().includes(filter.filtra_table.toLowerCase())
-                )
-            ));
-        }
-    }, [filter]);
-
-    const theadToHtml = () => {
-        setThead(header.map(title => {
-            return (
-                <th scope="col" className={`${dense ? " px-2 py-1 " : " px-4 py-2 "} text-${title?.align || "left"}`} key={title.label}>
-                    <div className="inline-flex items-center" title={`${title?.title || ""}`}>
-                        {title.label}
-                        {/* <FontAwesomeIcon icon={faArrowsUpDown} width="12" height="12" className="ml-2"/> */}
-                    </div>
-                </th>
-            );
-        }));
-    }
-
-    const dataToHtml = () => {
-        if (!tableData) {
-            return setTableBody(<tr className="odd:bg-white even:bg-gray-50"><td colSpan={header.lenght || 1}>Não há dados para exibir...</td></tr>);
-        }
-
-        setTableBody(tableData.map((item, index) => {
-            const getColumns = () => {
-                var chaves = Object.keys(item);
-                return chaves.map((chave, indexChave) => { return (<td className={`${dense ? " px-2 py-1 " : " px-4 py-2 "} text-${header[indexChave]?.align || "left"}`} key={chave}>{item[chave]}</td>); });
-            }
-            return (<tr className="odd:bg-white even:bg-gray-100 hover:bg-drop-shadow-1" key={`tr-${index}`}>{getColumns()}</tr>);
-        }));
-    }
-
-    const setFilterTextCallback = useCallback((id, value) => {
-        setFilter(prevFormFilterStatus => ({
-            ...prevFormFilterStatus,
-            [id]: value
-        }));
-    }, [setFilter]);
-
-    return (
-        <div className="flex w-full flex-wrap bg-white max-h-[80%]">
-            <div className="mx-auto bg-slate-300 rounded-t-lg shadow-lg flex pl-4 items-center justify-between w-full">
-                <div className="text-slate-800">{mainText}</div>
-                <div className="flex items-center">
-                    <div>{action}</div>
-                    <div className="w-30 p-1 ml-4">
-                        <InputText placeholder="Filtrar" onChange={setFilterTextCallback} id="filtra_table" clearable={true}/>
-                    </div>
-                </div>
-            </div>
-            <div className="relative overflow-x-auto shadow-md sm:rounded-lg w-full max-h-full overflow-y-auto">
-                <table className="w-full text-sm text-left rtl:text-right text-gray-500 relative">
-                    <thead className="text-xs text-gray-700 uppercase bg-slate-200 sticky top-0">
-                        <tr>{thead}</tr>
-                    </thead>
-                    <tbody>
-                        {tableBody}
-                    </tbody>
-                    <tfoot className="sticky bottom-0 bg-slate-300">
-                        <tr>
-                            <td colSpan={header.length || 1} className={`${dense ? " px-2 py-1 " : " px-4 py-2 "}`}>
-                                Exibindo {tableData.length} registros
-                            </td>
-                        </tr>
-                    </tfoot>
-                </table>
-            </div>
+  return (
+    <div className="flex w-full flex-col bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-lg shadow-xs overflow-hidden">
+      {/* Barra de Ferramentas Superior */}
+      {(mainText || action || searchable) && (
+        <div className="bg-slate-100 dark:bg-slate-800/70 border-b border-gray-200 dark:border-slate-800 px-4 py-2.5 flex items-center justify-between gap-4 flex-wrap">
+          <div className="font-semibold text-slate-800 dark:text-slate-100 text-sm">
+            {mainText}
+          </div>
+          <div className="flex items-center gap-3 ml-auto">
+            {action && <div>{action}</div>}
+            {searchable && (
+              <div className="w-48 sm:w-56">
+                <InputText
+                  placeholder="Filtrar dados..."
+                  value={filterText}
+                  onChange={(_, val) => setFilterText(val || '')}
+                  id="filtra_table"
+                  clearable={true}
+                />
+              </div>
+            )}
+          </div>
         </div>
+      )}
 
-    );
+      {/* Tabela de Dados */}
+      <div className="relative overflow-x-auto w-full">
+        <table className="w-full text-left text-slate-700 dark:text-slate-200">
+          <thead className="bg-slate-50 dark:bg-slate-800/90 text-slate-600 dark:text-slate-300 uppercase font-semibold border-b border-gray-200 dark:border-slate-800 sticky top-0">
+            <tr>
+              {effectiveColumns.map((col, index) => {
+                const alignClass = ALIGN_MAP[col.align] || 'text-left';
+                return (
+                  <th
+                    key={col.key || `th_${index}`}
+                    scope="col"
+                    className={`${headerPadding} ${alignClass} ${col.width || ''}`}
+                    title={col.title || ''}
+                  >
+                    {col.label}
+                  </th>
+                );
+              })}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100 dark:divide-slate-800/60">
+            {filteredData.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={effectiveColumns.length || 1}
+                  className="px-4 py-8 text-center text-slate-400 dark:text-slate-500 text-sm"
+                >
+                  {emptyText}
+                </td>
+              </tr>
+            ) : (
+              filteredData.map((row, rowIndex) => (
+                <tr
+                  key={row.id || `row_${rowIndex}`}
+                  className="odd:bg-white even:bg-slate-50/50 dark:odd:bg-slate-900 dark:even:bg-slate-800/40 hover:bg-blue-50/60 dark:hover:bg-slate-800/80 transition-colors"
+                >
+                  {useExplicitColumns
+                    ? columns.map((col, colIndex) => {
+                        const alignClass = ALIGN_MAP[col.align] || 'text-left';
+                        return (
+                          <td
+                            key={col.key || `td_${colIndex}`}
+                            className={`${cellPadding} ${alignClass}`}
+                          >
+                            {typeof col.render === 'function'
+                              ? col.render(row, rowIndex)
+                              : row[col.key] ?? '-'}
+                          </td>
+                        );
+                      })
+                    : Object.keys(row).map((key, kIndex) => {
+                        const alignClass =
+                          ALIGN_MAP[header[kIndex]?.align] || 'text-left';
+                        return (
+                          <td
+                            key={`legacy_${key}_${kIndex}`}
+                            className={`${cellPadding} ${alignClass}`}
+                          >
+                            {row[key] ?? '-'}
+                          </td>
+                        );
+                      })}
+                </tr>
+              ))
+            )}
+          </tbody>
+          <tfoot className="bg-slate-50 dark:bg-slate-800/80 border-t border-gray-200 dark:border-slate-800 text-slate-500 dark:text-slate-400">
+            <tr>
+              <td
+                colSpan={effectiveColumns.length || 1}
+                className={cellPadding}
+              >
+                Exibindo {filteredData.length} de {data.length} registros
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  );
 }
-export default DataTable;

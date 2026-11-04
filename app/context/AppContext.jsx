@@ -1,55 +1,97 @@
 'use client';
 
-import { createContext, useState, useCallback, useContext, useEffect } from 'react';
+import { createContext, useState, useCallback, useContext, useEffect, useMemo } from 'react';
+
+export const DEFAULT_SETTINGS = {
+  tableDensity: 'compact',      // 'compact' | 'normal' | 'relaxed'
+  rowsPerPage: 20,
+  demoValueLimit: 50000,        // limite demonstrativo de valor por nota
+  showOriginalValues: true,
+  autoSave: true,
+};
 
 export const AppContext = createContext();
 
 export function AppProvider({ children }) {
-  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [notifications, setNotifications] = useState([]);
-  const [darkMode, setDarkMode] = useState(false);
+  const [toasts, setToasts] = useState([]);
 
-  // Carregar dark mode do localStorage na inicialização
+  // Inicialização lazy para evitar setState síncrono em useEffect
+  const [darkMode, setDarkMode] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      return localStorage.getItem('smartnfe_darkMode') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const [settings, setSettings] = useState(() => {
+    if (typeof window === 'undefined') return DEFAULT_SETTINGS;
+    try {
+      const saved = localStorage.getItem('smartnfe_settings');
+      return saved ? { ...DEFAULT_SETTINGS, ...JSON.parse(saved) } : DEFAULT_SETTINGS;
+    } catch {
+      return DEFAULT_SETTINGS;
+    }
+  });
+
   useEffect(() => {
-    const savedDarkMode = localStorage.getItem('darkMode');
-    if (savedDarkMode === 'true') {
-      setDarkMode(true);
-    } else {
-      setDarkMode(false);
-      localStorage.setItem('darkMode', 'false');
+    try {
+      localStorage.setItem('smartnfe_darkMode', darkMode.toString());
+      document.documentElement.classList.toggle('dark', darkMode);
+    } catch (e) {}
+  }, [darkMode]);
+
+  const toggleDarkMode = useCallback(() => {
+    setDarkMode(prev => !prev);
+  }, []);
+
+  const updateSettings = useCallback((newSettings) => {
+    setSettings(prev => {
+      const updated = { ...prev, ...newSettings };
+      try {
+        localStorage.setItem('smartnfe_settings', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+  }, []);
+
+  const removeToast = useCallback((id) => {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  }, []);
+
+  const addToast = useCallback((message, type = 'info', duration = 4000) => {
+    const id = Date.now() + Math.random();
+    setToasts(prev => [...prev, { id, message, type }]);
+    if (duration > 0) {
+      setTimeout(() => {
+        setToasts(prev => prev.filter(t => t.id !== id));
+      }, duration);
     }
   }, []);
 
-  // Função para alternar dark mode
-  const toggleDarkMode = () => {
-    console.log('⚡ toggleDarkMode called:', !darkMode);
-    setDarkMode(!darkMode);
-  };
+  // Interface toast estável com suporte a duração customizada
+  const toast = useMemo(() => ({
+    success: (msg, duration) => addToast(msg, 'success', duration),
+    error: (msg, duration) => addToast(msg, 'error', duration),
+    warning: (msg, duration) => addToast(msg, 'warning', duration),
+    info: (msg, duration) => addToast(msg, 'info', duration),
+  }), [addToast]);
 
-  const addNotification = useCallback((message, type = 'info') => {
-    const id = Date.now();
-    setNotifications((prev) => [...prev, { id, message, type }]);
-    setTimeout(() => {
-      setNotifications((prev) => prev.filter((n) => n.id !== id));
-    }, 3000);
-  }, []);
-
-  const removeNotification = useCallback((id) => {
-    setNotifications((prev) => prev.filter((n) => n.id !== id));
-  }, []);
-
-  const value = {
-    user,
-    setUser,
+  const value = useMemo(() => ({
     loading,
     setLoading,
-    notifications,
-    addNotification,
-    removeNotification,
+    toasts,
+    addToast,
+    removeToast,
+    toast,
     darkMode,
     toggleDarkMode,
-  };
+    settings,
+    updateSettings,
+    DEFAULT_SETTINGS,
+  }), [loading, toasts, addToast, removeToast, toast, darkMode, toggleDarkMode, settings, updateSettings]);
 
   return (
     <AppContext.Provider value={value}>
