@@ -127,6 +127,10 @@ export function validateDivisionBatch(originalItems, destinationNotes) {
         noteItems = note.items;
       } else if (note.allocations && typeof note.allocations === 'object') {
         noteItems = Object.entries(note.allocations).map(([id, qty]) => ({ id, quantidade: qty }));
+      } else if (note.itens && typeof note.itens === 'object') {
+        noteItems = Object.entries(note.itens).map(([id, qty]) => ({ id, quantidade: qty }));
+      } else if (note.items && typeof note.items === 'object') {
+        noteItems = Object.entries(note.items).map(([id, qty]) => ({ id, quantidade: qty }));
       }
 
       return { id: noteId, numero: noteNum, itens: noteItems, raw: note };

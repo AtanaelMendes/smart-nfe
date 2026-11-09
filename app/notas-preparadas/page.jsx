@@ -63,35 +63,131 @@ export default function NotasPreparadasPage() {
     try {
       const xmlNumber = String(note.numero || '000000').replace(/\D/g, '');
       const xmlChave = `5024117778889900012255003000${xmlNumber.padStart(6, '0')}1001122334`;
+      
+      const emitNome = note.emitente?.razaoSocial || 'Cooperativa Agroindustrial Centro-Oeste';
+      const emitCnpj = String(note.emitente?.cnpj || '77788899000122').replace(/\D/g, '');
+      const emitUf = note.emitente?.uf || 'MT';
+      
+      const destNome = note.destinatario?.nome || note.destinatario?.razaoSocial || 'Destinatário Internacional';
+      const destPais = note.destinatario?.pais || 'Exterior';
+      const destPaisCod = note.destinatario?.paisCodigo || '156';
+
+      // Gera as tags <det> para cada produto alocado na nota preparada
+      const itemsList = Array.isArray(note.itens) && note.itens.length > 0
+        ? note.itens
+        : [
+            {
+              item: 1,
+              codigo: 'PROD-EXP-001',
+              descricao: note.descricaoLote || 'Mercadoria de Exportação',
+              ncm: '12019000',
+              cfop: '7101',
+              unidade: 'UN',
+              quantidade: String(note.quantidadeItens || '1'),
+              valorUnitario: note.valorTotalNota || '0.00',
+              valorTotal: note.valorTotalNota || '0.00',
+            },
+          ];
+
+      const detXml = itemsList
+        .map((it, idx) => {
+          const nItem = it.item || idx + 1;
+          const cProd = it.codigo || `PROD-${nItem}`;
+          const xProd = it.descricao || 'Produto';
+          const ncm = it.ncm || '00000000';
+          const cfop = it.cfop || '7101';
+          const uCom = it.unidade || 'UN';
+          const qCom = it.quantidade || '1';
+          const vUnCom = it.valorUnitario || '0.00';
+          const vProd = it.valorTotal || '0.00';
+
+          return `      <det nItem="${nItem}">
+        <prod>
+          <cProd>${cProd}</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>${xProd}</xProd>
+          <NCM>${ncm}</NCM>
+          <CFOP>${cfop}</CFOP>
+          <uCom>${uCom}</uCom>
+          <qCom>${qCom}</qCom>
+          <vUnCom>${vUnCom}</vUnCom>
+          <vProd>${vProd}</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>${uCom}</uTrib>
+          <qTrib>${qCom}</qTrib>
+          <vUnTrib>${vUnCom}</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS>
+            <ICMS40>
+              <orig>0</orig>
+              <CST>41</CST>
+            </ICMS40>
+          </ICMS>
+        </imposto>
+      </det>`;
+        })
+        .join('\n');
+
       const xmlContent = `<?xml version="1.0" encoding="UTF-8"?>
 <nfeProc xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.00">
   <NFe>
     <infNFe Id="NFe${xmlChave}" versao="4.00">
       <ide>
         <cUF>50</cUF>
+        <cNF>${xmlNumber.slice(-8) || '12345678'}</cNF>
+        <natOp>EXPORTACAO DE MERCADORIAS</natOp>
+        <mod>55</mod>
+        <serie>${note.serie || '1'}</serie>
         <nNF>${xmlNumber || '1'}</nNF>
         <dhEmi>${note.dataCriacao || new Date().toISOString()}</dhEmi>
         <tpNF>1</tpNF>
         <idDest>3</idDest>
-        <natOp>EXPORTACAO DE MERCADORIAS</natOp>
+        <cMunFG>5103403</cMunFG>
+        <tpImp>1</tpImp>
+        <tpEmis>1</tpEmis>
+        <tpAmb>2</tpAmb>
+        <finNFe>1</finNFe>
+        <indFinal>1</indFinal>
+        <indPres>1</indPres>
+        <procEmi>0</procEmi>
+        <verProc>SmartNFe-1.0</verProc>
       </ide>
       <emit>
-        <CNPJ>77788899000122</CNPJ>
-        <xNome>Cooperativa Agroindustrial Centro-Oeste</xNome>
-        <UF>MT</UF>
+        <CNPJ>${emitCnpj}</CNPJ>
+        <xNome>${emitNome}</xNome>
+        <UF>${emitUf}</UF>
+        <CRT>3</CRT>
       </emit>
       <dest>
-        <xNome>${note.destinatario?.nome || note.destinatario?.razaoSocial || 'Destinatario Internacional'}</xNome>
-        <cPais>156</cPais>
-        <xPais>${note.destinatario?.pais || 'Exterior'}</xPais>
+        <xNome>${destNome}</xNome>
+        <cPais>${destPaisCod}</cPais>
+        <xPais>${destPais}</xPais>
+        <indIEDest>9</indIEDest>
       </dest>
+${detXml}
       <total>
         <ICMSTot>
-          <vNF>${note.valorTotalNota || '0.00'}</vNF>
+          <vBC>0.00</vBC>
+          <vICMS>0.00</vICMS>
+          <vProd>${note.valorTotalNota || note.valorTotal || '0.00'}</vProd>
+          <vFrete>0.00</vFrete>
+          <vSeg>0.00</vSeg>
+          <vDesc>0.00</vDesc>
+          <vII>0.00</vII>
+          <vIPI>0.00</vIPI>
+          <vPIS>0.00</vPIS>
+          <vCOFINS>0.00</vCOFINS>
+          <vOutro>0.00</vOutro>
+          <vNF>${note.valorTotalNota || note.valorTotal || '0.00'}</vNF>
         </ICMSTot>
       </total>
+      <transp>
+        <modFrete>0</modFrete>
+      </transp>
       <infAdic>
-        <infCpl>Lote: ${note.descricaoLote || 'Nao informado'}. Origem: NF-e ${note.origemNumero || '000.205.670'}</infCpl>
+        <infCpl>Preparação SmartNFe: ${note.descricaoLote || note.nomePreparacao || 'Lote de Exportação'}. Origem: NF-e ${note.origemNumero || note.numeroOrigem || 'Principal'}</infCpl>
       </infAdic>
     </infNFe>
   </NFe>
@@ -449,6 +545,63 @@ export default function NotasPreparadasPage() {
                       <span className="text-[11px] text-slate-500">Data de Geração:</span>
                       <p className="font-semibold">{selectedDanfe.dataCriacao ? formatDateTimeBR(selectedDanfe.dataCriacao) : '26/10/2026 09:00'}</p>
                     </div>
+                  </div>
+                </div>
+
+                {/* Tabela de Produtos do Lote */}
+                <div className="border border-slate-300 dark:border-slate-700 rounded overflow-hidden">
+                  <div className="bg-slate-100 dark:bg-slate-800 px-3 py-1.5 border-b border-slate-300 dark:border-slate-700 font-bold text-xs text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                    <span>Produtos e Mercadorias Alocadas no Lote</span>
+                    <span className="text-[10px] text-slate-500 font-normal">
+                      {selectedDanfe.itens?.length || selectedDanfe.quantidadeItens || 0} produtos
+                    </span>
+                  </div>
+                  <div className="max-h-60 overflow-y-auto">
+                    <table className="w-full text-xs text-left text-slate-600 dark:text-slate-300">
+                      <thead className="text-[10px] uppercase bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700">
+                        <tr>
+                          <th className="px-2 py-1.5 text-center w-8">#</th>
+                          <th className="px-2 py-1.5">Código / Descrição</th>
+                          <th className="px-2 py-1.5 w-20">NCM</th>
+                          <th className="px-2 py-1.5 w-16 text-center">CFOP</th>
+                          <th className="px-2 py-1.5 w-14 text-center">Unid</th>
+                          <th className="px-2 py-1.5 w-20 text-right">Qtd</th>
+                          <th className="px-2 py-1.5 w-24 text-right">Unitário</th>
+                          <th className="px-2 py-1.5 w-24 text-right">Total</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+                        {(selectedDanfe.itens && selectedDanfe.itens.length > 0) ? (
+                          selectedDanfe.itens.map((it, idx) => (
+                            <tr key={it.id || idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                              <td className="px-2 py-1 text-center font-mono text-slate-400">{it.item || idx + 1}</td>
+                              <td className="px-2 py-1">
+                                <span className="font-semibold text-slate-800 dark:text-slate-200 block truncate max-w-[200px]">
+                                  {it.descricao}
+                                </span>
+                                <span className="text-[10px] text-slate-400 font-mono">Cód: {it.codigo}</span>
+                              </td>
+                              <td className="px-2 py-1 font-mono text-[11px]">{it.ncm}</td>
+                              <td className="px-2 py-1 text-center font-mono text-[11px]">{it.cfop}</td>
+                              <td className="px-2 py-1 text-center font-mono uppercase">{it.unidade}</td>
+                              <td className="px-2 py-1 text-right font-mono font-bold text-slate-800 dark:text-slate-200">
+                                {it.quantidade}
+                              </td>
+                              <td className="px-2 py-1 text-right font-mono">{formatBRL(it.valorUnitario)}</td>
+                              <td className="px-2 py-1 text-right font-mono font-bold text-slate-900 dark:text-slate-100">
+                                {formatBRL(it.valorTotal)}
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan={8} className="px-3 py-3 text-center text-slate-400 italic">
+                              Itens demonstrativos consolidados no valor do lote.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
 

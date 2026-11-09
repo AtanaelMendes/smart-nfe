@@ -306,6 +306,14 @@ export const MOCK_PREPARED_INVOICES = [
     quantidadeItens: 6,
     valorTotalNota: '134750.00',
     descricaoLote: 'Contêiner Marítimo 01 - Soja e Milho Lotes L01-L02',
+    itens: [
+      { id: 'prep-1-1', item: 1, codigo: 'SOJ-GR-001', descricao: 'Soja em Grãos Transgênica Tipo Exportação', ncm: '12019000', cfop: '7101', unidade: 'SC', quantidade: '1500.0000', valorUnitario: '145.5000', valorTotal: '21825.00' },
+      { id: 'prep-1-2', item: 2, codigo: 'SOJ-GR-002', descricao: 'Soja em Grãos Convencional Não-Transgênica', ncm: '12019000', cfop: '7101', unidade: 'SC', quantidade: '1200.0000', valorUnitario: '158.0000', valorTotal: '18960.00' },
+      { id: 'prep-1-3', item: 3, codigo: 'MIL-GR-001', descricao: 'Milho em Grãos Amarelo Padrão Exportação', ncm: '10059010', cfop: '7101', unidade: 'SC', quantidade: '2000.0000', valorUnitario: '72.3000', valorTotal: '14460.00' },
+      { id: 'prep-1-4', item: 4, codigo: 'MIL-GR-002', descricao: 'Milho em Grãos Quebrado para Ração', ncm: '10059090', cfop: '7101', unidade: 'SC', quantidade: '800.0000', valorUnitario: '65.0000', valorTotal: '5200.00' },
+      { id: 'prep-1-5', item: 5, codigo: 'SRG-GR-001', descricao: 'Sorgo Granífero Vermelho Exportação', ncm: '10079000', cfop: '7101', unidade: 'SC', quantidade: '1100.0000', valorUnitario: '58.9000', valorTotal: '6479.00' },
+      { id: 'prep-1-6', item: 6, codigo: 'CAF-AR-001', descricao: 'Café Cru em Grão Arábica Especial Tipo 2/3', ncm: '09011110', cfop: '7101', unidade: 'SC', quantidade: '60.0000', valorUnitario: '1130.4333', valorTotal: '67826.00' }
+    ]
   },
   {
     id: 'prep-02',
@@ -319,6 +327,12 @@ export const MOCK_PREPARED_INVOICES = [
     quantidadeItens: 9,
     valorTotalNota: '207250.00',
     descricaoLote: 'Contêiner Marítimo 02 - Sorgo e Restante de Lotes',
+    itens: [
+      { id: 'prep-2-1', item: 1, codigo: 'SOJ-FA-001', descricao: 'Farelo de Soja 46% Proteína Padrão Export', ncm: '23040090', cfop: '7101', unidade: 'TON', quantidade: '50.0000', valorUnitario: '2450.0000', valorTotal: '122500.00' },
+      { id: 'prep-2-2', item: 2, codigo: 'MIL-SI-001', descricao: 'Silagem de Milho Fardos Herméticos', ncm: '12149000', cfop: '7101', unidade: 'FD', quantidade: '300.0000', valorUnitario: '110.0000', valorTotal: '33000.00' },
+      { id: 'prep-2-3', item: 3, codigo: 'SRG-FO-001', descricao: 'Farinha de Sorgo Integral Peneirada', ncm: '11029000', cfop: '7101', unidade: 'SC', quantidade: '450.0000', valorUnitario: '85.0000', valorTotal: '38250.00' },
+      { id: 'prep-2-4', item: 4, codigo: 'OLL-SO-001', descricao: 'Óleo de Soja Degomado a Granel', ncm: '15071000', cfop: '7101', unidade: 'TON', quantidade: '2.5000', valorUnitario: '5400.0000', valorTotal: '13500.00' }
+    ]
   },
 ];
 
