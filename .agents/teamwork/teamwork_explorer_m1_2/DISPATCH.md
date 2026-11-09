@@ -1,33 +1,27 @@
-## 2026-11-04T14:39:58Z
-You are an exploration agent (teamwork_explorer).
-Your working directory is: c:\www\smart-nfe\.agents\teamwork\teamwork_explorer_m1_2\
-Caller conversation ID: 3aeeebdd-68a6-49e6-8f40-494114a9f1f7
+## 2026-11-09T19:34:06Z
+Você é o Milestone 1 Explorer 2 da equipe de engenharia do SmartNFe.
+Seu diretório de trabalho exclusivo é: c:\www\smart-nfe\.agents\teamwork\teamwork_explorer_m1_2\
 
-MANDATORY: Read before starting:
+Você DEVE ler os seguintes arquivos antes de iniciar:
 - c:\www\smart-nfe\.agents\teamwork\ORIGINAL_REQUEST.md
 - c:\www\smart-nfe\PROJECT.md
-- c:\www\smart-nfe\.agents\teamwork\sub_orch_m1_foundation\SCOPE.md
-- c:\www\smart-nfe\.agents\teamwork\teamwork_spec_miner_survey_2\survey_specs.md
+- c:\www\smart-nfe\.agents\teamwork\sub_orch_m1_xml\SCOPE.md
+- c:\www\smart-nfe\.agents\teamwork\teamwork_spec_miner_survey_2\handoff.md
 
-OBJECTIVE:
-Formulate the implementation strategy for the `/dashboard` screen and mock data baseline for Milestone 1:
-1. `app/dashboard/page.jsx`: Rebuild completely. Remove legacy fake auth check and login redirect.
-2. Structure the dashboard with:
-   - 5 KPI summary cards (Notas Importadas, Total Produtos, Aguardando Validação, Notas Preparadas, Valor Total Demonstrado).
-   - Quick action buttons (Importar NF-e, Carregar Cenários Demo 01 a 05).
-   - Recent documents table using `DataTable` with explicit columns (Número, Emitente, Destinatário, Itens, Valor, Status, Ações).
-   - Status badges and direct links to `/documentos/[id]/conferencia`.
-3. Provide baseline mock data and formatters needed:
-   - `app/lib/formatters/currency.js` (BRL format)
-   - `app/lib/formatters/dates.js` (native Intl, NO moment)
-   - `app/lib/formatters/status.js` (status labels and colors)
-   - `app/lib/data/mockInvoices.js` (baseline containing demo scenarios with rich fields for dashboard display)
+Missão:
+Elaborar a estratégia de implementação e arquitetura exata para os módulos `app/features/xml/accessKeyValidator.js` e `app/features/xml/xmlToInvoiceMapper.js`:
+1. `accessKeyValidator.js`:
+   - Validação da estrutura de 44 dígitos da chave de acesso (UF, AAMM, CNPJ, modelo 55, série, número, tpEmis, código aleatório).
+   - Cálculo rigoroso do dígito verificador pelo Módulo 11 com pesos de 2 a 9 da direita para a esquerda.
+   - Mensagens de erro claras quando o comprimento, caracteres, modelo ou DV forem inválidos.
+   - Vetores de teste oficiais para validação.
+2. `xmlToInvoiceMapper.js`:
+   - Normalização dos nós brutos do XML para o contrato estrito exigido pelo `invoiceRepository.js`.
+   - Geração determinística de `itemId`: `nfe-${chaveAcesso}-item-${nItem}` garantindo identificadores estáveis para cada produto.
+   - Tratamento de quantidades com até 4 casas decimais e valores unitários com precisão estendida.
+   - Garantir flags `isRealImport: true` e `isDemo: false`.
+   - Preservar estrutura de `totais` com `valorProdutos`, `valorFrete`, `valorSeguro`, `outrasDespesas`, `valorDesconto` e `valorTotalNota`.
+3. Propor a estratégia exata em `handoff.md` com trechos de código prontos para o Worker implementar.
 
-HARD CONSTRAINTS:
-- Dev server is running at http://localhost:3000/dashboard. DO NOT run `pnpm build` or `pnpm dev`.
-- Read-only exploration. DO NOT edit or create source code files. Recommend concrete implementation strategy with code snippets.
-
-OUTPUT:
-- Write strategy report to: c:\www\smart-nfe\.agents\teamwork\teamwork_explorer_m1_2\strategy_dashboard.md
-- Write standard handoff to: c:\www\smart-nfe\.agents\teamwork\teamwork_explorer_m1_2\handoff.md
-- Send message to caller (3aeeebdd-68a6-49e6-8f40-494114a9f1f7) when complete.
+Mantenha `progress.md` atualizado com timestamp e envie mensagem ao orquestrador quando concluir.
+NÃO escreva nem modifique arquivos de código-fonte diretamente (explorers são read-only).

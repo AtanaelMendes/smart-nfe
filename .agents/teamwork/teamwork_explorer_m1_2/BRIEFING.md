@@ -1,50 +1,53 @@
-# BRIEFING — 2026-11-04T14:41:00Z
+# BRIEFING — 2026-11-09T19:43:00Z
 
 ## Mission
-Formulate the implementation strategy for the `/dashboard` screen and mock data baseline for Milestone 1 (read-only exploration).
+Elaborar a estratégia de implementação e arquitetura exata para os módulos `accessKeyValidator.js` e `xmlToInvoiceMapper.js` para o Milestone 1.
 
 ## 🔒 My Identity
-- Archetype: teamwork_explorer
-- Roles: Explorer, Synthesizer
+- Archetype: explorer
+- Roles: investigation, synthesis
 - Working directory: c:\www\smart-nfe\.agents\teamwork\teamwork_explorer_m1_2\
-- Original parent: 3aeeebdd-68a6-49e6-8f40-494114a9f1f7
-- Milestone: M1 Foundation
+- Original parent: 71db8a14-4c80-4575-92ba-b52ae572b170
+- Milestone: milestone-1
 
 ## 🔒 Key Constraints
-- Read-only investigation — do NOT implement or modify source code files.
-- Dev server is running at http://localhost:3000/dashboard. DO NOT run `pnpm build` or `pnpm dev`.
-- Output strategy_dashboard.md and handoff.md in working directory.
-- Send message to caller (3aeeebdd-68a6-49e6-8f40-494114a9f1f7) when complete.
+- Read-only investigation — do NOT implement
+- Do not modify source code directly
+- Adhere to Teamwork protocol and layout compliance
+- Focus on accessKeyValidator.js and xmlToInvoiceMapper.js
 
 ## Current Parent
-- Conversation ID: 3aeeebdd-68a6-49e6-8f40-494114a9f1f7
-- Updated: 2026-11-04T14:41:00Z
+- Conversation ID: 71db8a14-4c80-4575-92ba-b52ae572b170
+- Updated: 2026-11-09T19:43:00Z
 
 ## Investigation State
 - **Explored paths**:
-  - `app/dashboard/page.jsx` (current legacy auth-blocked template examined)
-  - `app/components/cards/Card.jsx` (Card, CardTitle, CardBody API verified)
-  - `app/components/table/DataTable.jsx` (columns prop, render callback, filter verified)
-  - `app/components/buttons/Button.jsx` (variants, sizes, props verified)
-  - `app/components/Layouts/AppLayout.jsx` (Sidebar, Header, ToastContainer, DemoBadge verified)
-  - `app/context/AppContext.jsx` (toasts, settings, darkMode verified)
-  - `app/assets/utils.js` (existing formatters audited for migration)
-  - `package.json` & FontAwesome solid icons verified via Node script
-  - Local dev server active at http://localhost:3000/dashboard verified (HTTP 200)
+  - `ORIGINAL_REQUEST.md` (R1, R3, R5 requirements)
+  - `PROJECT.md` (Architecture, M1 scope, Interface Contracts 2 & 3)
+  - `sub_orch_m1_xml/SCOPE.md` (M1 boundaries)
+  - `teamwork_spec_miner_survey_2/handoff.md` (SEFAZ specs matrix & Modulo 11 math)
+  - `app/features/invoiceRepository.js` (invoice schema, item contract, findById, updateItem, create)
+  - `app/lib/calculations/decimal.js` (cleanDecimalString, roundDecimal, parseDecimal, decimalAdd, isDecimalZero)
+  - `app/lib/calculations/invoiceTotals.js` (calculateItemTotal, calculateInvoiceTotals)
+  - `app/lib/data/mockInvoices.js` (demo scenarios schema, item structure)
+  - `app/lib/formatters/numbers.js` (quantity and decimal formatting)
+  - `tests/tier1/m2_domain.test.mjs` (verified 44 tests pass with zero failures)
 - **Key findings**:
-  - `app/dashboard/page.jsx` currently redirects to `/login` if `localStorage.getItem('isAuthenticated')` is not set; needs complete replacement.
-  - `DataTable.jsx` already supports explicit `columns` with `{ key, label, align, render }` and `dense`. Adding flattened properties to mock items ensures instant search filtering.
-  - FontAwesome icons `faBoxesStacked`, `faFileInvoice`, `faTriangleExclamation`, `faClipboardCheck`, `faCoins`, `faFileImport`, `faListAlt` are all present.
-  - 5 demo scenarios (`demo-01` to `demo-05`) total 110 items and R$ 1.497.050,00, perfectly matching the 5 KPI summary cards.
-- **Unexplored areas**: None for M1 Dashboard scope.
+  - Modulo 11 weights [2..9] from right to left with remainder rules: rem 0 or 1 => DV 0, else 11 - rem.
+  - Test vectors verified for remainder 0, remainder 1, normal cases (rem 9 => DV 2), and invalid keys.
+  - Contract mapper requires deterministic item IDs: `nfe-${chaveAcesso}-item-${nItem}`.
+  - Decimal precision: `quantidade` normalized to 4 decimal places (`roundDecimal(val, 4)`), `valorUnitario` extended precision (min 4 places, preserving up to 10 decimals), monetary values (`valorTotal`, frete, seguro, etc.) normalized to 2 decimals.
+  - Strict flags: `isRealImport: true` and `isDemo: false`.
+  - Preserved `totais`: `valorProdutos`, `valorFrete`, `valorSeguro`, `outrasDespesas`, `valorDesconto`, `valorTotalNota`, `pesoLiquido`, `pesoBruto`.
+- **Unexplored areas**: None for M1-2 scope.
 
 ## Key Decisions Made
-- Architecture for formatters: 3 independent modules in `app/lib/formatters/` (`currency.js`, `dates.js` using native Intl without moment, `status.js` with semantic badges).
-- Decoupled mock baseline in `app/lib/data/mockInvoices.js` exporting `MOCK_INVOICES`, `MOCK_PREPARED_INVOICES`, and `getDashboardKPIs()`.
-- Rebuilding `app/dashboard/page.jsx` with `'use client'`, `AppLayout`, 5 KPI summary cards, quick action buttons with demo loaders, and `DataTable` with explicit columns and direct action links.
+- Validated Modulo 11 formula against official SEFAZ MOC guidelines.
+- Formulated exact mathematical rules and test vectors for `accessKeyValidator.js`.
+- Formulated complete code implementations ready for copy-paste by the Worker.
 
 ## Artifact Index
-- strategy_dashboard.md — Strategy report for dashboard rebuild & mock data baseline
-- handoff.md — 5-component handoff report
-- DISPATCH.md — Initial dispatch message
-- progress.md — Liveness heartbeat
+- DISPATCH.md — incoming dispatch instructions
+- BRIEFING.md — persistent working memory
+- progress.md — liveness heartbeat
+- handoff.md — final handoff report

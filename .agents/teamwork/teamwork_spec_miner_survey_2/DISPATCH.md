@@ -49,3 +49,31 @@ Content:
 **Context**: Survey Phase
 **Content**: CRITICAL USER INSTRUCTION: O projeto já está rodando em http://localhost:3000/dashboard (servidor dev ativo externamente pelo usuário). NÃO rode comandos de build (como `pnpm build`, `npm run build`) e NÃO inicie servidores de desenvolvimento (`pnpm dev`, `npm run dev`), para evitar conflitos de portas ou travamentos no ambiente.
 **Action**: Note this constraint in your survey findings.
+## 2026-11-09T19:20:53Z
+Caller conversation ID: 71db8a14-4c80-4575-92ba-b52ae572b170
+Content:
+Você é o Survey Spec Miner 2 da equipe de engenharia do SmartNFe.
+Seu diretório de trabalho exclusivo é: c:\www\smart-nfe\.agents\teamwork\teamwork_spec_miner_survey_2\
+Você DEVE ler o arquivo de requisitos original em: c:\www\smart-nfe\.agents\teamwork\ORIGINAL_REQUEST.md
+
+Missão:
+Minerar e estruturar as especificações detalhadas para a importação real de XML NF-e modelo 55 no navegador (R3) e o contrato de dados:
+1. Especificações do XML NF-e modelo 55:
+   - Suporte aos layouts `nfeProc` e `NFe` (com e sem procEvento / protocolo de autorização).
+   - Namespaces da NF-e (ex: `http://www.portalfiscal.inf.br/nfe`) e como consultar nós com segurança usando `DOMParser` e seletores (ex: `getElementsByTagNameNS` ou `querySelector` tolerante a prefixos).
+   - Mapeamento exato de todas as tags necessárias: versão, chave de acesso (`infNFe@Id` ou `chNFe`), número (`nNF`), série (`serie`), data de emissão (`dhEmi` ou `dEmi`), natureza da operação (`natOp`), emitente (`CNPJ`/`CPF`, `xNome`, `xFant`, `IE`), destinatário (`CNPJ`/`CPF`, `xNome`), itens/produtos (`det` -> `cProd`, `cEAN`, `xProd`, `NCM`, `CFOP`, `uCom`, `qCom`, `vUnCom`, `vProd`, `uTrib`, `qTrib`, `vUnTrib`, tributos ICMS/IPI/PIS/COFINS quando presentes), e totais (`total/ICMSTot` -> `vProd`, `vFrete`, `vSeg`, `vDesc`, `vOutro`, `vNF`, etc.).
+   - Algoritmo de validação da Chave de Acesso da NF-e de 44 dígitos: estrutura dos campos e cálculo do dígito verificador (módulo 11 com pesos de 2 a 9).
+   - Requisitos de segurança no navegador: File API, leitura com `File.text()`, sem avaliação de scripts, sem `dangerouslySetInnerHTML`, limite de tamanho de arquivo, tratamento de XML malformado/inválido com mensagens claras, e sem chamadas externas / sem backend.
+2. Contrato de dados e Repositório em Memória:
+   - Analisar `app/features/invoiceRepository.js` e o formato dos documentos mockados em `app/lib/data/mockInvoices.js`.
+   - Especificar a conversão exata do XML importado para o contrato aceito por `invoiceRepository.js` (geração de `itemId` estável para cada produto, status de conferência, etc.).
+   - Especificar o isolamento de sessão: documentos importados reais NÃO devem ser salvos no `localStorage` persistente (apenas sessão temporária em memória, avisando o usuário sobre perda ao fechar/recarregar a página) e não devem corromper nem se misturar com os mocks de fábrica.
+3. Verificar se há no repositório DANFEs em PDF, fixtures sintéticas de NF-e ou arquivos de teste prévios.
+4. Produzir relatório detalhado em `handoff.md` no seu diretório de trabalho com:
+   - Specification Matrix (tags, formatos, obrigatoriedade, tipos)
+   - Chave de Acesso check digit algorithm spec
+   - Browser DOMParser Architecture spec
+   - Contract Mapping spec para invoiceRepository
+   - Security & Session Storage boundary spec
+
+Mantenha seu `progress.md` atualizado com timestamp e envie mensagem ao orquestrador quando concluir.

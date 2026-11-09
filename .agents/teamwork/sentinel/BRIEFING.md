@@ -1,43 +1,36 @@
-# BRIEFING — 2026-11-04T14:26:00Z
+# BRIEFING — 2026-11-09T19:19:00Z
 
 ## Mission
-Coordinate implementation of SmartNFe Frontend MVP (Fase 1) with mocked data.
+Coordinate execution of SmartNFe frontend improvements and browser XML import via teamwork_orchestrator, monitor progress, and audit victory.
 
 ## 🔒 My Identity
 - Archetype: sentinel
 - Working directory: c:\www\smart-nfe\.agents\teamwork\sentinel\
-- Orchestrator: a9e44541-179a-4e3d-a02e-7a5492fb14f5 (Gen 1)
-- Victory Auditor: f2d636bf-70c8-4d2f-9ef8-b477192dbc2b (Round 2)
+- Orchestrator: 71db8a14-4c80-4575-92ba-b52ae572b170
+- Victory Auditor: [to be spawned on victory claim]
 
 ## 🔒 Key Constraints
 - No technical decisions — relay only
 - Victory Audit is MANDATORY before reporting completion
-- R1: Foundation fixes (Sidebar SmartNFe menus, AppContext toast integration, remove basePath/output:export from next.config.js, DataTable explicit columns, InputFile XML/PDF, reuse components)
-- R2: Mock architecture (5 demo scenarios, repositories with async contract, formatters, decimal calculations, localStorageService versioned 1.0.0)
-- R3: 8 application screens (dashboard, import, list, conference, division, validation, prepared invoices, settings)
-- R4: Next.js 16 App Router, React 19, JavaScript/JSX only (no TypeScript), Tailwind CSS 4, Font Awesome 7, pnpm, no real HTTP calls, demo badge on all screens, zero build errors
-- User constraint (2026-11-04): Dev server already running on http://localhost:3000/dashboard. DO NOT run build commands (pnpm build) or dev servers (pnpm dev). Only file modifications and non-conflicting verifications.
-- User Directive (2026-11-04): Limitar equipe a no máximo 2 agentes simultâneos. Foco 100% na entrega e acabamento das telas MVP no navegador (/documentos/importar, /documentos/[id]/divisao, /documentos/[id]/validacao, /notas-preparadas, /configuracoes), dispensando testes pesados e portões formais no momento.
-
-## Routing Decision
-- Route: General (`teamwork_orchestrator`)
-- Rationale: Multi-screen frontend MVP implementation spanning foundational refactors, mock data architecture, and 8 screens. No document review, not a pure math proof, and not a single self-contained light edit.
+- Branch: fix/frontend-xml-conferencia-v0.1.1 (do not modify master directly, no merge without authorization)
+- No backend implementation
+- Next.js 16 App Router, React 19, JavaScript/JSX, Tailwind CSS 4 (do not migrate to TypeScript, do not recreate from scratch)
+- Browser-only XML import (File API, DOMParser), no external HTTP/API requests, no localStorage for real XML
+- Reusable components preservation in app/components
+- Zero errors in pnpm lint and pnpm build
 
 ## User Context
-- **Last user request**: Priorizar tela inicial (/dashboard e layout base) e notificar imediatamente quando estiver pronta para visualização no navegador.
-- **Pending clarifications**: [none]
-- **Pending notifications**: [none]
-- **Delivered results**: 
-  - M1 concluído: Tela /dashboard e layout base (Sidebar, Header, DemoBadge, AppContext) entregues e funcionais em http://localhost:3000/dashboard.
-  - M2 concluído: Camada de domínio (cálculos decimais em BigInt, localStorageService 1.0.0, repositórios assíncronos) homologada no portão (159 testes passando, 0 erros de lint).
+- **Last user request**: Approved task prompt received
+- **Pending clarifications**: none
+- **Delivered results**: [none]
 
 ## Project Status
-- **Phase**: auditing (Round 2)
+- **Phase**: in progress
 
 ## Victory Audit Status
-- **Triggered**: yes
+- **Triggered**: no
 - **Verdict**: pending
-- **Retry count**: 1
+- **Retry count**: 0
 
 ## Artifact Index
-- c:\www\smart-nfe\.agents\teamwork\ORIGINAL_REQUEST.md — Authoritative user intent record
+- .agents/teamwork/ORIGINAL_REQUEST.md — Authoritative record of user intent

@@ -1,35 +1,33 @@
-## 2026-11-04T14:27:36Z
-You are an exploration agent (teamwork_explorer).
-Your working directory is: c:\www\smart-nfe\.agents\teamwork\teamwork_explorer_survey_3\
-Caller conversation ID: 3aeeebdd-68a6-49e6-8f40-494114a9f1f7
+## 2026-11-09T19:21:02Z
+Você é o Survey Explorer 3 da equipe de engenharia do SmartNFe.
+Seu diretório de trabalho exclusivo é: c:\www\smart-nfe\.agents\teamwork\teamwork_explorer_survey_3\
+Você DEVE ler o arquivo de requisitos original em: c:\www\smart-nfe\.agents\teamwork\ORIGINAL_REQUEST.md
 
-MANDATORY: Read the original user request before starting work:
-Path: c:\www\smart-nfe\.agents\teamwork\ORIGINAL_REQUEST.md
+Missão:
+Realizar o levantamento detalhado de Validação, Divisão de Notas, Motor Decimal e Infraestrutura de Testes/Build:
+1. Analisar `app/documentos/[id]/validacao/page.jsx` (R2):
+   - Como as inconsistências e sugestões fiscais são apresentadas e aplicadas hoje?
+   - Existe aplicação silenciosa de alterações?
+   - O que a opção "Corrigir todas" faz atualmente?
+   - O que é necessário para exigir confirmação explícita com exibição de valor atual vs proposto, origem da sugestão, suporte a cancelamento, capacidade de desfazer (undo) com restauração do estado anterior e reexecução das validações?
+   - Como separar correções mecânicas de sugestões fiscais e desabilitar aplicação em massa de alterações sensíveis (tributação, CFOP, NCM)?
+2. Analisar `app/documentos/[id]/divisao/page.jsx` e `app/lib/calculations/` (R1 e R4):
+   - Como a divisão entre notas fiscais aloca produtos e quantidades?
+   - Como o motor decimal (`decimal.js`, `invoiceTotals.js`, `divisionMath.js`) está sendo utilizado? Existem usos residuais de parseFloat/toFixed/Math.round?
+   - Como implementar distribuição de saldo restante para uma nota ou igualmente entre notas conservando saldos sem arredondamento prematuro (incluindo até 4 casas decimais em quantidade)?
+   - Como impedir finalização da divisão com saldos pendentes ou quantidades superiores à original?
+3. Inspecionar a infraestrutura de testes e ferramentas de verificação (R5):
+   - Como os testes estão estruturados atualmente (`package.json`, `tests/`)?
+   - Como planejar os testes de integração automatizados para os 4 fluxos exigidos:
+     * Fluxo A: Importação real de XML e conferência de totais
+     * Fluxo B: Conferência com filtros, edição por itemId, recálculo e restauração
+     * Fluxo C: Divisão entre notas com validação de saldos
+     * Fluxo D: Validação com revisão de sugestões fiscais e undo
+   - Verificar a execução de `pnpm lint` e `pnpm build` e como garantir 0 erros em ambos mantendo compatibilidade com Vercel.
+4. Produzir relatório detalhado em `handoff.md` no seu diretório de trabalho com:
+   - Observation (evidências e trechos de código)
+   - Logic Chain (análise técnica das telas de validação e divisão e cálculos decimais)
+   - Proposed Fix Strategy para R2, R4 (Divisão) e R5 (Testes de Integração e Build)
+   - Verification Method
 
-Also read:
-Path: c:\www\smart-nfe\.github\copilot-instructions.md
-Path: c:\www\smart-nfe\package.json
-
-OBJECTIVE:
-Investigate the verification, test, and build infrastructure of the project:
-1. Examine package.json: scripts, dependencies, devDependencies, test runner (or lack thereof).
-2. Check how Next.js build and lint work in this environment (commands, environment assumptions).
-3. Evaluate requirements for E2E testing and automated verification:
-   - How can we run automated tests (e.g. Node test runner, Vitest, custom test runner scripts) without breaking constraints?
-   - How to verify production build (pnpm build) and lint (pnpm lint)?
-   - Recommend the exact testing architecture for the E2E Testing Track (Tiers 1-4 requirement-driven tests, test runner format, execution command).
-4. Identify any risks, missing devDependencies, or build blockers.
-
-BOUNDARIES:
-- Read-only exploration. NEVER edit or create source code files. Write ONLY to your working directory.
-
-OUTPUT:
-- Write full findings to: c:\www\smart-nfe\.agents\teamwork\teamwork_explorer_survey_3\survey_verification.md
-- Write standard handoff to: c:\www\smart-nfe\.agents\teamwork\teamwork_explorer_survey_3\handoff.md
-- When done, send a message to caller (3aeeebdd-68a6-49e6-8f40-494114a9f1f7) with summary and report path.
-
-## 2026-11-04T14:32:28Z
-**Context**: Survey Phase
-**Content**: CRITICAL USER INSTRUCTION: O projeto já está rodando em http://localhost:3000/dashboard (servidor dev ativo externamente pelo usuário). NÃO rode comandos de build (como `pnpm build`, `npm run build`) e NÃO inicie servidores de desenvolvimento (`pnpm dev`, `npm run dev`), para evitar conflitos de portas ou travamentos no ambiente. Apenas crie, edite arquivos e realize testes ou verificações que não derrubem nem conflitem com o servidor já ativo.
-**Action**: Note this constraint in your survey findings and ensure your recommendations align with it.
-
+Mantenha seu `progress.md` atualizado com timestamp e envie mensagem ao orquestrador quando concluir.

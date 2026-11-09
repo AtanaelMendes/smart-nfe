@@ -1,45 +1,44 @@
-# BRIEFING — 2026-11-04T14:28:00Z
+# BRIEFING — 2026-11-09T19:29:00Z
 
 ## Mission
-Investigate verification, testing, and build infrastructure (Next.js build, lint, test runner, E2E test strategy, devDependencies) for Smart NFe.
+Survey detalhado de Validação (R2), Divisão de Notas (R1/R4), Motor Decimal (R1) e Infraestrutura de Testes/Build (R5).
 
 ## 🔒 My Identity
 - Archetype: explorer
-- Roles: investigation, synthesis
-- Working directory: c:\www\smart-nfe\.agents\teamwork\teamwork_explorer_survey_3\
-- Original parent: 3aeeebdd-68a6-49e6-8f40-494114a9f1f7
-- Milestone: Survey 3 - Verification, Test, and Build Infrastructure
+- Roles: Read-only investigation: analyze problems, synthesize findings, produce structured reports
+- Working directory: c:\www\smart-nfe\.agents\teamwork\teamwork_explorer_survey_3
+- Original parent: 71db8a14-4c80-4575-92ba-b52ae572b170
+- Milestone: Survey & Investigation (Survey Explorer 3)
 
 ## 🔒 Key Constraints
-- Read-only investigation — do NOT implement
-- Never edit or create source code files outside of working directory
-- Write only to working directory: c:\www\smart-nfe\.agents\teamwork\teamwork_explorer_survey_3\
-- CRITICAL USER INSTRUCTION (2026-11-04): Dev server already running externally at http://localhost:3000/dashboard. DO NOT run `pnpm build` or `pnpm dev`. Only create/edit files and run non-conflicting tests/verifications.
+- Read-only investigation — do NOT implement changes in source code
+- Produce detailed handoff report in `handoff.md` with 5 components
+- Keep BRIEFING under 100 lines and maintain progress.md heartbeat
 
 ## Current Parent
-- Conversation ID: 3aeeebdd-68a6-49e6-8f40-494114a9f1f7
-- Updated: 2026-11-04T14:38:00Z
+- Conversation ID: 71db8a14-4c80-4575-92ba-b52ae572b170
+- Updated: 2026-11-09T19:29:00Z
 
 ## Investigation State
-- **Explored paths**: package.json, eslint.config.mjs, .eslintrc.json, next.config.js, jsconfig.json, build_prod.bat, app/assets/utils.js, node --test, live dev server at http://localhost:3000
+- **Explored paths**:
+  - `app/documentos/[id]/validacao/page.jsx`
+  - `app/documentos/[id]/divisao/page.jsx`
+  - `app/lib/calculations/` (`decimal.js`, `invoiceTotals.js`, `divisionMath.js`, `index.js`)
+  - `app/features/` (`invoiceRepository.js`, `preparedInvoiceRepository.js`)
+  - `package.json`, `eslint.config.mjs`, `tests/`
+  - Comandos executados: `pnpm test`, `pnpm lint`, `pnpm build`
 - **Key findings**:
-  1. Next.js 16.0.10, React 19.2.0, Node 24.11.0, pnpm 10.22.0.
-  2. `pnpm build` verified to produce 7 static pages with 0 errors in ~7s.
-  3. Strict active dev server constraint respected: no dev/build commands to run.
-  4. `pnpm lint` fails due to ESLint 9 + React 19 compiler rules on legacy components + unwanted `nextTs` import in `eslint.config.mjs`.
-  5. Node 24 native test runner (`node:test` + `node:assert`) selected for Tier 1-4 requirement-driven automated verification. Zero dependencies needed.
-- **Unexplored areas**: None for survey scope. Ready for implementation & E2E tracks.
+  - R2: Validação possui mutação imediata sem confirmação e `handleFixAll` altera campos fiscais em lote sem triagem; falta mecanismo de Undo.
+  - R1/R4: Divisão usa `parseFloat`/`Math.floor`/`Math.round` em `handleDistributeEqually`; `divisionMath.js` permite `canSave` com saldos pendentes; frete/seguro/despesas não são rateados nas notas preparadas.
+  - R5: `pnpm build` funciona 100%; `pnpm lint` falha com 120 problemas devido a componentes legados de template RH em `app/components/`; `pnpm test` usa `node:test` e testes live falham com ECONNREFUSED se o servidor web estiver offline.
+- **Unexplored areas**: Nenhuma pendente no escopo da missão.
 
 ## Key Decisions Made
-- Selected Node native test runner (`node --test`) with `.mjs` test suites
-- Designed 4-tier requirement-driven verification architecture
-- Tier 3 smoke testing will use Node native `fetch` against `http://localhost:3000` without disturbing active server
-- Formulated fix for `eslint.config.mjs` and legacy template components
+- Estruturar `handoff.md` com as 5 seções padrão cobrindo detalhadamente R2, R4, R1 e R5.
+- Propor estratégia concreta de fix e testes de integração para os 4 fluxos.
 
 ## Artifact Index
-- DISPATCH.md — Recorded instructions & user constraints
-- BRIEFING.md — Persistent working state
-- progress.md — Liveness heartbeat & checklist
-- survey_verification.md — Full investigation report on build, lint, and test runner
-- handoff.md — Standard 5-component handoff report
-
+- DISPATCH.md — Mensagem original de despacho
+- BRIEFING.md — Contexto e memória de trabalho persistente
+- progress.md — Heartbeat de liveness
+- handoff.md — Relatório completo de handoff de investigação
