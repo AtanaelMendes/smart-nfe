@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -36,7 +36,7 @@ export default function DocumentosPage() {
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [deleteDialog, setDeleteDialog] = useState({ open: false, invoice: null });
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       const data = await invoiceRepository.list();
@@ -46,11 +46,11 @@ export default function DocumentosPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [loadData]);
 
   const handleReset = async () => {
     await invoiceRepository.resetAll();
@@ -288,7 +288,7 @@ export default function DocumentosPage() {
         confirmActionCallback={handleDelete}
       >
         <p className="text-sm text-slate-600 dark:text-slate-300 p-4">
-          Tem certeza de que deseja excluir o documento <strong>NF-e {deleteDialog.invoice?.numero}</strong>? Esta ação pode ser desfeita clicando em "Restaurar Mocks".
+          Tem certeza de que deseja excluir o documento <strong>NF-e {deleteDialog.invoice?.numero}</strong>? Esta ação pode ser desfeita clicando em &quot;Restaurar Mocks&quot;.
         </p>
       </Dialog>
     </AppLayout>

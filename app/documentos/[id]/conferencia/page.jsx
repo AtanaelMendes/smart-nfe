@@ -61,7 +61,7 @@ export default function ConferenciaPage({ params }) {
       }
     }
     load();
-  }, [id]);
+  }, [id, toast]);
 
   // Edição direta de campo na tabela
   const handleItemChange = (index, field, value) => {

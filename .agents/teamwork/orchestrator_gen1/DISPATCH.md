@@ -68,3 +68,31 @@ Workspace: c:\www\smart-nfe
 1. Limite a equipe a NO MÁXIMO 2 agentes concorrentes simultâneos para preservar cotas de IA e evitar sobrecarga.
 2. Foque 100% na entrega e acabamento visual/interativo das TELAS MVP no navegador (Dashboard, Importar, Documentos, Conferência, Divisão, Preparadas, Configurações). Bypasse testes pesados e validações formais extensivas de portão por hora.
 3. As telas `/documentos` e `/documentos/[id]/conferencia` já foram criadas na raiz. Prossiga imediatamente com as telas restantes (`/documentos/importar`, `/documentos/[id]/divisao`, `/documentos/[id]/validacao`, `/notas-preparadas`, `/configuracoes`), mantendo a equipe com no máximo 2 agentes simultâneos.
+
+
+## 2026-11-04T19:28:47Z
+
+[Message] timestamp=2026-11-04T19:28:47Z sender=5b9042e8-b7f6-4f48-b6d2-96fde9311758 priority=MESSAGE_PRIORITY_HIGH content=AUDITORIA DE VITÓRIA: VEREDITO REJEITADO (VICTORY REJECTED)
+
+O auditor independente de vitória (`teamwork_victory_auditor`) executou a inspeção forense e rejeitou o encerramento do projeto devido a 2 erros de ESLint em `app/documentos/page.jsx:291` (`react/no-unescaped-entities`), que violam o critério de compilação sem erros no Vercel.
+
+Relatório completo de evidência do auditor:
+```
+Target File: c:\www\smart-nfe\app\documentos\page.jsx
+Linha 291:
+<p className="text-sm text-slate-600 dark:text-slate-300 p-4">
+  Tem certeza de que deseja excluir o documento <strong>NF-e {deleteDialog.invoice?.numero}</strong>? Esta ação pode ser desfeita clicando em "Restaurar Mocks".
+</p>
+
+Erros reportados pelo ESLint:
+C:\www\smart-nfe\app\documentos\page.jsx
+   53:6    warning  React Hook useEffect has a missing dependency: 'loadData'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  291:151  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                              react/no-unescaped-entities
+  291:167  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                              react/no-unescaped-entities
+
+✖ 3 problems (2 errors, 1 warning)
+Exit Code: 1
+```
+
+AÇÃO NECESSÁRIA:
+Ajuste imediatamente o arquivo `app/documentos/page.jsx` substituindo as aspas duplas por entidades JSX (ex: `&quot;` ou aspas tipográficas) e corrija o warning do hook se aplicável. Verifique com `npx eslint app/documentos/page.jsx` (deve retornar código 0, zero erros) e nos notifique para que uma nova auditoria seja disparada.
