@@ -118,3 +118,14 @@ Integrity mode: development
 - Trabalhar exclusivamente na branch `fix/frontend-xml-conferencia-v0.1.1` com commits coerentes, sem modificar a `master` diretamente e sem fazer merge na `master`.
 - Implementar testes de integração automatizados para: Fluxo A (Importação real de XML e conferência de totais), Fluxo B (Conferência com filtros, edição por `itemId`, recálculo e restauração), Fluxo C (Divisão entre notas com validação de saldos) e Fluxo D (Validação com revisão de sugestões fiscais e undo).
 - Garantir execução com 0 erros de `pnpm install`, `pnpm lint` e `pnpm build`, mantendo compatibilidade com Vercel.
+
+
+## 2026-11-09T19:45:01Z
+[Diretriz do Usuário]:
+"apos finalizar commit as alterações para o git"
+
+Certifique-se de que, ao concluir os marcos e a suíte de testes/build, todas as alterações do código fonte, componentes, testes e artefatos de entrega sejam devidamente commitadas na branch `fix/frontend-xml-conferencia-v0.1.1` com mensagens de commit descritivas e coerentes (mantendo a regra estrita de não realizar merge na master).
+
+
+## 2026-11-09T22:18:36Z
+[Sentinel Liveness / Wakeup]: Quota has reset. Please resume Milestone 4 Gate verification and Milestone 5 completion.

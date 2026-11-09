@@ -1,62 +1,64 @@
-# BRIEFING — 2026-11-04T15:10:00Z
+# BRIEFING — 2026-11-09T20:01:30Z
 
 ## Mission
-Perform adversarial and quality review of Milestone 1 Layout & Foundation deliverables, verifying integrity, correctness, React 19 / Tailwind 4 compliance, running tests and linters, and issuing APPROVE or REQUEST_CHANGES verdict.
+Review and adversarial stress-testing of Milestone 1 XML parsing and access key validation engines.
 
 ## 🔒 My Identity
-- Archetype: reviewer / critic
+- Archetype: reviewer
 - Roles: reviewer, critic
-- Working directory: c:\www\smart-nfe\.agents\teamwork\teamwork_reviewer_m1_1\
-- Original parent: 3aeeebdd-68a6-49e6-8f40-494114a9f1f7
-- Milestone: Milestone 1 (Foundation & Layout)
+- Working directory: c:\www\smart-nfe\.agents\teamwork\teamwork_reviewer_m1_1
+- Original parent: 71db8a14-4c80-4575-92ba-b52ae572b170
+- Milestone: Milestone 1 - XML Engine
 - Instance: 1 of 1
 
 ## 🔒 Key Constraints
 - Review-only — do NOT modify implementation code
-- The dev server is active at http://localhost:3000/dashboard. DO NOT run `pnpm build` or `pnpm dev`
-- Actively check for integrity violations (hardcoded test results, facade implementations, shortcuts, fabricated verification)
-- Verdict MUST be REQUEST_CHANGES if any integrity violation is detected
+- Evidence-based findings; adversarial stress-testing; integrity violation checks
+- Absolute adherence to project layouts and communication conventions
 
 ## Current Parent
-- Conversation ID: 3aeeebdd-68a6-49e6-8f40-494114a9f1f7
-- Updated: 2026-11-04T15:10:00Z
+- Conversation ID: 71db8a14-4c80-4575-92ba-b52ae572b170
+- Updated: 2026-11-09T19:56:07Z
 
 ## Review Scope
-- **Files reviewed**:
-  - `app/components/Layouts/DemoBadge.jsx` (Modo Demonstração, amber pulse, non-blocking)
-  - `app/components/Layouts/SmartNFeSidebar.jsx` (5 root menus, active route logic)
-  - `app/components/Layouts/SmartNFeHeader.jsx` (Dark mode, breadcrumbs)
-  - `app/components/Layouts/AppLayout.jsx` (Shell layout integration)
-  - `app/components/Layouts/ToastContainer.jsx` (4 toast variants, non-blocking container)
-  - `app/context/AppContext.jsx` (Lazy state initialization, memoization, DEFAULT_SETTINGS)
-  - `app/components/table/DataTable.jsx` (React 19 pure derivations, ALIGN_MAP for Tailwind 4, dense mode)
-  - `app/components/inputs/InputFile.jsx` (XML/PDF, 10MB limit, clear button, toast.error)
-  - `app/components/Layouts/Dialog.jsx` (Cleaned effect setState, Escape key teardown, backdrop click)
-  - `eslint.config.mjs` (Pure JS, dead code ignores)
-  - `tests/tier1/m1_foundation.test.mjs` (10 tests pass)
-  - `tests/tier2/m1_boundary_stress.test.mjs` (15 tests pass)
-  - `tests/tier5/live_dashboard_adversarial.test.mjs` (20 tests pass)
-- **Interface contracts**: `PROJECT.md`, `.agents/teamwork/sub_orch_m1_foundation/SCOPE.md`, `.agents/teamwork/ORIGINAL_REQUEST.md`
-- **Review criteria**: Integrity, correctness, edge case resilience, React 19 / Tailwind 4 compatibility, lint & test passes.
+- **Files to review**: app/features/xml/nfeXmlParser.js, app/features/xml/accessKeyValidator.js, app/features/xml/xmlToInvoiceMapper.js, app/features/invoiceRepository.js, app/documentos/importar/page.jsx
+- **Interface contracts**: PROJECT.md, SCOPE.md
+- **Review criteria**: XML parsing correctness (nfeProc/NFe standalone, namespaces, parsererror), Modulo 11 check digit (weights 2-9, remainder 0/1 -> 0, 44 digits, UF IBGE, Model 55), test execution, integrity check, session repository isolation
 
 ## Review Checklist
-- **Items reviewed**: All 10 Foundation and Layout files plus test suites
+- **Items reviewed**:
+  - `app/features/xml/nfeXmlParser.js` (DOMParser, namespaces, parsererror handling, NodeXmlDomParser fallback)
+  - `app/features/xml/accessKeyValidator.js` (44 digits, UF IBGE, Model 55, emission type, cyclic weights 2..9 right-to-left, remainder 0/1 -> 0)
+  - `app/features/xml/xmlToInvoiceMapper.js` (deterministic `itemId`, 4-decimal quantities, extended unit price, ancillary expenses)
+  - `app/features/invoiceRepository.js` (in-memory `sessionInvoices = new Map()`, isolation from localStorage)
+  - `app/documentos/importar/page.jsx` (File API text reading, validation feedback, privacy banner)
 - **Verdict**: APPROVE
-- **Unverified claims**: None; all claims verified independently
+- **Unverified claims**: none; all claims independently verified via automated tests, linter, Next.js build, and node runtime.
 
 ## Attack Surface
 - **Hypotheses tested**:
-  - Currency/date formatters under NaN/null/extreme values: Handled safely
-  - Concurrent HTTP requests & burst load: Dev server sustained 30 sequential and 15 concurrent requests
-  - Pathname null safety during Next SSR/fallback: Identified minor finding (`pathname?.startsWith(...)`)
-- **Vulnerabilities found**: No blocking or critical vulnerabilities; zero integrity cheats.
-- **Untested angles**: Subsequent screen routes (`/documentos`, `/notas-preparadas`, `/configuracoes`), which belong to M2-M5.
+  - Remainder 0 and 1 -> DV 0: PASS
+  - Weights 2..9 right to left with wrap-around: PASS
+  - 44-digit string with letters or non-digits: PASS (rejected)
+  - Invalid IBGE UF code: PASS (rejected)
+  - Invalid emission month (00, 13): PASS (rejected)
+  - Model other than 55 (e.g. NFC-e 65): PASS (rejected)
+  - XML with tag mismatch or unclosed tag: PASS (gracefully handled as PARSER_ERROR)
+  - XML with namespace prefixes (`nfe:NFe`, `nfe:ide`): PASS (parsed transparently)
+  - Decimal comma normalization: PASS
+  - LocalStorage isolation: PASS (no real imports written to localStorageService)
+- **Vulnerabilities found**: None. Code is clean and meets all specifications.
+- **Untested angles**: Extreme volume of 1,000+ items (covered by performance stress tests in tier suites).
 
 ## Key Decisions Made
-- Confirmed full compliance with Milestone 1 specifications.
-- Verified live server response (`HTTP 200`, `62,640` bytes) at `http://localhost:3000/dashboard`.
-- Issued verdict: APPROVE.
+- Confirmed zero integrity violations: no hardcoded fixture returns, genuine algorithms.
+- Confirmed 100% test pass on `flow_a_xml_import.test.mjs` (14/14), `m1_xml_engine.test.mjs` (14/14), `flow_*.test.mjs` (43/43).
+- Confirmed ESLint: 0 errors, 0 warnings.
+- Confirmed Next.js `pnpm build`: 0 errors.
+- Issued formal verdict: APPROVE.
 
 ## Artifact Index
-- `review_layout_foundation.md` — Detailed review and adversarial findings
-- `handoff.md` — Handoff report with final verdict: APPROVE
+- DISPATCH.md — incoming instructions
+- progress.md — liveness heartbeat
+- BRIEFING.md — persistent situational awareness
+- handoff.md — comprehensive 5-component review and adversarial report

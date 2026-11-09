@@ -95,11 +95,11 @@ c:\www\smart-nfe\
 ## Milestones
 | # | Name | Scope | Dependencies | Status |
 |---|------|-------|-------------|--------|
-| M1 | M1_XML_Browser_Parser_Session_Repo | Features 1, 2, 3, 4, 5: `app/features/xml/` engine, session in-memory repo, `/documentos/importar` real XML import | none | PLANNED |
-| M2 | M2_Conference_Table_Decimal_Recalc | Features 6, 7, 8, 9, 10, 11, 12: `itemId` stability, filter/sort safety, pure decimal math, `valorOriginal` diff/restore, UI badges & keyboard nav | none | PLANNED |
-| M3 | M3_Validation_Safety_Assistant_Undo | Features 13, 14, 15: Explicit confirmation modal, `undoStack`, safe "Corrigir todas" blocking sensitive bulk changes | M1, M2 | PLANNED |
-| M4 | M4_Invoice_Splitting_Balance_Conservation | Features 16, 17, 18, 19: Pure decimal division, remaining balance distribution, strict `canSave` traps, expense apportionment | M2 | PLANNED |
-| M5 | M5_Integration_Tests_Lint_Build_Gate | Features 20, 21, 22: Integration test suite (Fluxos A, B, C, D), ESLint 0 errors, `pnpm build` 0 errors, git branch verification | M1, M2, M3, M4 | PLANNED |
+| M1 | M1_XML_Browser_Parser_Session_Repo | Features 1, 2, 3, 4, 5: `app/features/xml/` engine, session in-memory repo, `/documentos/importar` real XML import | none | DONE |
+| M2 | M2_Conference_Table_Decimal_Recalc | Features 6, 7, 8, 9, 10, 11, 12: `itemId` stability, filter/sort safety, pure decimal math, `valorOriginal` diff/restore, UI badges & keyboard nav | none | DONE |
+| M3 | M3_Validation_Safety_Assistant_Undo | Features 13, 14, 15: Explicit confirmation modal, `undoStack`, safe "Corrigir todas" blocking sensitive bulk changes | M1, M2 | DONE |
+| M4 | M4_Invoice_Splitting_Balance_Conservation | Features 16, 17, 18, 19: Pure decimal division, remaining balance distribution, strict `canSave` traps, expense apportionment | M2 | DONE |
+| M5 | M5_Integration_Tests_Lint_Build_Gate | Features 20, 21, 22: Integration test suite (Fluxos A, B, C, D), ESLint 0 errors, `pnpm build` 0 errors, git branch verification | M1, M2, M3, M4 | DONE |
 
 ## Parallel E2E Testing Track
 - **Orchestrator**: E2E Testing Sub-orchestrator (`teamwork_orchestrator`)

@@ -43,15 +43,17 @@ Criar a infraestrutura de fixtures sintéticas de NF-e e a suíte de testes de i
 - (Nenhuma skill externa Antigravity solicitada no dispatch)
 
 ## Quality Status
-- **Build/test result**: Pending execution
-- **Lint status**: TBD
-- **Tests added/modified**: Pending
+- **Build/test result**: All 43 integration tests passing in Node 24 (`node --no-warnings --test tests/integration/*.test.mjs`)
+- **Lint status**: Clean (test code only)
+- **Tests added/modified**: 4 integration test files, 43 test cases across 18 test suites
 
 ## Key Decisions Made
 - Usar ESM (.mjs) para os testes de integração compatíveis com Node 24 native runner e imports de módulos JS do projeto.
+- Criar 4 fixtures sintéticas em tests/fixtures/ com conformidade estrita ao layout SEFAZ v4.00 e cálculo matemático comprovado do Módulo 11 (pesos 2..9).
+- Escalar defeito de sobrescrita incondicional de valorTotal em invoiceRepository.updateItem.
 
 ## Artifact Index
-- [c:\www\smart-nfe\tests\fixtures\] — Diretório de fixtures sintéticas
-- [c:\www\smart-nfe\tests\integration\] — Diretório de testes de integração
-- [c:\www\smart-nfe\TEST_READY.md] — Publicação do status dos testes
-- [c:\www\smart-nfe\.agents\teamwork\teamwork_test_writer_e2e\handoff.md] — Relatório de handoff
+- [c:\www\smart-nfe\tests\fixtures\] — Diretório com as 4 fixtures sintéticas de NF-e modelo 55
+- [c:\www\smart-nfe\tests\integration\] — Diretório com os 4 arquivos de teste de integração
+- [c:\www\smart-nfe\TEST_READY.md] — Publicação do status dos testes na raiz
+- [c:\www\smart-nfe\.agents\teamwork\teamwork_test_writer_e2e\handoff.md] — Relatório de handoff detalhado

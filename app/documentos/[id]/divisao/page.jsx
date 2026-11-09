@@ -34,6 +34,8 @@ import { preparedInvoiceRepository } from '@/features/preparedInvoiceRepository'
 import {
   validateDivisionBatch,
   calculateRemainingBalance,
+  distributeEqually,
+  apportionAllInvoiceExpenses,
 } from '@/lib/calculations/divisionMath';
 import {
   decimalAdd,
@@ -42,6 +44,7 @@ import {
   decimalCompare,
   cleanDecimalString,
 } from '@/lib/calculations/decimal';
+import { calculateInvoiceTotals } from '@/lib/calculations/invoiceTotals';
 
 export default function DivisaoNotasPage({ params }) {
   const resolvedParams = use(params);
@@ -278,7 +281,42 @@ export default function DivisaoNotasPage({ params }) {
     toast.success(`Saldo de ${formatQuantity(balance)} alocado na nota.`);
   };
 
-  // Assistente: Distribuir igualmente 50/50 entre as 2 primeiras notas
+  // Assistente: Dividir saldo deste item igualmente entre todas as notas de destino
+  const handleDistributeItemEqually = (item) => {
+    const report = itemReportsMap.get(item.id);
+    const balance = report ? report.balanceStr : item.quantidade;
+
+    if (decimalCompare(balance, '0') <= 0) {
+      toast.info('Este item não possui saldo restante para alocar.');
+      return;
+    }
+
+    const numNotes = targetNotes.length;
+    if (numNotes < 2) {
+      toast.warning('A divisão exige no mínimo 2 notas de destino.');
+      return;
+    }
+
+    const slices = distributeEqually(balance, numNotes, 4);
+
+    setTargetNotes((prev) =>
+      prev.map((note, idx) => {
+        const current = cleanDecimalString(note.itens[item.id] || '0');
+        const newQty = decimalAdd(current, slices[idx] || '0.0000', 4);
+        return {
+          ...note,
+          itens: {
+            ...note.itens,
+            [item.id]: newQty,
+          },
+        };
+      })
+    );
+
+    toast.success(`Saldo de ${formatQuantity(balance)} dividido igualmente entre as ${numNotes} notas.`);
+  };
+
+  // Assistente: Distribuir igualmente todas as quantidades entre as notas configuradas com conservação decimal de 100%
   const handleDistributeEqually = () => {
     if (!invoice?.itens || targetNotes.length < 2) return;
 
@@ -286,24 +324,41 @@ export default function DivisaoNotasPage({ params }) {
     const updatedNotes = targetNotes.map((note) => ({ ...note, itens: {} }));
 
     invoice.itens.forEach((it) => {
-      const origQty = parseFloat(cleanDecimalString(it.quantidade)) || 0;
-      const piece = Math.floor((origQty / numNotes) * 10000) / 10000;
-      let allocatedSoFar = 0;
-
+      const slices = distributeEqually(it.quantidade, numNotes, 4);
       updatedNotes.forEach((note, idx) => {
-        if (idx === numNotes - 1) {
-          // Última nota fica com a diferença exata para somar 100%
-          const lastPiece = Math.round((origQty - allocatedSoFar) * 10000) / 10000;
-          note.itens[it.id] = lastPiece > 0 ? String(lastPiece) : '0';
-        } else {
-          note.itens[it.id] = String(piece);
-          allocatedSoFar += piece;
-        }
+        note.itens[it.id] = slices[idx] || '0.0000';
       });
     });
 
     setTargetNotes(updatedNotes);
     toast.success(`Itens distribuídos igualmente entre as ${numNotes} notas.`);
+  };
+
+  // Assistente: Distribuir apenas os saldos pendentes de todos os itens igualmente
+  const handleDistributeRemainingAll = () => {
+    if (!invoice?.itens || targetNotes.length < 2) return;
+
+    const numNotes = targetNotes.length;
+    setTargetNotes((prev) => {
+      const notesCopy = prev.map((n) => ({ ...n, itens: { ...n.itens } }));
+
+      invoice.itens.forEach((it) => {
+        const report = itemReportsMap.get(it.id);
+        const balance = report ? report.balanceStr : it.quantidade;
+
+        if (decimalCompare(balance, '0') > 0) {
+          const slices = distributeEqually(balance, numNotes, 4);
+          notesCopy.forEach((note, idx) => {
+            const current = cleanDecimalString(note.itens[it.id] || '0');
+            note.itens[it.id] = decimalAdd(current, slices[idx] || '0.0000', 4);
+          });
+        }
+      });
+
+      return notesCopy;
+    });
+
+    toast.success(`Saldos restantes distribuídos igualmente entre as ${numNotes} notas.`);
   };
 
   // Assistente: Alocar 100% dos itens na primeira nota
@@ -332,10 +387,10 @@ export default function DivisaoNotasPage({ params }) {
   };
 
   // Finalizar a divisão e gerar as notas preparadas
-  // Requisito: Não pode finalizar se houver excesso OU saldo restante pendente!
+  // Requisito: Bloqueia estritamente se houver excesso OU saldo restante pendente!
   const canFinalize = useMemo(() => {
     if (!invoice?.itens || targetNotes.length < 2) return false;
-    return batchResult.isBalanced && !batchResult.hasExcess && !batchResult.hasRemaining;
+    return Boolean(batchResult.canSave);
   }, [invoice, targetNotes, batchResult]);
 
   const handleFinalizeDivision = async () => {
@@ -353,12 +408,12 @@ export default function DivisaoNotasPage({ params }) {
     try {
       setIsSaving(true);
 
-      // Gera as notas preparadas para cada destino com itens alocados
-      let createdCount = 0;
+      // 1. Mapeia itens alocados para cada nota de destino
+      const preparedNotesData = [];
       for (let i = 0; i < targetNotes.length; i++) {
         const note = targetNotes[i];
         const distributedItems = invoice.itens
-          .map((origItem) => {
+          .map((origItem, itemIdx) => {
             const raw = note.itens[origItem.id] || '0';
             const qtyStr = cleanDecimalString(raw);
             if (decimalCompare(qtyStr, '0') <= 0) return null;
@@ -366,6 +421,7 @@ export default function DivisaoNotasPage({ params }) {
             const lineTotal = decimalMultiply(origItem.valorUnitario, qtyStr, 2);
             return {
               ...origItem,
+              item: itemIdx + 1,
               quantidade: qtyStr,
               valorTotal: lineTotal,
             };
@@ -373,38 +429,92 @@ export default function DivisaoNotasPage({ params }) {
           .filter(Boolean);
 
         if (distributedItems.length > 0) {
-          const suffix = String.fromCharCode(65 + i);
-          const totalNota = noteTotals[note.id] || '0.00';
-
-          await preparedInvoiceRepository.create({
-            parentInvoiceId: invoice.id,
-            documentoOrigemId: invoice.id,
-            origemNumero: invoice.numero,
-            numeroOrigem: invoice.numero,
-            numero: `${invoice.numero}-${suffix}`,
-            serie: invoice.serie || '1',
-            nomePreparacao: note.nome || `Nota Destino ${suffix}`,
-            descricaoLote: `${note.nome} — Destino: ${note.razaoSocial || 'Exterior'}`,
-            emitente: invoice.emitente,
-            destinatario: {
-              nome: note.razaoSocial || invoice.destinatario?.nome || 'Destinatário',
-              cnpj: note.cnpj || invoice.destinatario?.cnpj || invoice.destinatario?.idEstrangeiro || '',
-              uf: note.uf || invoice.destinatario?.uf || '',
-              pais: note.pais || invoice.destinatario?.pais || 'Exterior',
-              paisCodigo: invoice.destinatario?.paisCodigo || '',
-            },
-            itens: distributedItems,
-            quantidadeItens: distributedItems.length,
-            valorTotal: totalNota,
-            valorTotalNota: totalNota,
-            status: 'preparado',
-            dataCriacao: new Date().toISOString(),
+          const productTotal = distributedItems.reduce(
+            (acc, it) => decimalAdd(acc, it.valorTotal, 2),
+            '0.00'
+          );
+          preparedNotesData.push({
+            note,
+            index: i,
+            distributedItems,
+            productTotal,
           });
-          createdCount++;
         }
       }
 
-      // Atualiza o status do documento original para 'dividida'
+      if (preparedNotesData.length === 0) {
+        toast.error('Nenhum item alocado para as notas de destino.');
+        return;
+      }
+
+      // 2. Executa o rateio proporcional de despesas acessórias da NF de origem
+      const activeNotesForExpenses = preparedNotesData.map((p) => ({
+        id: p.note.id,
+        productTotal: p.productTotal,
+      }));
+      const expensesByNote = apportionAllInvoiceExpenses(
+        invoice.totais || {},
+        activeNotesForExpenses
+      );
+
+      // 3. Cria cada nota preparada com totais reconciliados
+      let createdCount = 0;
+      for (let pIdx = 0; pIdx < preparedNotesData.length; pIdx++) {
+        const { note, index, distributedItems } = preparedNotesData[pIdx];
+        const suffix = String.fromCharCode(65 + index);
+        const exp = expensesByNote[note.id] || {
+          valorProdutos: noteTotals[note.id] || '0.00',
+          valorFrete: '0.00',
+          valorSeguro: '0.00',
+          outrasDespesas: '0.00',
+          valorDesconto: '0.00',
+        };
+
+        // Calcula totais completos com fórmula oficial SEFAZ
+        const noteTotais = calculateInvoiceTotals(
+          distributedItems,
+          {
+            discount: exp.valorDesconto,
+            freight: exp.valorFrete,
+            insurance: exp.valorSeguro,
+            otherExpenses: exp.outrasDespesas,
+          }
+        );
+
+        await preparedInvoiceRepository.create({
+          parentInvoiceId: invoice.id,
+          documentoOrigemId: invoice.id,
+          origemNumero: invoice.numero,
+          numeroOrigem: invoice.numero,
+          numero: `${invoice.numero}-${suffix}`,
+          serie: invoice.serie || '1',
+          nomePreparacao: note.nome || `Nota Destino ${suffix}`,
+          descricaoLote: `${note.nome} — Destino: ${note.razaoSocial || 'Exterior'}`,
+          emitente: invoice.emitente,
+          destinatario: {
+            nome: note.razaoSocial || invoice.destinatario?.nome || 'Destinatário',
+            cnpj: note.cnpj || invoice.destinatario?.cnpj || invoice.destinatario?.idEstrangeiro || '',
+            uf: note.uf || invoice.destinatario?.uf || '',
+            pais: note.pais || invoice.destinatario?.pais || 'Exterior',
+            paisCodigo: invoice.destinatario?.paisCodigo || '',
+          },
+          itens: distributedItems,
+          quantidadeItens: distributedItems.length,
+          valorProdutos: noteTotais.valorProdutos,
+          valorFrete: noteTotais.valorFrete,
+          valorSeguro: noteTotais.valorSeguro,
+          outrasDespesas: noteTotais.outrasDespesas,
+          valorDesconto: noteTotais.valorDesconto,
+          valorTotal: noteTotais.valorTotalNota,
+          valorTotalNota: noteTotais.valorTotalNota,
+          totais: noteTotais,
+          status: 'preparado',
+          dataCriacao: new Date().toISOString(),
+        });
+        createdCount++;
+      }
+
+      // 4. Marca status da nota pai como 'dividida'
       await invoiceRepository.update(invoice.id, { status: 'dividida' });
 
       toast.success(
@@ -739,9 +849,20 @@ export default function DivisaoNotasPage({ params }) {
               type="button"
               onClick={handleDistributeEqually}
               className="px-2.5 py-1 text-xs font-semibold rounded bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors"
+              title="Distribuir 100% das quantidades em partes iguais entre as notas"
             >
               Distribuir Igualmente ({targetNotes.length} Notas)
             </button>
+            {batchResult.hasRemaining && (
+              <button
+                type="button"
+                onClick={handleDistributeRemainingAll}
+                className="px-2.5 py-1 text-xs font-semibold rounded bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900/60 transition-colors"
+                title="Distribuir apenas o saldo pendente de cada item igualmente"
+              >
+                Dividir Saldos Restantes ({targetNotes.length} Notas)
+              </button>
+            )}
             <button
               type="button"
               onClick={handleAllocateAllToFirst}
@@ -879,8 +1000,8 @@ export default function DivisaoNotasPage({ params }) {
                                 <button
                                   type="button"
                                   onClick={() => handleAllocateRemaining(note.id, it)}
-                                  title="Alocar o saldo restante nesta nota"
-                                  className="w-5 h-5 rounded flex items-center justify-center text-[10px] bg-amber-100 hover:bg-amber-200 text-amber-800 dark:bg-amber-900/50 dark:hover:bg-amber-800 dark:text-amber-200 transition-colors"
+                                  title={`Distribuir 100% do saldo restante (${formatQuantity(report.balanceStr)}) para ${note.nome}`}
+                                  className="w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold bg-amber-100 hover:bg-amber-200 text-amber-800 dark:bg-amber-900/50 dark:hover:bg-amber-800 dark:text-amber-200 transition-colors"
                                 >
                                   +
                                 </button>
@@ -897,17 +1018,30 @@ export default function DivisaoNotasPage({ params }) {
 
                       {/* Saldo Restante */}
                       <td className="px-3 py-2 text-right font-mono font-bold">
-                        <span
-                          className={
-                            isExcess
-                              ? 'text-red-600 dark:text-red-400'
-                              : isOk
-                              ? 'text-emerald-600 dark:text-emerald-400'
-                              : 'text-amber-600 dark:text-amber-400'
-                          }
-                        >
-                          {formatQuantity(report.balanceStr)}
-                        </span>
+                        <div className="flex items-center justify-end gap-1.5">
+                          <span
+                            className={
+                              isExcess
+                                ? 'text-red-600 dark:text-red-400'
+                                : isOk
+                                ? 'text-emerald-600 dark:text-emerald-400'
+                                : 'text-amber-600 dark:text-amber-400'
+                            }
+                          >
+                            {formatQuantity(report.balanceStr)}
+                          </span>
+                          {isRemaining && (
+                            <button
+                              type="button"
+                              onClick={() => handleDistributeItemEqually(it)}
+                              title={`Dividir saldo deste item (${formatQuantity(report.balanceStr)}) igualmente entre as ${targetNotes.length} notas`}
+                              className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-100 hover:bg-amber-200 text-amber-800 dark:bg-amber-900/50 dark:hover:bg-amber-800 dark:text-amber-200 inline-flex items-center gap-1 transition-colors"
+                            >
+                              <FontAwesomeIcon icon={faScaleBalanced} className="w-2.5 h-2.5" />
+                              <span>÷ Dividir</span>
+                            </button>
+                          )}
+                        </div>
                       </td>
 
                       {/* Status Badges: OK verde (100%), Restante amarelo, Excesso vermelho */}

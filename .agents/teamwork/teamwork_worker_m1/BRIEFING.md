@@ -1,73 +1,66 @@
-# BRIEFING — 2026-11-04T15:02:00Z
+# BRIEFING — 2026-11-09T19:54:30Z
 
 ## Mission
-Implement Milestone 1 (Foundation & Dashboard) cleanly, complying with Next.js 15, React 19, Tailwind CSS v4, and ESLint 9 standards without restarting or running dev/build processes.
+Implementar integralmente o Milestone 1 (Importação Real de XML NF-e Modelo 55 no Navegador e Repositório em Memória de Sessão) com precisão técnica e zero regressão.
 
 ## 🔒 My Identity
-- Archetype: teamwork_worker
-- Roles: [implementer, qa, specialist]
+- Archetype: implementer / qa / specialist
+- Roles: implementer, qa, specialist
 - Working directory: c:\www\smart-nfe\.agents\teamwork\teamwork_worker_m1\
-- Original parent: 3aeeebdd-68a6-49e6-8f40-494114a9f1f7
-- Milestone: Milestone 1 - Foundation & Dashboard
+- Original parent: 71db8a14-4c80-4575-92ba-b52ae572b170
+- Milestone: Milestone 1 - Importação Real de XML NF-e Modelo 55 no Navegador e Repositório em Memória de Sessão
 
 ## 🔒 Key Constraints
-- DO NOT CHEAT. All implementations must be genuine. No hardcoded test shortcuts.
-- DO NOT run build commands (`pnpm build`, `npm run build`) and DO NOT start dev servers (`pnpm dev`, `npm run dev`).
-- Project is running at http://localhost:3000/dashboard externally.
-- Next.js 15, React 19, Tailwind CSS v4, ESLint 9 rules.
-- Pure JS/ESM formatters (no moment, no heavy libs).
-- Native Node 24 test runner (`node:test`).
+- Arquivos de escrita exclusiva:
+  - `app/features/xml/nfeXmlParser.js`
+  - `app/features/xml/accessKeyValidator.js`
+  - `app/features/xml/xmlToInvoiceMapper.js`
+  - `app/features/xml/index.js`
+  - `app/features/invoiceRepository.js`
+  - `app/documentos/importar/page.jsx`
+- NÃO criar implementações simuladas/falsas; integridade absoluta.
+- Persistência em memória de sessão volátil para XMLs reais (`sessionInvoices`), sem persistência de dados reais no `localStorageService`.
+- Manter total retrocompatibilidade com mocks existentes (`demo-01` a `demo-05`).
+- DOMParser com fallback resiliente para ambiente Node/testes.
+- Validador de chave com Módulo 11 estrito.
+- Mapeamento determinístico de itens e precisão decimal estendida.
 
 ## Current Parent
-- Conversation ID: 3aeeebdd-68a6-49e6-8f40-494114a9f1f7
-- Updated: 2026-11-04T15:02:00Z
+- Conversation ID: 71db8a14-4c80-4575-92ba-b52ae572b170
+- Updated: 2026-11-09T19:54:30Z
 
 ## Task Summary
-- **What to build**: DemoBadge, SmartNFeSidebar (5 items), SmartNFeHeader, AppLayout, ToastContainer, AppContext, DataTable (React 19 friendly), InputFile, Dialog, eslint.config.mjs clean up, formatters (currency, dates, status), mockInvoices (5 scenarios + getDashboardKPIs), dashboard/page.jsx, and automated test suite m1_foundation.test.mjs.
-- **Success criteria**:
-  1. `node --no-warnings --test tests/tier1/m1_foundation.test.mjs` passes 100%. (PASSED: 10/10)
-  2. `npx eslint ...` passes with 0 errors. (PASSED: 0 errors, 0 warnings)
-  3. `fetch('http://localhost:3000/dashboard')` returns HTTP 200 with "Modo Demonstração" and "Painel Operacional". (PASSED: HTTP 200, length 62640, all 13 element assertions true)
-- **Interface contracts**: PROJECT.md, SCOPE.md, and explorer strategies.
+- **What to build**: Módulos de parsing, validação e mapeamento de NF-e XML (modelo 55), atualização de invoiceRepository com sessão em memória e atualização da página de importação com File API e banner de segurança.
+- **Success criteria**: 100% testes passando (`node --test tests/tier1/m2_domain.test.mjs`, integration tests se houver), `pnpm build` passando com 0 erros.
+- **Interface contracts**: `c:\www\smart-nfe\PROJECT.md` e `c:\www\smart-nfe\.agents\teamwork\sub_orch_m1_xml\SCOPE.md`
+
+## Key Decisions Made
+- `nfeXmlParser.js`: DOMParser nativo no browser com fallback NodeXmlDomParser puro em Node; suporte total a namespaces e layouts nfeProc e NFe avulso.
+- `accessKeyValidator.js`: Módulo 11 oficial SEFAZ com pesos [2..9] e regra resto 0/1 -> DV 0; validação estrita de modelo 55, UF IBGE e AAMM.
+- `xmlToInvoiceMapper.js`: Geração determinística de `itemId` estável (`nfe-${chaveAcesso}-item-${nItem}`); normalização decimal estendida e flags de isolamento `isRealImport: true` e `isDemo: false`.
+- `invoiceRepository.js`: Isolamento estrito de dados fiscais reais em `sessionInvoices = new Map()`, sem chamadas a `localStorageService.save()`; prioridade na busca e listagem; métodos auxiliares `delete()`, `resetAll()`, `clearSession()`.
+- `app/documentos/importar/page.jsx`: Leitura real via File API (`file.text()`), pipeline completo parser -> validação -> mapper -> repositório, banner permanente de privacidade e cards detalhados.
 
 ## Change Tracker
 - **Files modified**:
-  - `eslint.config.mjs`: Removed `nextTs` import, added ignore paths for legacy dev/template files.
-  - `app/lib/formatters/currency.js`: Created with `formatBRL`, `parseBRL`, `formatNumberBRL`.
-  - `app/lib/formatters/dates.js`: Created with `formatDateBR`, `formatDateTimeBR` (native Intl).
-  - `app/lib/formatters/status.js`: Created with `STATUS_CONFIG`, `getStatusLabel`, `getStatusColor`, `getStatusBadgeClass`, `getStatusBadge`, `getStatusDot`.
-  - `app/lib/data/mockInvoices.js`: Created with 5 rich demo scenarios (`demo-01` to `demo-05`), prepared invoices, and `getDashboardKPIs()`.
-  - `app/context/AppContext.jsx`: Added lazy state initializers, memoized toasts & settings, exported `DEFAULT_SETTINGS`.
-  - `app/components/Layouts/DemoBadge.jsx`: Set exact text "Modo Demonstração", amber dot, data-testid, non-blocking click.
-  - `app/components/Layouts/SmartNFeSidebar.jsx`: Configured 5 root SmartNFe menus, active route highlighting without duplicate triggers.
-  - `app/components/Layouts/SmartNFeHeader.jsx`: Dark mode classes, breadcrumbs, demo tag, accessibility attributes.
-  - `app/components/Layouts/ToastContainer.jsx`: Non-blocking container pointer-events, dark mode classes.
-  - `app/components/Layouts/AppLayout.jsx`: Dark mode classes, connected Header, Sidebar, ToastContainer, DemoBadge.
-  - `app/components/table/DataTable.jsx`: Cleaned React 19 rendering using `useMemo`, explicit `columns` support, static `ALIGN_MAP`.
-  - `app/components/inputs/InputFile.jsx`: Case-insensitive XML/PDF support, 10MB limit, clear button aria-label, dark mode.
-  - `app/components/Layouts/Dialog.jsx`: Removed synchronous setState in useEffect, wrapped closeDialog in useCallback, added Escape key listener.
-  - `app/dashboard/page.jsx`: Reimplemented with AppLayout, zero login redirect, 5 KPI cards, quick demo actions, recent documents table.
-  - `tests/tier1/m1_foundation.test.mjs`: 10 automated tests using `node:test`.
-  - `package.json`: Added `"test"` script.
-- **Build status**: PASS (all tests pass, eslint pass, live HTTP 200).
-- **Pending issues**: None.
+  - `app/features/xml/nfeXmlParser.js` — Parser XML com DOMParser e fallback NodeXmlDomParser
+  - `app/features/xml/accessKeyValidator.js` — Validador estrutural e Módulo 11
+  - `app/features/xml/xmlToInvoiceMapper.js` — Mapeador para contrato Invoice com `itemId` estável
+  - `app/features/xml/index.js` — Barrel export dos módulos XML
+  - `app/features/invoiceRepository.js` — Camada volátil de sessão (`sessionInvoices`) e métodos CRUD
+  - `app/documentos/importar/page.jsx` — Importação real File API e banner de privacidade
+  - `tests/tier1/m1_xml_engine.test.mjs` — Suíte de testes dedicada cobrindo os novos módulos
+- **Build status**: PASS (Next.js 16 turbopack compilation concluída com 0 erros)
+- **Pending issues**: Nenhum
 
 ## Quality Status
-- **Build/test result**: 10 tests passing (0 failures).
-- **Lint status**: 0 errors, 0 warnings across all modified and shell files.
-- **Tests added/modified**: `tests/tier1/m1_foundation.test.mjs` (5 test suites, 10 unit/integration tests).
+- **Build/test result**: PASS (44/44 m2_domain, 14/14 flow_a, 43/43 integration tests, 14/14 m1_xml_engine)
+- **Lint status**: PASS (0 erros e 0 warnings nos arquivos do Milestone 1)
+- **Tests added/modified**: `tests/tier1/m1_xml_engine.test.mjs` (14 novos testes)
 
 ## Loaded Skills
-None.
-
-## Key Decisions Made
-- Used lazy useState initializers `useState(() => ...)` in `AppContext.jsx` to prevent React 19 `react-hooks/set-state-in-effect`.
-- Declared `closeDialog` with `useCallback` in `Dialog.jsx` before `useEffect` to satisfy React hook immutability and dependency rules.
-- Added both `emissao` and `dataEmissao` in mock invoice records to ensure multi-contract compatibility.
+- Nenhuma carregada explicitamente.
 
 ## Artifact Index
-- c:\www\smart-nfe\.agents\teamwork\teamwork_worker_m1\DISPATCH.md — Dispatch orders
-- c:\www\smart-nfe\.agents\teamwork\teamwork_worker_m1\BRIEFING.md — Working memory
-- c:\www\smart-nfe\.agents\teamwork\teamwork_worker_m1\progress.md — Liveness heartbeat
-- c:\www\smart-nfe\.agents\teamwork\teamwork_worker_m1\handoff.md — Final handoff report
-- c:\www\smart-nfe\tests\tier1\m1_foundation.test.mjs — Automated Tier 1 test suite
+- `handoff.md` — Relatório final com evidências
+- `progress.md` — Log de progresso e batimentos

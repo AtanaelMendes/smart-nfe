@@ -72,3 +72,9 @@ Integrity mode: development
 - [ ] Testes automatizados cobrindo os Fluxos A, B, C e D executam com sucesso.
 - [ ] O código reside na branch `fix/frontend-xml-conferencia-v0.1.1` sem alterações na branch `master`.
 - [ ] Os comandos `pnpm lint` e `pnpm build` executam sem nenhum erro.
+
+
+## Follow-up — 2026-11-09T19:44:47Z
+
+Instrução do usuário: "apos finalizar commit as alterações para o git".
+Certifique-se de que, ao concluir os marcos e a suíte de testes/build, todas as alterações sejam devidamente commitadas na branch `fix/frontend-xml-conferencia-v0.1.1` com mensagens descritivas e coerentes (sem merge na master).

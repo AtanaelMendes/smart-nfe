@@ -1,110 +1,95 @@
-# Soft Handoff — Orchestrator Generation 0 to Generation 1
+# Soft Handoff Report — Project Orchestrator Succession
 
-**From:** Project Orchestrator (Gen 0 / Conv ID: `3aeeebdd-68a6-49e6-8f40-494114a9f1f7`)  
-**To:** Successor Orchestrator (Gen 1)  
-**Parent Conversation ID:** `5b9042e8-b7f6-4f48-b6d2-96fde9311758`  
-**Date:** 2026-11-04T15:44:00Z  
-**Type:** Soft Handoff (Succession Triggered at 16 Spawns)  
-**Working Directory:** `c:\www\smart-nfe\.agents\teamwork\orchestrator\`
-
----
-
-## 1. Observation & State Summary
-
-1. **Phase 0 Survey (Complete):**
-   - Surveyed codebase architecture, complete functional specifications from `copilot-instructions.md`, and verification runner options.
-   - Verified that Node.js 24 native test runner (`node:test`) executes ESM tests in <20ms with 0 new dependencies.
-   - Authored global scope document `PROJECT.md` with full architecture, 6 milestones, feature inventory, code layout, and interface contracts.
-
-2. **Milestone 1 — M1_Foundation_Dashboard (COMPLETE & PASSED GATE):**
-   - R1 Foundation cleanup completed: `DemoBadge.jsx` displays "Modo Demonstração", `SmartNFeSidebar.jsx` exposes 5 root menus (Dashboard, Documentos, Importar, Notas Preparadas, Configurações), `AppContext.jsx` provides toasts & settings, `DataTable.jsx` supports explicit columns & dense mode, `InputFile.jsx` accepts XML/PDF with 10MB limit, `Dialog.jsx` eliminates synchronous setState in effect, `eslint.config.mjs` cleaned of TypeScript.
-   - Initial Dashboard `/dashboard` screen completely re-implemented with `AppLayout`, 5 KPI summary cards, 5 demo scenario quick load buttons, recent documents table with 7 columns. Zero login redirect.
-   - Fully approved by Gate: Reviewer 1 (APPROVE), Reviewer 2 (APPROVE), Challenger 1 (APPROVE), Challenger 2 (APPROVE), Forensic Auditor (CLEAN).
-   - Parent notified of completion. The user can view and test the live dashboard at `http://localhost:3000/dashboard`.
-
-3. **Milestone 2 — M2_Core_Domain_Services (IMPLEMENTATION COMPLETE — READY FOR GATE):**
-   - 3 Explorers formulated complete strategies for:
-     - Decimal Calculation Engine (`strategy_calculations.md`)
-     - LocalStorage Persistence version 1.0.0 & Async Repositories (`strategy_storage_repositories.md`)
-     - Formatters, Mock Calibrations & Domain Test Suite (`strategy_formatters_mocks_tests.md`)
-   - Worker (`teamwork_worker_m2`) completed all 15 deliverables:
-     - `app/lib/calculations/`: `decimal.js` (BigInt scaling, ABNT NBR 5891 Half-Up rounding, zero binary float loss), `invoiceTotals.js` (SEFAZ totals), `divisionMath.js` (remaining balance & batch validation), `index.js`.
-     - `app/lib/storage/`: `localStorageService.js` (schema 1.0.0, envelope `{ version, timestamp, data }`, memoryStore fallback for SSR/tests/private mode, auto-healing), `index.js`.
-     - `app/features/`: `invoiceRepository.js` (async Promise contract with `valorOriginal` snapshot and dynamic export rules), `preparedInvoiceRepository.js` (async Promise contract), `index.js`.
-     - `app/lib/formatters/`: `numbers.js` (formatQuantity, formatDecimal), `currency.js` (parseBRL with decimal point fix), `dates.js` (strict Gregorian calendar validation without rollover), `index.js`.
-     - `app/lib/data/mockInvoices.js`: Calibrated `demo-02` (25 items symmetric around 5950.00, 100% math match), `demo-05` (item 15 = 28.120,00, sum = 342.000,00 matching preps), `demo-04` annotated.
-     - `app/components/table/DataTable.jsx`: Protected against `data={null}` with `useMemo`.
-     - `tests/tier1/m2_domain.test.mjs`: 43/43 tests passing.
-     - Full test suite: **112/112 tests passing across 27 suites**.
-     - ESLint: **0 errors, 0 warnings**.
-     - Live server: **HTTP 200 length 62639**.
+**From**: Project Orchestrator (Gen 0)  
+**To**: Project Orchestrator Successor (Gen 1)  
+**Date**: 2026-11-09T20:17:00Z  
+**Parent Conversation ID**: `2abc9845-da79-48fd-bcde-ddb894009441`  
+**Working Directory**: `c:\www\smart-nfe\.agents\teamwork\orchestrator\`  
+**Target Branch**: `fix/frontend-xml-conferencia-v0.1.1` (Zero commits to master, no merge to master)  
+**Status**: Milestone 1 DONE (Passed Gate), Milestone 2 Exploration Complete (Ready for Worker Dispatch)
 
 ---
 
-## 2. Milestone State
+## 1. Observation & Work Completed
+
+### 1.1 Foundation, Survey & Architecture (Phases 0 & 1)
+- Survey completed by 3 parallel agents (`3bf64967`, `806da47c`, `c49245ad`).
+- `PROJECT.md` created with 22 inventoried features, 5 sequential milestones, and interface contracts.
+- E2E Testing Track created `TEST_INFRA.md` and 43 integration tests across `tests/integration/flow_[a-d]_*.test.mjs`, all passing. Published `TEST_READY.md`.
+
+### 1.2 Milestone 1: Browser XML Parser & In-Memory Session Repo (Phase 2 — DONE)
+- Implemented `app/features/xml/nfeXmlParser.js` (native browser `DOMParser`, namespace-safe extraction, `nfeProc` and `NFe` roots, safe error handling).
+- Implemented `app/features/xml/accessKeyValidator.js` (44-digit format and Modulo 11 check digit verification).
+- Implemented `app/features/xml/xmlToInvoiceMapper.js` (contract normalization with deterministic `itemId: 'nfe-' + chaveAcesso + '-item-' + nItem`, 4 decimals for quantities, extended unit prices).
+- Updated `app/features/invoiceRepository.js` (`sessionInvoices = new Map()`, complete isolation of real fiscal data from localStorage).
+- Updated `app/documentos/importar/page.jsx` (File API `file.text()` real parsing, validation cards, privacy warning banner).
+- Gate Verification: 2 Reviewers (`APPROVE`), 2 Challengers (`APPROVE` — 22/22 stress tests up to 5.38 MB, 18/18 session integrity tests), Forensic Auditor (`CLEAN`). Marked `DONE` in `PROJECT.md`.
+
+### 1.3 Milestone 2: Exploration Phase Complete (Phase 3 Step a — DONE)
+Three parallel Explorers analyzed `app/documentos/[id]/conferencia/page.jsx`:
+- **Explorer 1 (`ddf4d4d1`)**: Root-caused item corruption under filtering/sorting. `filteredItems.map((item, index) => ...)` passes visual index `index` to `handleItemChange(index, field, value)`. In `copy[index] = item`, it mutates the wrong master item! Fix: change signature to `handleItemChange(itemId, field, value)` and update immutably: `setItems(prev => prev.map(it => it.id === itemId ? { ...it, [field]: value, modificado: true } : it))`. Full stability verified even with duplicate `cProd` items (e.g. `demo-05`).
+- **Explorer 2 (`e36f57f2`)**: Found binary floating-point operations (`parseFloat`, `.toFixed(2)`, `*`, `+`) in lines 74–76, 89–100, 144–147, and the destructive line 99 (`valorTotalNota: totalProdutos.toFixed(2)` which wiped out freight, insurance, other expenses, and discounts). Fix: replace with `calculateItemTotal(unitPrice, qty)` and `calculateInvoiceTotals(items, invoice.totais)` from `app/lib/calculations/invoiceTotals.js`. Handle 4 decimal places without premature rounding; validate negative/invalid inputs.
+- **Explorer 3 (`72ccdfea`)**: Detailed UI enhancements and keyboard navigation:
+  - Snapshot original values in `valorOriginal` on first modification.
+  - Visual inline comparison (strikethrough original vs edited).
+  - Row-level restore `handleRestoreItem(itemId)` and bulk restore `handleRestoreAll()`.
+  - Badges: XML Mod 55 badge, product counts, comparison cards (original totals vs recalculated totals), missing data warnings, and session mode vs demo mode indicator.
+  - Keyboard navigation: Enter key advances focus vertically to the same field in the next row; Escape key cancels/restores. Stable focus without flicker.
+
+---
+
+## 2. Milestone State in `PROJECT.md`
 
 | # | Name | Scope | Dependencies | Status |
 |---|------|-------|-------------|--------|
-| M1 | M1_Foundation_Dashboard | R1 foundation, layout, DemoBadge, AppContext, /dashboard | none | **DONE (Gate Passed)** |
-| M2 | M2_Core_Domain_Services | Decimal math, storage 1.0.0, repositories, formatters, mocks | M1 | **IMPLEMENTED (Awaiting Gate Verification)** |
-| M3 | M3_Document_Management_Screens | /documentos/importar, /documentos list, /configuracoes | M2 | **PLANNED** |
-| M4 | M4_Conference_Validation_Screens | /documentos/[id]/conferencia, /documentos/[id]/validacao | M2 | **PLANNED** |
-| M5 | M5_Splitting_Prepared_Invoices_Screens | /documentos/[id]/divisao, /notas-preparadas | M2, M4 | **PLANNED** |
-| M6 | M6_Final_Integration_E2E | 100% E2E test pass + Tier 5 adversarial hardening | M1-M5 | **PLANNED** |
+| M1 | M1_XML_Browser_Parser_Session_Repo | Features 1-5 | none | DONE |
+| M2 | M2_Conference_Table_Decimal_Recalc | Features 6-12 | none | IN_PROGRESS (Exploration Done -> Ready for Worker) |
+| M3 | M3_Validation_Safety_Assistant_Undo | Features 13-15 | M1, M2 | PLANNED |
+| M4 | M4_Invoice_Splitting_Balance_Conservation | Features 16-19 | M2 | PLANNED |
+| M5 | M5_Integration_Tests_Lint_Build_Gate | Features 20-22 | M1-M4 | PLANNED |
 
 ---
 
-## 3. Active Subagents
-- None currently active. All 16 subagents spawned in Gen 0 have completed and delivered their reports.
-- Current cumulative spawn count: 16 / 16.
+## 3. Concrete Next Steps for Successor (Gen 1)
+
+1. **Milestone 2 Step b: Dispatch Worker (`teamwork_worker`)**:
+   - Provide the Worker with the handoff reports from:
+     - `c:\www\smart-nfe\.agents\teamwork\teamwork_explorer_m2_conferencia_1\handoff.md`
+     - `c:\www\smart-nfe\.agents\teamwork\teamwork_explorer_m2_conferencia_2\handoff.md`
+     - `c:\www\smart-nfe\.agents\teamwork\teamwork_explorer_m2_conferencia_3\handoff.md`
+   - Target file: `app/documentos/[id]/conferencia/page.jsx`.
+   - Mandatory integrity warning included verbatim.
+   - Worker must implement:
+     - `handleItemChange(itemId, field, value)` keyed by `item.id === itemId`.
+     - `calculateItemTotal` and `calculateInvoiceTotals` from `app/lib/calculations/invoiceTotals.js` (zero binary float).
+     - Full preservation of freight, insurance, other expenses, and discounts.
+     - Snapshot `valorOriginal` on first touch, inline diff, `handleRestoreItem`, and `handleRestoreAll`.
+     - UI Badges (XML Mod 55, Product count, totals comparison cards, mode indicator).
+     - Keyboard navigation (Enter vertical move, Escape restore).
+   - Worker runs tests: `node --no-warnings --test tests/integration/flow_b_conferencia_stable_edit.test.mjs` and `pnpm build`.
+2. **Milestone 2 Steps c, d, e: Reviewers, Challengers, and Forensic Auditor**:
+   - Dispatch 2 Reviewers (`teamwork_reviewer`).
+   - Dispatch 2 Challengers (`teamwork_challenger`).
+   - Dispatch 1 Forensic Auditor (`teamwork_auditor`).
+3. **Milestone 2 Step f: Gate Evaluation**:
+   - Record verdicts in `GATE_STATUS.md`.
+   - If clean and approved -> mark M2 `DONE` in `PROJECT.md`.
+4. **Milestone 3 Execution**:
+   - Target: `app/documentos/[id]/validacao/page.jsx` (Explicit confirmation modal, undo stack, safe "Corrigir todas" blocking sensitive fields).
+5. **Milestone 4 Execution**:
+   - Target: `app/documentos/[id]/divisao/page.jsx` and `divisionMath.js` (Pure decimal division, remaining balance distribution, strict `canSave` traps, expense apportionment).
+6. **Milestone 5 Execution & Git Commit**:
+   - Update `eslint.config.mjs` `globalIgnores` for dead HR template components.
+   - Run full test suite: `node --no-warnings --test tests/integration/*.test.mjs` (all 43+ tests passing).
+   - Run `pnpm build` (0 errors).
+   - User directive: Commit all changes to branch `fix/frontend-xml-conferencia-v0.1.1` with descriptive commit messages (no merge to master).
 
 ---
 
-## 4. Pending Decisions & Critical Constraints
+## 4. Key Artifacts & Constraints
 
-1. **CRITICAL USER CONSTRAINT:**
-   - The project is running at `http://localhost:3000/dashboard` (active dev server run externally by the user).
-   - **DO NOT** run build commands (`pnpm build`, `npm run build`) and **DO NOT** start dev servers (`pnpm dev`, `npm run dev`), to avoid port conflicts or environment freezes.
-   - Run verification via `node --no-warnings --test tests/**/*.test.mjs`, `npx eslint`, and live fetch against port 3000.
-
-2. **FORENSIC AUDIT ZERO TOLERANCE:**
-   - A Forensic Auditor (`teamwork_auditor`) MUST be dispatched for every milestone.
-   - If the auditor reports INTEGRITY VIOLATION, the milestone fails unconditionally (BINARY VETO).
-
-3. **PARENT PASSTHROUGH:**
-   - Your parent is `5b9042e8-b7f6-4f48-b6d2-96fde9311758`. Use this ID for all escalation, status reporting, and completion communication (`send_message`).
-
----
-
-## 5. Concrete Next Steps for Successor (Gen 1)
-
-1. **Start Timers:**
-   - Initialize recurring heartbeat cron (`schedule(CronExpression="*/10 * * * *")`).
-2. **Execute Milestone 2 Gate Verification:**
-   - Dispatch 2 Reviewers, 2 Challengers, and 1 Forensic Auditor for Milestone 2:
-     - Reviewer 1: Calculations Engine & Decimal Math (`app/lib/calculations/`)
-     - Reviewer 2: Storage & Repositories (`app/lib/storage/`, `app/features/`, formatters, mocks)
-     - Challenger 1: Empirical Decimal Math & Rounding Stress Test
-     - Challenger 2: Async Repository & Storage Concurrency Stress Test
-     - Forensic Auditor: Forensic integrity audit of M2 files (zero hardcoded facades, pure JS)
-   - Evaluate Gate in `GATE_STATUS.md`. If all PASS, mark M2 Status -> `DONE` in `PROJECT.md`.
-3. **Execute Milestone 3 (Document Management Screens):**
-   - Scope: `/documentos/importar` (drag-and-drop XML/PDF + quick demo cards), `/documentos` (filterable, paginated list), `/configuracoes` (UI preferences + master resetAll).
-4. **Execute Milestone 4 (Conference & Validation Screens):**
-   - Scope: `/documentos/[id]/conferencia` (dense table, inline editing, Tab/Enter keyboard navigation, real-time decimal recalculation, auto-save), `/documentos/[id]/validacao` (fiscal inconsistency display for demo-04 with assistant).
-5. **Execute Milestone 5 (Splitting & Prepared Invoices):**
-   - Scope: `/documentos/[id]/divisao` (multi-destination distribution with real-time balance validation), `/notas-preparadas` (list of generated split invoices, preview, simulated XML export).
-6. **Execute Milestone 6 & Final E2E Test Suite Pass:**
-   - Pass 100% of E2E tests + Tier 5 adversarial hardening.
-   - Final report to user and parent.
-
----
-
-## 6. Key Artifacts Index
-- `c:\www\smart-nfe\PROJECT.md` — Global architecture, feature inventory, code layout, milestones
-- `c:\www\smart-nfe\.agents\teamwork\ORIGINAL_REQUEST.md` — Authoritative user request
-- `c:\www\smart-nfe\.agents\teamwork\orchestrator\BRIEFING.md` — Persistent working memory
-- `c:\www\smart-nfe\.agents\teamwork\orchestrator\progress.md` — Status checklist
-- `c:\www\smart-nfe\.agents\teamwork\orchestrator\GATE_STATUS.md` — Gate verdicts
-- `c:\www\smart-nfe\.agents\teamwork\sub_orch_m2_core\SCOPE.md` — Milestone 2 Scope
-- `c:\www\smart-nfe\.agents\teamwork\teamwork_worker_m2\handoff.md` — M2 Worker handoff report
+- `PROJECT.md`: Global architecture, feature inventory, milestones, interface contracts.
+- `TEST_READY.md`: Test runner and test case matrix.
+- `ORIGINAL_REQUEST.md`: Immutable user requirements.
+- `c:\www\smart-nfe\.agents\teamwork\orchestrator\GATE_STATUS.md`: Milestone Gate verdicts.
+- Constraints: Dispatch-only (no manual code editing), zero binary float in calculations, zero mock pollution in session repo, mandatory git commit on `fix/frontend-xml-conferencia-v0.1.1`.

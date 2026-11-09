@@ -17,6 +17,9 @@ import {
   faFilePdf,
   faFileCode,
   faCircleCheck,
+  faSort,
+  faSortUp,
+  faSortDown,
 } from '@fortawesome/free-solid-svg-icons';
 
 import AppLayout from '@/components/Layouts/AppLayout';
@@ -27,6 +30,18 @@ import { formatBRL } from '@/lib/formatters/currency';
 import { formatDateBR } from '@/lib/formatters/dates';
 import { getStatusLabel, getStatusColor } from '@/lib/formatters/status';
 import { invoiceRepository } from '@/features/invoiceRepository';
+
+import {
+  calculateItemTotal,
+  calculateInvoiceTotals,
+} from '@/lib/calculations/invoiceTotals';
+import {
+  decimalSubtract,
+  decimalCompare,
+  isDecimalZero,
+  isDecimalNegative,
+  cleanDecimalString,
+} from '@/lib/calculations/decimal';
 
 export default function ConferenciaPage({ params }) {
   // Unwrap do params no Next.js App Router
@@ -40,6 +55,7 @@ export default function ConferenciaPage({ params }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
   const [showPreview, setShowPreview] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
 
@@ -63,40 +79,148 @@ export default function ConferenciaPage({ params }) {
     load();
   }, [id, toast]);
 
-  // Edição direta de campo na tabela
-  const handleItemChange = (index, field, value) => {
-    setItems((prev) => {
-      const copy = [...prev];
-      const item = { ...copy[index], [field]: value, modificado: true };
+  // Edição direta de campo na tabela orientada exclusivamente a itemId estável
+  const handleItemChange = (itemId, field, value) => {
+    setItems((prevItems) =>
+      prevItems.map((item) => {
+        if (item.id !== itemId) return item;
 
-      // Recalcula valor total do item se mudar quantidade ou valor unitário
-      if (field === 'quantidade' || field === 'valorUnitario') {
-        const q = parseFloat(String(item.quantidade).replace(',', '.')) || 0;
-        const u = parseFloat(String(item.valorUnitario).replace(',', '.')) || 0;
-        item.valorTotal = (q * u).toFixed(2);
-      }
+        // Snapshot inicial imutável no primeiro toque
+        const valorOriginal = item.valorOriginal || {
+          item: item.item,
+          codigo: item.codigo,
+          descricao: item.descricao,
+          ncm: item.ncm,
+          cfop: item.cfop,
+          unidade: item.unidade,
+          quantidade: item.quantidade,
+          valorUnitario: item.valorUnitario,
+          valorTotal: item.valorTotal,
+        };
 
-      copy[index] = item;
-      return copy;
-    });
+        const updated = {
+          ...item,
+          [field]: value,
+          modificado: true,
+          valorOriginal,
+        };
+
+        // Recálculo automático do valor total do produto via motor decimal BigInt
+        if (field === 'quantidade' || field === 'valorUnitario') {
+          const q = field === 'quantidade' ? value : item.quantidade;
+          const u = field === 'valorUnitario' ? value : item.valorUnitario;
+          updated.valorTotal = calculateItemTotal(u, q);
+        }
+
+        return updated;
+      })
+    );
     setHasChanges(true);
   };
 
-  // Salvar alterações no storage
+  // Restaura um único item para o snapshot de valor original
+  const handleRestoreItem = (itemId) => {
+    setItems((prevItems) => {
+      const next = prevItems.map((item) => {
+        if (item.id !== itemId || !item.valorOriginal) return item;
+        return {
+          ...item,
+          ...item.valorOriginal,
+          modificado: false,
+          valorOriginal: null,
+        };
+      });
+      const anyModified = next.some((it) => it.modificado);
+      setHasChanges(anyModified);
+      return next;
+    });
+    toast.info('Item restaurado para o valor original.');
+  };
+
+  // Restaura todos os itens modificados de volta ao baseline original
+  const handleRestoreAll = () => {
+    setItems((prevItems) =>
+      prevItems.map((item) => {
+        if (!item.valorOriginal) return item;
+        return {
+          ...item,
+          ...item.valorOriginal,
+          modificado: false,
+          valorOriginal: null,
+        };
+      })
+    );
+    setHasChanges(false);
+    toast.info('Todos os itens foram restaurados para os valores originais.');
+  };
+
+  // Ordenação de colunas da tabela
+  const handleSort = (key) => {
+    setSortConfig((prev) => {
+      if (prev.key === key) {
+        return { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' };
+      }
+      return { key, direction: 'asc' };
+    });
+  };
+
+  // Navegação por teclado (Enter move verticalmente, Escape desfaz/cancela)
+  const handleKeyDown = (e, rowIndex, field, itemId) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const targetIndex = e.shiftKey ? rowIndex - 1 : rowIndex + 1;
+      if (targetIndex >= 0 && targetIndex < filteredAndSortedItems.length) {
+        const nextInput = document.querySelector(
+          `input[data-row-index="${targetIndex}"][data-field="${field}"]`
+        );
+        if (nextInput) {
+          nextInput.focus();
+          if (typeof nextInput.select === 'function') {
+            nextInput.select();
+          }
+        }
+      }
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      handleRestoreItem(itemId);
+      e.target.blur();
+    }
+  };
+
+  // Salvar alterações no repositório com preservação integral de despesas acessórias
   const handleSave = async () => {
     try {
-      // Recalcula total da nota
-      const totalProdutos = items.reduce((acc, curr) => {
-        return acc + (parseFloat(String(curr.valorTotal).replace(',', '.')) || 0);
-      }, 0);
+      // 1. Validação de integridade numérica
+      for (const item of items) {
+        if (isDecimalNegative(item.quantidade)) {
+          toast.error(`Item ${item.item || item.codigo || item.id}: A quantidade não pode ser negativa.`);
+          return;
+        }
+        if (isDecimalNegative(item.valorUnitario)) {
+          toast.error(`Item ${item.item || item.codigo || item.id}: O valor unitário não pode ser negativo.`);
+          return;
+        }
+        if (isDecimalZero(item.quantidade) || String(item.quantidade).trim() === '') {
+          toast.error(`Item ${item.item || item.codigo || item.id}: A quantidade deve ser maior que zero.`);
+          return;
+        }
+      }
+
+      // 2. Recálculo consolidado via motor fiscal
+      const newTotals = calculateInvoiceTotals(items, invoice?.totais || {});
 
       const updatedInvoice = {
         ...invoice,
         itens: items,
         totais: {
-          ...invoice.totais,
-          valorTotalProdutos: totalProdutos.toFixed(2),
-          valorTotalNota: totalProdutos.toFixed(2),
+          ...invoice?.totais,
+          valorProdutos: newTotals.valorProdutos,
+          valorTotalProdutos: newTotals.valorProdutos,
+          valorFrete: newTotals.valorFrete,
+          valorSeguro: newTotals.valorSeguro,
+          valorDesconto: newTotals.valorDesconto,
+          outrasDespesas: newTotals.outrasDespesas,
+          valorTotalNota: newTotals.valorTotalNota,
         },
       };
 
@@ -105,18 +229,37 @@ export default function ConferenciaPage({ params }) {
       setHasChanges(false);
       toast.success('Alterações salvas com sucesso!');
     } catch (e) {
-      toast.error('Erro ao salvar.');
+      toast.error('Erro ao salvar as alterações.');
     }
   };
 
   // Marcar nota como conferida
   const handleMarkAsChecked = async () => {
     try {
+      for (const item of items) {
+        if (isDecimalNegative(item.quantidade) || isDecimalNegative(item.valorUnitario)) {
+          toast.error('Não é possível concluir conferência com quantidades ou preços negativos.');
+          return;
+        }
+      }
+
+      const newTotals = calculateInvoiceTotals(items, invoice?.totais || {});
       const updated = {
         ...invoice,
-        status: 'PRONTO_REVISAO',
+        status: 'conferido',
         itens: items.map((i) => ({ ...i, situacao: 'conferido' })),
+        totais: {
+          ...invoice?.totais,
+          valorProdutos: newTotals.valorProdutos,
+          valorTotalProdutos: newTotals.valorProdutos,
+          valorFrete: newTotals.valorFrete,
+          valorSeguro: newTotals.valorSeguro,
+          valorDesconto: newTotals.valorDesconto,
+          outrasDespesas: newTotals.outrasDespesas,
+          valorTotalNota: newTotals.valorTotalNota,
+        },
       };
+
       await invoiceRepository.update(id, updated);
       setInvoice(updated);
       setItems(updated.itens);
@@ -127,24 +270,103 @@ export default function ConferenciaPage({ params }) {
     }
   };
 
-  const filteredItems = useMemo(() => {
-    if (!searchTerm) return items;
-    const term = searchTerm.toLowerCase();
-    return items.filter(
-      (it) =>
-        it.codigo?.toLowerCase().includes(term) ||
-        it.descricao?.toLowerCase().includes(term) ||
-        it.ncm?.toLowerCase().includes(term) ||
-        it.cfop?.toLowerCase().includes(term)
-    );
-  }, [items, searchTerm]);
+  // Totais recalculados via motor fiscal preservando frete, seguro, outras despesas e descontos
+  const recalculatedTotals = useMemo(() => {
+    if (!invoice) {
+      return {
+        valorProdutos: '0.00',
+        valorTotalNota: '0.00',
+        valorFrete: '0.00',
+        valorSeguro: '0.00',
+        valorDesconto: '0.00',
+        outrasDespesas: '0.00',
+      };
+    }
+    return calculateInvoiceTotals(items, invoice.totais || {});
+  }, [items, invoice]);
 
-  // Totais calculados
-  const totalGeral = useMemo(() => {
-    return items.reduce((acc, curr) => {
-      return acc + (parseFloat(String(curr.valorTotal).replace(',', '.')) || 0);
-    }, 0);
+  // Diferença do total da nota (Recalculado - Original)
+  const totalsDiff = useMemo(() => {
+    if (!recalculatedTotals || !invoice?.totais?.valorTotalNota) return '0.00';
+    return decimalSubtract(
+      recalculatedTotals.valorTotalNota,
+      invoice.totais.valorTotalNota,
+      2
+    );
+  }, [recalculatedTotals, invoice]);
+
+  const hasTotalsDiff = useMemo(() => {
+    return !isDecimalZero(totalsDiff);
+  }, [totalsDiff]);
+
+  // Contagem de itens modificados
+  const modifiedItemsCount = useMemo(() => {
+    return items.filter((i) => i.modificado).length;
   }, [items]);
+
+  // Detecção de itens com dados ausentes ou inconsistências
+  const itemsWithIssues = useMemo(() => {
+    return items.filter((item) => {
+      const cleanNcm = String(item.ncm || '').replace(/\D/g, '');
+      const missingNcm = cleanNcm.length !== 8;
+      const missingCfop = !item.cfop || String(item.cfop).trim() === '';
+      const cleanQty = cleanDecimalString(item.quantidade);
+      const cleanPrice = cleanDecimalString(item.valorUnitario);
+      const invalidQty = isDecimalZero(cleanQty) || isDecimalNegative(cleanQty);
+      const invalidPrice = isDecimalZero(cleanPrice) || isDecimalNegative(cleanPrice);
+      const lineExpected = calculateItemTotal(item.valorUnitario, item.quantidade);
+      const cleanTotal = cleanDecimalString(item.valorTotal);
+      const mathDiff = decimalCompare(lineExpected, cleanTotal) !== 0;
+      const flagged =
+        item.situacao === 'inconsistente' ||
+        (Array.isArray(item.inconsistencias) && item.inconsistencias.length > 0);
+
+      return missingNcm || missingCfop || invalidQty || invalidPrice || mathDiff || flagged;
+    });
+  }, [items]);
+
+  // Itens filtrados e ordenados
+  const filteredAndSortedItems = useMemo(() => {
+    let result = items;
+
+    // Filtro textual
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      result = result.filter(
+        (it) =>
+          it.codigo?.toLowerCase().includes(term) ||
+          it.descricao?.toLowerCase().includes(term) ||
+          it.ncm?.toLowerCase().includes(term) ||
+          it.cfop?.toLowerCase().includes(term)
+      );
+    }
+
+    // Ordenação
+    if (sortConfig.key) {
+      result = [...result].sort((a, b) => {
+        const valA = a[sortConfig.key];
+        const valB = b[sortConfig.key];
+
+        if (['quantidade', 'valorUnitario', 'valorTotal'].includes(sortConfig.key)) {
+          const cmp = decimalCompare(valA || '0', valB || '0');
+          return sortConfig.direction === 'asc' ? cmp : -cmp;
+        }
+
+        if (sortConfig.key === 'item') {
+          const numA = Number(valA || 0);
+          const numB = Number(valB || 0);
+          return sortConfig.direction === 'asc' ? numA - numB : numB - numA;
+        }
+
+        const strA = String(valA || '').toLowerCase();
+        const strB = String(valB || '').toLowerCase();
+        const cmp = strA.localeCompare(strB);
+        return sortConfig.direction === 'asc' ? cmp : -cmp;
+      });
+    }
+
+    return result;
+  }, [items, searchTerm, sortConfig]);
 
   if (loading) {
     return (
@@ -182,16 +404,36 @@ export default function ConferenciaPage({ params }) {
               <FontAwesomeIcon icon={faArrowLeft} className="w-4 h-4" />
             </Link>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <h1 className="text-lg font-bold text-slate-900 dark:text-slate-100">
                   Conferência da NF-e {invoice.numero}
                 </h1>
                 <span className="text-xs bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded font-mono">
                   Série {invoice.serie}
                 </span>
-                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${getStatusColor(invoice.status).bg} ${getStatusColor(invoice.status).text}`}>
+                <span className="text-xs bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 font-bold px-2 py-0.5 rounded font-mono shadow-xs">
+                  NF-e Mod. 55
+                </span>
+                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${getStatusColor(invoice.status)}`}>
                   {getStatusLabel(invoice.status)}
                 </span>
+                {invoice.isRealImport || invoice.isDemo === false ? (
+                  <span
+                    className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700"
+                    title="Documento mantido exclusivamente na memória volátil de sessão. Não persistido em disco."
+                  >
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <span>Importação Local (Memória Temporária de Sessão)</span>
+                  </span>
+                ) : (
+                  <span
+                    className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-950/80 dark:text-blue-300 border border-blue-300 dark:border-blue-700"
+                    title="Cenário de demonstração pré-carregado no navegador."
+                  >
+                    <span className="w-2 h-2 rounded-full bg-blue-500" />
+                    <span>Modo Demonstração</span>
+                  </span>
+                )}
               </div>
               <p className="text-xs text-slate-500 truncate max-w-lg mt-0.5">
                 Chave: <span className="font-mono">{invoice.chaveAcesso}</span>
@@ -209,6 +451,19 @@ export default function ConferenciaPage({ params }) {
               <FontAwesomeIcon icon={showPreview ? faFileCode : faEye} className="w-3.5 h-3.5 mr-1" />
               {showPreview ? 'Ocultar Origem' : 'Ver Origem (PDF/XML)'}
             </Button>
+
+            {modifiedItemsCount > 0 && (
+              <Button
+                buttonType="secondary"
+                size="small"
+                outline
+                onClick={handleRestoreAll}
+                title="Desfazer todas as edições e restaurar dados originais"
+              >
+                <FontAwesomeIcon icon={faRotateLeft} className="w-3.5 h-3.5 mr-1 text-amber-500" />
+                Restaurar Todos ({modifiedItemsCount})
+              </Button>
+            )}
 
             <Button
               buttonType="primary"
@@ -294,23 +549,61 @@ export default function ConferenciaPage({ params }) {
           </div>
 
           <div className="bg-white dark:bg-slate-800 p-3 rounded-lg border border-slate-200 dark:border-slate-700">
-            <span className="text-[11px] text-slate-500 uppercase font-semibold">Quantidade de Itens</span>
+            <span className="text-[11px] text-slate-500 uppercase font-semibold">Produtos da NF-e</span>
             <p className="text-xs font-bold text-slate-900 dark:text-slate-100 mt-0.5">
               {items.length} produtos
             </p>
-            <span className="text-[10px] text-slate-400">Prontos para edição</span>
+            <div className="flex flex-wrap items-center gap-1.5 mt-1">
+              {modifiedItemsCount > 0 ? (
+                <span className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold bg-amber-50 dark:bg-amber-950/60 px-1.5 py-0.5 rounded">
+                  {modifiedItemsCount} alterado(s)
+                </span>
+              ) : (
+                <span className="text-[10px] text-slate-400">Todos originais</span>
+              )}
+              {itemsWithIssues.length > 0 && (
+                <span className="text-[10px] text-rose-600 dark:text-rose-400 font-semibold bg-rose-50 dark:bg-rose-950/60 px-1.5 py-0.5 rounded">
+                  {itemsWithIssues.length} pendente(s)
+                </span>
+              )}
+            </div>
           </div>
 
           <div className="bg-white dark:bg-slate-800 p-3 rounded-lg border border-slate-200 dark:border-slate-700">
-            <span className="text-[11px] text-slate-500 uppercase font-semibold">Total Calculado</span>
-            <p className="text-sm font-bold text-blue-600 dark:text-blue-400 mt-0.5">
-              {formatBRL(totalGeral)}
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] text-slate-500 uppercase font-semibold">Total da NF-e</span>
+              {hasTotalsDiff && (
+                <span className="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                  {isDecimalNegative(totalsDiff) ? '' : '+'}{formatBRL(totalsDiff)}
+                </span>
+              )}
+            </div>
+            <p className="text-sm font-bold text-blue-600 dark:text-blue-400 mt-0.5 font-mono">
+              {formatBRL(recalculatedTotals?.valorTotalNota)}
             </p>
-            {hasChanges && (
-              <span className="text-[10px] text-amber-500 font-medium">● Alterações não salvas</span>
-            )}
+            <div className="text-[10px] text-slate-500 flex items-center justify-between mt-0.5">
+              <span>Produtos: {formatBRL(recalculatedTotals?.valorProdutos)}</span>
+              {invoice.totais?.valorTotalNota && invoice.totais.valorTotalNota !== recalculatedTotals?.valorTotalNota && (
+                <span className="line-through text-slate-400">Orig: {formatBRL(invoice.totais.valorTotalNota)}</span>
+              )}
+            </div>
           </div>
         </div>
+
+        {/* Alerta de Inconsistências Fiscais */}
+        {itemsWithIssues.length > 0 && (
+          <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-amber-900 dark:text-amber-200">
+            <div className="flex items-center gap-2">
+              <FontAwesomeIcon icon={faTriangleExclamation} className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+              <span>
+                <strong>Alerta de Inconsistências Fiscais:</strong> {itemsWithIssues.length} {itemsWithIssues.length === 1 ? 'produto apresenta' : 'produtos apresentam'} dados ausentes ou divergentes (NCM incompleto, CFOP ausente ou divergência no cálculo).
+              </span>
+            </div>
+            <span className="text-[11px] font-semibold bg-amber-200 dark:bg-amber-900/60 px-2.5 py-0.5 rounded-full text-amber-900 dark:text-amber-200 self-start sm:self-auto">
+              {itemsWithIssues.length} {itemsWithIssues.length === 1 ? 'pendência' : 'pendências'}
+            </span>
+          </div>
+        )}
 
         {/* Tabela de Produtos Editável */}
         <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-xs overflow-hidden">
@@ -318,10 +611,10 @@ export default function ConferenciaPage({ params }) {
           <div className="p-3 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between gap-3 bg-slate-50 dark:bg-slate-800/60">
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold text-slate-700 dark:text-slate-200">
-                Produtos da Nota ({filteredItems.length})
+                Produtos da Nota ({filteredAndSortedItems.length})
               </span>
               <span className="text-[11px] text-slate-400 hidden sm:inline">
-                • Edite as células diretamente na grade
+                • Edite as células diretamente na grade ou use Enter/Esc
               </span>
             </div>
 
@@ -342,27 +635,150 @@ export default function ConferenciaPage({ params }) {
             <table className="w-full text-xs text-left text-slate-600 dark:text-slate-300">
               <thead className="text-[11px] uppercase bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 border-b border-slate-200 dark:border-slate-600">
                 <tr>
-                  <th className="px-2 py-2 w-10 text-center">#</th>
-                  <th className="px-2 py-2 w-24">Código</th>
-                  <th className="px-3 py-2">Descrição da Mercadoria</th>
-                  <th className="px-2 py-2 w-24">NCM</th>
-                  <th className="px-2 py-2 w-16">CFOP</th>
-                  <th className="px-2 py-2 w-16 text-center">Unid.</th>
-                  <th className="px-2 py-2 w-24 text-right">Qtd</th>
-                  <th className="px-2 py-2 w-28 text-right">Unitário (R$)</th>
-                  <th className="px-2 py-2 w-28 text-right">Total (R$)</th>
+                  <th
+                    className="px-2 py-2 w-12 text-center cursor-pointer select-none hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+                    onClick={() => handleSort('item')}
+                    title="Ordenar por número do item"
+                  >
+                    <div className="flex items-center justify-center gap-1">
+                      <span>#</span>
+                      <FontAwesomeIcon
+                        icon={sortConfig.key === 'item' ? (sortConfig.direction === 'asc' ? faSortUp : faSortDown) : faSort}
+                        className={`w-2.5 h-2.5 ${sortConfig.key === 'item' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 opacity-60'}`}
+                      />
+                    </div>
+                  </th>
+
+                  <th
+                    className="px-2 py-2 w-24 cursor-pointer select-none hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+                    onClick={() => handleSort('codigo')}
+                    title="Ordenar por código"
+                  >
+                    <div className="flex items-center justify-start gap-1">
+                      <span>Código</span>
+                      <FontAwesomeIcon
+                        icon={sortConfig.key === 'codigo' ? (sortConfig.direction === 'asc' ? faSortUp : faSortDown) : faSort}
+                        className={`w-2.5 h-2.5 ${sortConfig.key === 'codigo' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 opacity-60'}`}
+                      />
+                    </div>
+                  </th>
+
+                  <th
+                    className="px-3 py-2 cursor-pointer select-none hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+                    onClick={() => handleSort('descricao')}
+                    title="Ordenar por descrição"
+                  >
+                    <div className="flex items-center justify-start gap-1">
+                      <span>Descrição da Mercadoria</span>
+                      <FontAwesomeIcon
+                        icon={sortConfig.key === 'descricao' ? (sortConfig.direction === 'asc' ? faSortUp : faSortDown) : faSort}
+                        className={`w-2.5 h-2.5 ${sortConfig.key === 'descricao' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 opacity-60'}`}
+                      />
+                    </div>
+                  </th>
+
+                  <th
+                    className="px-2 py-2 w-24 cursor-pointer select-none hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+                    onClick={() => handleSort('ncm')}
+                    title="Ordenar por NCM"
+                  >
+                    <div className="flex items-center justify-start gap-1">
+                      <span>NCM</span>
+                      <FontAwesomeIcon
+                        icon={sortConfig.key === 'ncm' ? (sortConfig.direction === 'asc' ? faSortUp : faSortDown) : faSort}
+                        className={`w-2.5 h-2.5 ${sortConfig.key === 'ncm' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 opacity-60'}`}
+                      />
+                    </div>
+                  </th>
+
+                  <th
+                    className="px-2 py-2 w-16 text-center cursor-pointer select-none hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+                    onClick={() => handleSort('cfop')}
+                    title="Ordenar por CFOP"
+                  >
+                    <div className="flex items-center justify-center gap-1">
+                      <span>CFOP</span>
+                      <FontAwesomeIcon
+                        icon={sortConfig.key === 'cfop' ? (sortConfig.direction === 'asc' ? faSortUp : faSortDown) : faSort}
+                        className={`w-2.5 h-2.5 ${sortConfig.key === 'cfop' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 opacity-60'}`}
+                      />
+                    </div>
+                  </th>
+
+                  <th
+                    className="px-2 py-2 w-16 text-center cursor-pointer select-none hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+                    onClick={() => handleSort('unidade')}
+                    title="Ordenar por unidade"
+                  >
+                    <div className="flex items-center justify-center gap-1">
+                      <span>Unid.</span>
+                      <FontAwesomeIcon
+                        icon={sortConfig.key === 'unidade' ? (sortConfig.direction === 'asc' ? faSortUp : faSortDown) : faSort}
+                        className={`w-2.5 h-2.5 ${sortConfig.key === 'unidade' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 opacity-60'}`}
+                      />
+                    </div>
+                  </th>
+
+                  <th
+                    className="px-2 py-2 w-24 text-right cursor-pointer select-none hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+                    onClick={() => handleSort('quantidade')}
+                    title="Ordenar por quantidade"
+                  >
+                    <div className="flex items-center justify-end gap-1">
+                      <span>Qtd</span>
+                      <FontAwesomeIcon
+                        icon={sortConfig.key === 'quantidade' ? (sortConfig.direction === 'asc' ? faSortUp : faSortDown) : faSort}
+                        className={`w-2.5 h-2.5 ${sortConfig.key === 'quantidade' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 opacity-60'}`}
+                      />
+                    </div>
+                  </th>
+
+                  <th
+                    className="px-2 py-2 w-28 text-right cursor-pointer select-none hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+                    onClick={() => handleSort('valorUnitario')}
+                    title="Ordenar por valor unitário"
+                  >
+                    <div className="flex items-center justify-end gap-1">
+                      <span>Unitário (R$)</span>
+                      <FontAwesomeIcon
+                        icon={sortConfig.key === 'valorUnitario' ? (sortConfig.direction === 'asc' ? faSortUp : faSortDown) : faSort}
+                        className={`w-2.5 h-2.5 ${sortConfig.key === 'valorUnitario' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 opacity-60'}`}
+                      />
+                    </div>
+                  </th>
+
+                  <th
+                    className="px-2 py-2 w-28 text-right cursor-pointer select-none hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+                    onClick={() => handleSort('valorTotal')}
+                    title="Ordenar por total do produto"
+                  >
+                    <div className="flex items-center justify-end gap-1">
+                      <span>Total (R$)</span>
+                      <FontAwesomeIcon
+                        icon={sortConfig.key === 'valorTotal' ? (sortConfig.direction === 'asc' ? faSortUp : faSortDown) : faSort}
+                        className={`w-2.5 h-2.5 ${sortConfig.key === 'valorTotal' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 opacity-60'}`}
+                      />
+                    </div>
+                  </th>
+
+                  <th className="px-2 py-2 w-20 text-center">
+                    Ações
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
-                {filteredItems.map((item, index) => {
+                {filteredAndSortedItems.map((item, index) => {
                   const isModified = item.modificado;
+                  const orig = item.valorOriginal;
+
                   return (
                     <tr
-                      key={item.id || index}
+                      key={item.id}
                       className={`hover:bg-blue-50/40 dark:hover:bg-slate-700/40 transition-colors ${
                         isModified ? 'bg-amber-50/30 dark:bg-amber-950/20' : ''
                       }`}
                     >
+                      {/* # */}
                       <td className="px-2 py-1.5 text-center font-mono text-slate-400">
                         {item.item || index + 1}
                       </td>
@@ -371,81 +787,199 @@ export default function ConferenciaPage({ params }) {
                       <td className="px-2 py-1.5">
                         <input
                           type="text"
+                          data-row-index={index}
+                          data-field="codigo"
                           value={item.codigo || ''}
-                          onChange={(e) => handleItemChange(index, 'codigo', e.target.value)}
-                          className="w-full px-1.5 py-1 text-xs rounded border border-transparent hover:border-slate-300 focus:border-blue-500 bg-transparent font-mono focus:bg-white dark:focus:bg-slate-900"
+                          onChange={(e) => handleItemChange(item.id, 'codigo', e.target.value)}
+                          onKeyDown={(e) => handleKeyDown(e, index, 'codigo', item.id)}
+                          className={`w-full px-1.5 py-1 text-xs rounded font-mono transition-colors ${
+                            orig && orig.codigo !== item.codigo
+                              ? 'border-amber-400 bg-amber-50/60 dark:bg-amber-950/40 text-amber-950 dark:text-amber-200 font-bold focus:border-amber-500'
+                              : 'border border-transparent hover:border-slate-300 focus:border-blue-500 bg-transparent focus:bg-white dark:focus:bg-slate-900'
+                          }`}
                         />
+                        {orig && orig.codigo !== item.codigo && (
+                          <span className="text-[10px] text-slate-400 dark:text-slate-500 line-through block truncate" title="Código original">
+                            Orig: {orig.codigo}
+                          </span>
+                        )}
                       </td>
 
                       {/* Descrição */}
                       <td className="px-3 py-1.5">
                         <input
                           type="text"
+                          data-row-index={index}
+                          data-field="descricao"
                           value={item.descricao || ''}
-                          onChange={(e) => handleItemChange(index, 'descricao', e.target.value)}
-                          className="w-full px-1.5 py-1 text-xs rounded border border-transparent hover:border-slate-300 focus:border-blue-500 bg-transparent font-medium text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900"
+                          onChange={(e) => handleItemChange(item.id, 'descricao', e.target.value)}
+                          onKeyDown={(e) => handleKeyDown(e, index, 'descricao', item.id)}
+                          className={`w-full px-1.5 py-1 text-xs rounded font-medium transition-colors ${
+                            orig && orig.descricao !== item.descricao
+                              ? 'border-amber-400 bg-amber-50/60 dark:bg-amber-950/40 text-amber-950 dark:text-amber-200 font-bold focus:border-amber-500'
+                              : 'border border-transparent hover:border-slate-300 focus:border-blue-500 bg-transparent text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900'
+                          }`}
                         />
+                        {orig && orig.descricao !== item.descricao && (
+                          <span className="text-[10px] text-slate-400 dark:text-slate-500 line-through block truncate" title="Descrição original">
+                            Orig: {orig.descricao}
+                          </span>
+                        )}
                       </td>
 
                       {/* NCM */}
                       <td className="px-2 py-1.5">
                         <input
                           type="text"
+                          data-row-index={index}
+                          data-field="ncm"
                           value={item.ncm || ''}
-                          onChange={(e) => handleItemChange(index, 'ncm', e.target.value)}
-                          className={`w-full px-1.5 py-1 text-xs rounded border font-mono ${
-                            !item.ncm || item.ncm.length < 8
+                          onChange={(e) => handleItemChange(item.id, 'ncm', e.target.value)}
+                          onKeyDown={(e) => handleKeyDown(e, index, 'ncm', item.id)}
+                          className={`w-full px-1.5 py-1 text-xs rounded font-mono transition-colors ${
+                            !item.ncm || String(item.ncm).replace(/\D/g, '').length !== 8
                               ? 'border-red-300 bg-red-50 text-red-900 dark:bg-red-950 dark:border-red-800 dark:text-red-200'
-                              : 'border-transparent hover:border-slate-300 focus:border-blue-500 bg-transparent focus:bg-white dark:focus:bg-slate-900'
+                              : orig && orig.ncm !== item.ncm
+                              ? 'border-amber-400 bg-amber-50/60 dark:bg-amber-950/40 text-amber-950 dark:text-amber-200 font-bold focus:border-amber-500'
+                              : 'border border-transparent hover:border-slate-300 focus:border-blue-500 bg-transparent focus:bg-white dark:focus:bg-slate-900'
                           }`}
                           placeholder="00000000"
                         />
+                        {orig && orig.ncm !== item.ncm && (
+                          <span className="text-[10px] text-slate-400 dark:text-slate-500 line-through block" title="NCM original">
+                            Orig: {orig.ncm}
+                          </span>
+                        )}
                       </td>
 
                       {/* CFOP */}
                       <td className="px-2 py-1.5">
                         <input
                           type="text"
+                          data-row-index={index}
+                          data-field="cfop"
                           value={item.cfop || ''}
-                          onChange={(e) => handleItemChange(index, 'cfop', e.target.value)}
-                          className="w-full px-1.5 py-1 text-xs rounded border border-transparent hover:border-slate-300 focus:border-blue-500 bg-transparent font-mono text-center focus:bg-white dark:focus:bg-slate-900"
+                          onChange={(e) => handleItemChange(item.id, 'cfop', e.target.value)}
+                          onKeyDown={(e) => handleKeyDown(e, index, 'cfop', item.id)}
+                          className={`w-full px-1.5 py-1 text-xs rounded font-mono text-center transition-colors ${
+                            !item.cfop || String(item.cfop).trim() === ''
+                              ? 'border-red-300 bg-red-50 text-red-900 dark:bg-red-950 dark:border-red-800 dark:text-red-200'
+                              : orig && orig.cfop !== item.cfop
+                              ? 'border-amber-400 bg-amber-50/60 dark:bg-amber-950/40 text-amber-950 dark:text-amber-200 font-bold focus:border-amber-500'
+                              : 'border border-transparent hover:border-slate-300 focus:border-blue-500 bg-transparent font-mono text-center focus:bg-white dark:focus:bg-slate-900'
+                          }`}
                           placeholder="7101"
                         />
+                        {orig && orig.cfop !== item.cfop && (
+                          <span className="text-[10px] text-slate-400 dark:text-slate-500 line-through block text-center" title="CFOP original">
+                            Orig: {orig.cfop}
+                          </span>
+                        )}
                       </td>
 
                       {/* Unidade */}
                       <td className="px-2 py-1.5 text-center">
                         <input
                           type="text"
+                          data-row-index={index}
+                          data-field="unidade"
                           value={item.unidade || ''}
-                          onChange={(e) => handleItemChange(index, 'unidade', e.target.value)}
-                          className="w-full px-1 py-1 text-xs rounded border border-transparent hover:border-slate-300 focus:border-blue-500 bg-transparent text-center uppercase focus:bg-white dark:focus:bg-slate-900"
+                          onChange={(e) => handleItemChange(item.id, 'unidade', e.target.value)}
+                          onKeyDown={(e) => handleKeyDown(e, index, 'unidade', item.id)}
+                          className={`w-full px-1 py-1 text-xs rounded uppercase text-center transition-colors ${
+                            orig && orig.unidade !== item.unidade
+                              ? 'border-amber-400 bg-amber-50/60 dark:bg-amber-950/40 text-amber-950 dark:text-amber-200 font-bold focus:border-amber-500'
+                              : 'border border-transparent hover:border-slate-300 focus:border-blue-500 bg-transparent text-center focus:bg-white dark:focus:bg-slate-900'
+                          }`}
                         />
+                        {orig && orig.unidade !== item.unidade && (
+                          <span className="text-[10px] text-slate-400 dark:text-slate-500 line-through block" title="Unidade original">
+                            Orig: {orig.unidade}
+                          </span>
+                        )}
                       </td>
 
                       {/* Quantidade */}
                       <td className="px-2 py-1.5 text-right">
                         <input
                           type="text"
-                          value={item.quantidade || ''}
-                          onChange={(e) => handleItemChange(index, 'quantidade', e.target.value)}
-                          className="w-full px-1.5 py-1 text-xs rounded border border-transparent hover:border-slate-300 focus:border-blue-500 bg-transparent font-mono text-right focus:bg-white dark:focus:bg-slate-900"
+                          data-row-index={index}
+                          data-field="quantidade"
+                          value={item.quantidade ?? ''}
+                          onChange={(e) => handleItemChange(item.id, 'quantidade', e.target.value)}
+                          onKeyDown={(e) => handleKeyDown(e, index, 'quantidade', item.id)}
+                          className={`w-full px-1.5 py-1 text-xs rounded font-mono text-right transition-colors ${
+                            isDecimalNegative(item.quantidade)
+                              ? 'border-red-500 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 ring-1 ring-red-500'
+                              : orig && orig.quantidade !== item.quantidade
+                              ? 'border-amber-400 bg-amber-50/60 dark:bg-amber-950/40 text-amber-950 dark:text-amber-200 font-bold focus:border-amber-500'
+                              : 'border border-transparent hover:border-slate-300 focus:border-blue-500 bg-transparent focus:bg-white dark:focus:bg-slate-900'
+                          }`}
+                          title={isDecimalNegative(item.quantidade) ? 'Quantidade não pode ser negativa' : undefined}
                         />
+                        {orig && orig.quantidade !== item.quantidade && (
+                          <span className="text-[10px] text-slate-400 dark:text-slate-500 line-through block text-right pr-1" title="Quantidade original">
+                            Orig: {orig.quantidade}
+                          </span>
+                        )}
                       </td>
 
                       {/* Valor Unitário */}
                       <td className="px-2 py-1.5 text-right">
                         <input
                           type="text"
-                          value={item.valorUnitario || ''}
-                          onChange={(e) => handleItemChange(index, 'valorUnitario', e.target.value)}
-                          className="w-full px-1.5 py-1 text-xs rounded border border-transparent hover:border-slate-300 focus:border-blue-500 bg-transparent font-mono text-right focus:bg-white dark:focus:bg-slate-900"
+                          data-row-index={index}
+                          data-field="valorUnitario"
+                          value={item.valorUnitario ?? ''}
+                          onChange={(e) => handleItemChange(item.id, 'valorUnitario', e.target.value)}
+                          onKeyDown={(e) => handleKeyDown(e, index, 'valorUnitario', item.id)}
+                          className={`w-full px-1.5 py-1 text-xs rounded font-mono text-right transition-colors ${
+                            isDecimalNegative(item.valorUnitario)
+                              ? 'border-red-500 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 ring-1 ring-red-500'
+                              : orig && orig.valorUnitario !== item.valorUnitario
+                              ? 'border-amber-400 bg-amber-50/60 dark:bg-amber-950/40 text-amber-950 dark:text-amber-200 font-bold focus:border-amber-500'
+                              : 'border border-transparent hover:border-slate-300 focus:border-blue-500 bg-transparent focus:bg-white dark:focus:bg-slate-900'
+                          }`}
+                          title={isDecimalNegative(item.valorUnitario) ? 'Valor unitário não pode ser negativo' : undefined}
                         />
+                        {orig && orig.valorUnitario !== item.valorUnitario && (
+                          <span className="text-[10px] text-slate-400 dark:text-slate-500 line-through block text-right pr-1" title="Valor unitário original">
+                            Orig: {orig.valorUnitario}
+                          </span>
+                        )}
                       </td>
 
                       {/* Total */}
-                      <td className="px-3 py-1.5 text-right font-mono font-bold text-slate-900 dark:text-slate-100">
-                        {formatBRL(item.valorTotal)}
+                      <td className="px-3 py-1.5 text-right font-mono">
+                        <span className="font-bold text-slate-900 dark:text-slate-100 block">
+                          {formatBRL(item.valorTotal)}
+                        </span>
+                        {orig && orig.valorTotal !== item.valorTotal && (
+                          <span className="text-[10px] text-slate-400 dark:text-slate-500 line-through block" title="Total original do produto">
+                            Orig: {formatBRL(orig.valorTotal)}
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Ações */}
+                      <td className="px-2 py-1.5 text-center">
+                        {isModified ? (
+                          <div className="flex items-center justify-center gap-1">
+                            <span className="text-[10px] bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 font-semibold px-1.5 py-0.5 rounded">
+                              Editado
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleRestoreItem(item.id)}
+                              className="p-1 text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                              title="Restaurar valor original deste item (Esc)"
+                            >
+                              <FontAwesomeIcon icon={faRotateLeft} className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-[10px] text-slate-400">Original</span>
+                        )}
                       </td>
                     </tr>
                   );
@@ -456,10 +990,27 @@ export default function ConferenciaPage({ params }) {
                   <td colSpan={6} className="px-4 py-2 text-slate-700 dark:text-slate-200">
                     Total dos Produtos ({items.length} itens)
                   </td>
-                  <td colSpan={3} className="px-4 py-2 text-right text-sm text-blue-600 dark:text-blue-400">
-                    {formatBRL(totalGeral)}
+                  <td colSpan={4} className="px-4 py-2 text-right text-sm text-blue-600 dark:text-blue-400 font-mono">
+                    {formatBRL(recalculatedTotals?.valorProdutos)}
                   </td>
                 </tr>
+                {(recalculatedTotals?.valorFrete !== '0.00' ||
+                  recalculatedTotals?.valorSeguro !== '0.00' ||
+                  recalculatedTotals?.outrasDespesas !== '0.00' ||
+                  recalculatedTotals?.valorDesconto !== '0.00') && (
+                  <tr className="text-[11px] text-slate-500 dark:text-slate-400 bg-slate-100/50 dark:bg-slate-800/40 font-normal">
+                    <td colSpan={6} className="px-4 py-1.5">
+                      Composição: Produtos ({formatBRL(recalculatedTotals?.valorProdutos)})
+                      {recalculatedTotals?.valorDesconto !== '0.00' && ` − Desconto (${formatBRL(recalculatedTotals?.valorDesconto)})`}
+                      {recalculatedTotals?.valorFrete !== '0.00' && ` + Frete (${formatBRL(recalculatedTotals?.valorFrete)})`}
+                      {recalculatedTotals?.valorSeguro !== '0.00' && ` + Seguro (${formatBRL(recalculatedTotals?.valorSeguro)})`}
+                      {recalculatedTotals?.outrasDespesas !== '0.00' && ` + Outras (${formatBRL(recalculatedTotals?.outrasDespesas)})`}
+                    </td>
+                    <td colSpan={4} className="px-4 py-1.5 text-right font-mono font-bold text-slate-800 dark:text-slate-200">
+                      Total NF-e: {formatBRL(recalculatedTotals?.valorTotalNota)}
+                    </td>
+                  </tr>
+                )}
               </tfoot>
             </table>
           </div>

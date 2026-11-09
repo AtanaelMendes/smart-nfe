@@ -11,17 +11,23 @@ import {
   faFilePdf,
   faCircleCheck,
   faTriangleExclamation,
+  faCircleExclamation,
   faPlay,
   faArrowRight,
   faCircleNotch,
   faFolderOpen,
-  faBoxesStacked,
-  faRotateRight,
+  faShieldHalved,
+  faTrashCan,
 } from '@fortawesome/free-solid-svg-icons';
 
 import AppLayout from '@/components/Layouts/AppLayout';
 import Button from '@/components/buttons/Button';
 import { useAppContext } from '@/context/AppContext';
+import { invoiceRepository } from '@/features/invoiceRepository';
+import { parseNFeXml } from '@/features/xml/nfeXmlParser';
+import { validateAccessKey } from '@/features/xml/accessKeyValidator';
+import { mapXmlToInvoice } from '@/features/xml/xmlToInvoiceMapper';
+import { formatBRL } from '@/lib/formatters/currency';
 
 const DEMO_SCENARIOS = [
   {
@@ -88,9 +94,9 @@ export default function ImportarDocumentoPage() {
 
   const [dragActive, setDragActive] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
-  const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [simulatedExtraction, setSimulatedExtraction] = useState(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [importSuccess, setImportSuccess] = useState(null);
+  const [importError, setImportError] = useState(null);
 
   const handleDrag = (e) => {
     e.preventDefault();
@@ -118,15 +124,20 @@ export default function ImportarDocumentoPage() {
     }
   };
 
-  const processFile = (file) => {
-    const isXML = file.name.toLowerCase().endsWith('.xml');
-    const isPDF = file.name.toLowerCase().endsWith('.pdf');
+  const processFile = async (file) => {
+    if (!file) return;
 
+    const fileNameLower = file.name.toLowerCase();
+    const isXML = fileNameLower.endsWith('.xml');
+    const isPDF = fileNameLower.endsWith('.pdf');
+
+    // 1. Validação de formato de arquivo
     if (!isXML && !isPDF) {
-      toast.error('Formato inválido. Por favor, envie arquivos .XML ou .PDF.');
+      toast.error('Formato inválido. Por favor, envie arquivos .XML (NF-e modelo 55) ou .PDF.');
       return;
     }
 
+    // 2. Limite de tamanho de arquivo (10 MB)
     if (file.size > 10 * 1024 * 1024) {
       toast.error('O arquivo excede o limite máximo permitido de 10 MB.');
       return;
@@ -139,29 +150,102 @@ export default function ImportarDocumentoPage() {
     };
 
     setSelectedFile(fileMeta);
-    setSimulatedExtraction(null);
-    setUploading(true);
-    setUploadProgress(0);
+    setImportSuccess(null);
+    setImportError(null);
+    setIsProcessing(true);
 
-    let current = 0;
-    const interval = setInterval(() => {
-      current += 20;
-      setUploadProgress(Math.min(current, 100));
-
-      if (current >= 100) {
-        clearInterval(interval);
-        setUploading(false);
-        setSimulatedExtraction({
-          numero: '000.145.892',
-          itensCount: isXML ? 8 : 25,
-          tipo: fileMeta.type,
-          valorEstimado: isXML ? 'R$ 291.200,00' : 'R$ 148.750,00',
+    try {
+      if (isPDF) {
+        // PDF: Fluxo assistido de orientação para o usuário
+        setImportError({
+          title: 'Arquivo PDF Identificado',
+          message:
+            'A importação automatizada com conferência estruturada e validação fiscal de lote opera com arquivos XML da NF-e (Modelo 55). Para testar a conferência de DANFE em PDF, utilize os cenários pré-carregados de demonstração abaixo.',
+          isWarning: true,
         });
-        toast.success(
-          `Arquivo ${file.name} processado com sucesso na demonstração! Extração simulada pronta para conferência.`
+        toast.info('Para importação real e extração de dados fiscais, envie o arquivo XML da NF-e.');
+        setIsProcessing(false);
+        return;
+      }
+
+      // XML: Leitura REAL via File API do navegador
+      const xmlString = await file.text();
+
+      if (!xmlString || !xmlString.trim()) {
+        throw new Error('O arquivo XML selecionado está vazio.');
+      }
+
+      // 3. Execução do DOMParser nativo
+      const parseResult = parseNFeXml(xmlString);
+      if (!parseResult.success) {
+        throw new Error(parseResult.error || 'Falha ao analisar a estrutura XML do documento.');
+      }
+
+      const extracted = parseResult.data;
+
+      // 4. Validação da Chave de Acesso (44 dígitos e Módulo 11)
+      if (!extracted.chaveAcesso) {
+        throw new Error('Chave de acesso não localizada no documento fiscal (tag infNFe/@Id ausente).');
+      }
+
+      const keyValidation = validateAccessKey(extracted.chaveAcesso);
+      if (!keyValidation.isValid) {
+        throw new Error(
+          `Inconsistência na Chave de Acesso: ${keyValidation.error || 'Dígito verificador ou formato incorreto.'}`
         );
       }
-    }, 180);
+
+      // 5. Mapeamento para o contrato do invoiceRepository
+      const invoiceData = mapXmlToInvoice(extracted);
+
+      // Assegura flags estritas de importação em sessão volátil
+      invoiceData.isRealImport = true;
+      invoiceData.isDemo = false;
+
+      // 6. Salvamento no repositório (exclusivamente em sessionInvoices Map)
+      const savedInvoice = await invoiceRepository.create(invoiceData);
+
+      // 7. Feedback de Sucesso Detalhado
+      setImportSuccess({
+        id: savedInvoice.id,
+        numero: savedInvoice.numero,
+        serie: savedInvoice.serie,
+        chaveAcesso: savedInvoice.chaveAcesso,
+        naturezaOperacao: savedInvoice.naturezaOperacao,
+        emitente: {
+          razaoSocial: savedInvoice.emitente?.razaoSocial || 'Não informado',
+          cnpj: savedInvoice.emitente?.cnpj || '',
+          uf: savedInvoice.emitente?.uf || '',
+          municipio: savedInvoice.emitente?.municipio || '',
+        },
+        destinatario: {
+          nome: savedInvoice.destinatario?.nome || 'Não informado',
+          cnpjOuId: savedInvoice.destinatario?.cnpj || savedInvoice.destinatario?.idEstrangeiro || '',
+          pais: savedInvoice.destinatario?.pais || 'Brasil',
+          uf: savedInvoice.destinatario?.uf || '',
+        },
+        itensCount: savedInvoice.itens?.length || 0,
+        valorTotal: savedInvoice.totais?.valorTotalNota || '0.00',
+        valorProdutos: savedInvoice.totais?.valorProdutos || '0.00',
+        valorFrete: savedInvoice.totais?.valorFrete || '0.00',
+        outrasDespesas: savedInvoice.totais?.outrasDespesas || '0.00',
+      });
+
+      toast.success(
+        `NF-e ${savedInvoice.numero} importada com sucesso! ${savedInvoice.itens?.length || 0} produtos prontos para conferência.`
+      );
+    } catch (err) {
+      console.error('Erro na importação de XML:', err);
+      const errMsg = err?.message || 'Ocorreu um erro desconhecido ao processar o arquivo XML.';
+      setImportError({
+        title: 'Falha na Validação do Arquivo XML',
+        message: errMsg,
+        isWarning: false,
+      });
+      toast.error(errMsg);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleOpenScenario = (scenarioId) => {
@@ -171,9 +255,9 @@ export default function ImportarDocumentoPage() {
 
   const handleClearFile = () => {
     setSelectedFile(null);
-    setSimulatedExtraction(null);
-    setUploadProgress(0);
-    setUploading(false);
+    setImportSuccess(null);
+    setImportError(null);
+    setIsProcessing(false);
   };
 
   return (
@@ -185,6 +269,21 @@ export default function ImportarDocumentoPage() {
       ]}
     >
       <div className="max-w-4xl mx-auto space-y-6">
+        {/* Banner de Segurança & Sessão Temporária */}
+        <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/80 rounded-lg p-4 flex items-start gap-3">
+          <div className="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/60 flex items-center justify-center shrink-0 text-amber-700 dark:text-amber-400 mt-0.5">
+            <FontAwesomeIcon icon={faShieldHalved} className="w-4 h-4" />
+          </div>
+          <div className="text-xs space-y-1">
+            <p className="font-bold text-amber-900 dark:text-amber-200">
+              Sessão Volátil em Memória &mdash; Isolamento de Dados Fiscais Reais
+            </p>
+            <p className="text-amber-800 dark:text-amber-300/90 leading-relaxed">
+              Por segurança e conformidade, os arquivos XML reais importados são processados 100% no seu navegador e mantidos exclusivamente na memória da sessão (<code className="font-mono text-[11px] bg-amber-100/70 dark:bg-amber-900/50 px-1 py-0.5 rounded">sessionInvoices</code>). <strong>Nenhum dado fiscal real é gravado em disco (localStorage) ou enviado a servidores externos</strong>. Os dados serão perdidos caso você feche ou recarregue a página.
+            </p>
+          </div>
+        </div>
+
         {/* Header */}
         <div className="bg-white dark:bg-slate-800 p-5 rounded-lg border border-slate-200 dark:border-slate-700 shadow-xs">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -194,7 +293,7 @@ export default function ImportarDocumentoPage() {
                 Importação de Documentos Fiscais
               </h1>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                Envie arquivos <strong>.XML</strong> de NF-e ou faturas/danfes em <strong>.PDF</strong> para simular a extração e conferência de exportação.
+                Envie arquivos <strong>.XML</strong> de NF-e modelo 55 para extração real e conferência imediata no navegador.
               </p>
             </div>
             <Link href="/documentos">
@@ -233,7 +332,7 @@ export default function ImportarDocumentoPage() {
 
             <div>
               <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-                Arraste e solte seus arquivos aqui, ou{' '}
+                Arraste e solte seu arquivo XML aqui, ou{' '}
                 <label
                   htmlFor="file-upload"
                   className="text-blue-600 dark:text-blue-400 hover:underline cursor-pointer font-bold"
@@ -242,7 +341,7 @@ export default function ImportarDocumentoPage() {
                 </label>
               </p>
               <p className="text-xs text-slate-500 mt-1">
-                Formatos aceitos: <strong>.XML</strong> (layout NF-e padrão SEFAZ) e <strong>.PDF</strong> (faturas/danfes até 10 MB)
+                Formatos aceitos: <strong>.XML</strong> (NF-e modelo 55 padrão SEFAZ até 10 MB)
               </p>
             </div>
           </div>
@@ -262,58 +361,129 @@ export default function ImportarDocumentoPage() {
                   </div>
                 </div>
 
-                {uploading ? (
+                {isProcessing ? (
                   <div className="flex items-center gap-2 text-xs text-blue-600 font-medium">
                     <FontAwesomeIcon icon={faCircleNotch} className="animate-spin w-4 h-4" />
-                    <span>Processando extração {uploadProgress}%</span>
+                    <span>Processando e validando NF-e...</span>
                   </div>
                 ) : (
                   <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-semibold bg-emerald-50 dark:bg-emerald-950/50 px-2 py-1 rounded border border-emerald-200 dark:border-emerald-800">
-                      <FontAwesomeIcon icon={faCircleCheck} className="w-3.5 h-3.5" />
-                      <span>Leitura Concluída</span>
-                    </div>
+                    {importSuccess && (
+                      <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-semibold bg-emerald-50 dark:bg-emerald-950/50 px-2 py-1 rounded border border-emerald-200 dark:border-emerald-800">
+                        <FontAwesomeIcon icon={faCircleCheck} className="w-3.5 h-3.5" />
+                        <span>Leitura e Validação Concluídas</span>
+                      </div>
+                    )}
                     <button
                       type="button"
                       onClick={handleClearFile}
-                      className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 ml-2 cursor-pointer underline"
+                      className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 ml-2 cursor-pointer underline flex items-center gap-1"
                     >
-                      Remover
+                      <FontAwesomeIcon icon={faTrashCan} className="w-3 h-3" />
+                      Remover / Novo Arquivo
                     </button>
                   </div>
                 )}
               </div>
 
-              {/* Barra de progresso visual */}
-              {uploading && (
-                <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
-                  <div
-                    className="bg-blue-600 h-1.5 rounded-full transition-all duration-200"
-                    style={{ width: `${uploadProgress}%` }}
-                  />
+              {/* Card de Erro Detalhado */}
+              {importError && !isProcessing && (
+                <div
+                  className={`mt-4 p-4 rounded-lg border text-left text-xs ${
+                    importError.isWarning
+                      ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-800/80 text-amber-900 dark:text-amber-200'
+                      : 'bg-rose-50 dark:bg-rose-950/40 border-rose-300 dark:border-rose-800/80 text-rose-900 dark:text-rose-200'
+                  }`}
+                >
+                  <div className="flex items-start gap-2.5">
+                    <FontAwesomeIcon
+                      icon={importError.isWarning ? faTriangleExclamation : faCircleExclamation}
+                      className={`w-4 h-4 shrink-0 mt-0.5 ${importError.isWarning ? 'text-amber-600' : 'text-rose-600'}`}
+                    />
+                    <div className="space-y-1">
+                      <p className="font-bold text-sm">{importError.title}</p>
+                      <p className="leading-relaxed whitespace-pre-wrap">{importError.message}</p>
+                    </div>
+                  </div>
                 </div>
               )}
 
-              {/* Resumo da extração simulada com CTAs */}
-              {simulatedExtraction && !uploading && (
-                <div className="pt-2 border-t border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div className="text-xs text-slate-600 dark:text-slate-300">
-                    <p className="font-semibold text-slate-800 dark:text-slate-100">
-                      Extração simulada: {simulatedExtraction.itensCount} produtos detectados ({simulatedExtraction.valorEstimado})
-                    </p>
-                    <p className="text-[11px] text-slate-500">
-                      Na demonstração, o arquivo foi associado aos dados estruturados do Cenário 1 para conferência imediata.
-                    </p>
+              {/* Card de Sucesso com Resumo da Nota e Ação Direta para Conferência */}
+              {importSuccess && !isProcessing && (
+                <div className="mt-4 p-5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/80 space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-emerald-200/80 dark:border-emerald-800/60 pb-3">
+                    <div className="flex items-center gap-2">
+                      <FontAwesomeIcon icon={faCircleCheck} className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                      <div>
+                        <h3 className="text-sm font-bold text-emerald-900 dark:text-emerald-100">
+                          NF-e {importSuccess.numero} importada com sucesso!
+                        </h3>
+                        <p className="text-xs text-emerald-700 dark:text-emerald-300">
+                          Série {importSuccess.serie} • Chave: <span className="font-mono">{importSuccess.chaveAcesso}</span>
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        buttonType="primary"
+                        size="small"
+                        onClick={() => router.push(`/documentos/${importSuccess.id}/conferencia`)}
+                      >
+                        <FontAwesomeIcon icon={faPlay} className="mr-1.5" />
+                        Abrir na Conferência
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex gap-2">
-                    <Button
-                      buttonType="primary"
-                      size="small"
-                      onClick={() => handleOpenScenario('demo-01')}
-                    >
-                      <FontAwesomeIcon icon={faPlay} className="mr-1.5" />
-                      Abrir na Conferência
-                    </Button>
+
+                  {/* Grid de Informações Extraídas */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                    <div className="bg-white dark:bg-slate-800/80 p-3 rounded border border-emerald-100 dark:border-emerald-900/40">
+                      <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block mb-1">
+                        Emitente
+                      </span>
+                      <p className="font-bold text-slate-900 dark:text-slate-100 truncate" title={importSuccess.emitente.razaoSocial}>
+                        {importSuccess.emitente.razaoSocial}
+                      </p>
+                      <p className="text-[11px] text-slate-500 mt-0.5">
+                        {importSuccess.emitente.cnpj || 'CNPJ não informado'}
+                      </p>
+                    </div>
+
+                    <div className="bg-white dark:bg-slate-800/80 p-3 rounded border border-emerald-100 dark:border-emerald-900/40">
+                      <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block mb-1">
+                        Destinatário
+                      </span>
+                      <p className="font-bold text-slate-900 dark:text-slate-100 truncate" title={importSuccess.destinatario.nome}>
+                        {importSuccess.destinatario.nome}
+                      </p>
+                      <p className="text-[11px] text-slate-500 mt-0.5">
+                        {importSuccess.destinatario.pais} ({importSuccess.destinatario.uf})
+                      </p>
+                    </div>
+
+                    <div className="bg-white dark:bg-slate-800/80 p-3 rounded border border-emerald-100 dark:border-emerald-900/40">
+                      <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block mb-1">
+                        Produtos / Linhas
+                      </span>
+                      <p className="text-base font-bold text-blue-600 dark:text-blue-400">
+                        {importSuccess.itensCount} {importSuccess.itensCount === 1 ? 'item' : 'itens'}
+                      </p>
+                      <p className="text-[11px] text-slate-500 mt-0.5 truncate" title={importSuccess.naturezaOperacao}>
+                        {importSuccess.naturezaOperacao || 'Operação normal'}
+                      </p>
+                    </div>
+
+                    <div className="bg-white dark:bg-slate-800/80 p-3 rounded border border-emerald-100 dark:border-emerald-900/40">
+                      <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block mb-1">
+                        Valor Total da NF-e
+                      </span>
+                      <p className="text-base font-bold text-emerald-600 dark:text-emerald-400">
+                        {formatBRL(importSuccess.valorTotal)}
+                      </p>
+                      <p className="text-[11px] text-slate-500 mt-0.5">
+                        Produtos: {formatBRL(importSuccess.valorProdutos)}
+                      </p>
+                    </div>
                   </div>
                 </div>
               )}
