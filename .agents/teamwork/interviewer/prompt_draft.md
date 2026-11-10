@@ -1,70 +1,60 @@
-Corrigir problemas funcionais do frontend SmartNFe e implementar a importação real de XML de NF-e modelo 55 diretamente no navegador, permitindo conferência de produtos, divisão de quantidades e validação fiscal com precisão decimal e segurança.
+This is a single self-contained fix; keep it small and focused. Implementar um sistema de tourtip / onboarding contextual que explica o objetivo de cada tela ao ser acessada no SmartNFe, permitindo guiar o usuário pelas regras e ações de cada etapa do fluxo fiscal, sem criar novos arquivos de teste e focando exclusivamente na feature e em zero erros de lint e build.
 
 Working directory: c:\www\smart-nfe
 Integrity mode: development
 
 ## Requirements
 
-### R1. Correção da Edição na Tabela de Conferência e Precisão dos Cálculos Decimais
-- Utilizar identificadores estáveis (`itemId`) para localizar e atualizar produtos na tabela de conferência (`app/documentos/[id]/conferencia/page.jsx`), alterando `handleItemChange`, usando atualização imutável de estado e garantindo que filtros (por NCM ou descrição) e ordenação não alterem a identidade dos produtos nem modifiquem o item errado. Atualizar o total do produto e preservar os dados originais para comparação.
-- Eliminar cálculos monetários e de quantidades com ponto flutuante binário (`parseFloat`, `.toFixed(2)`, `Math.floor()`, `Math.round()`). Utilizar strings decimais e centralizar as operações nos utilitários existentes (`app/lib/calculations/decimal.js`, `invoiceTotals.js`, `divisionMath.js`), preservando casas decimais de quantidade e valor unitário sem arredondamento prematuro. Validar quantidades negativas e entradas inválidas, diferenciar valor dos produtos do valor total da NF-e, conservando frete, seguro, descontos e outras despesas sem substituir o total original por soma simplificada.
+### R1. Dicionário Centralizado de Conteúdo dos Tourtips
+Implementar em `app/config/screenTours.js` a base centralizada de dados explicativos para as 8 rotas mapeadas do SmartNFe:
+1. `/dashboard`: Painel Geral — Visão geral dos documentos fiscais em andamento, métricas consolidadas e atalhos rápidos.
+2. `/documentos/importar`: Importação de XML — Leitura e validação client-side de NF-e modelo 55 (DOMParser, Módulo 11) com privacidade em memória de sessão temporária.
+3. `/documentos`: Lista de Documentos — Gerenciamento e filtro das notas fiscais originais, status de processamento e ações de conferência.
+4. `/documentos/[id]/conferencia`: Conferência de Produtos — Conferência item a item de mercadorias, edição estável por `itemId`, recálculo em precisão decimal, comparação com `valorOriginal` e atalhos de teclado.
+5. `/documentos/[id]/validacao`: Validação Fiscal — Diagnóstico de inconsistências cadastrais e tributárias de exportação, confirmação explícita de alterações, pilha de desfazer (*undo*) e bloqueio de lote em campos tributários sensíveis.
+6. `/documentos/[id]/divisao`: Divisão de Notas — Desmembramento de quantidades entre múltiplas notas de exportação, distribuição de saldos e rateio proporcional de frete/seguro/despesas.
+7. `/notas-preparadas`: Notas Preparadas — Consulta e conferência das notas finais geradas para exportação.
+8. `/configuracoes`: Configurações do Sistema — Personalização da experiência (modo escuro, densidade de tabela) e opção para reiniciar os guias explicativos de todas as telas.
 
-### R2. Segurança das Correções Sugeridas e Assistente de Validação
-- Impedir aplicação silenciosa de correções fiscais em `app/documentos/[id]/validacao/page.jsx`. Antes de qualquer alteração, exibir os valores atual e proposto, a origem da sugestão, exigir confirmação explícita, permitir cancelamento, preservar valores anteriores com capacidade de desfazer (undo) e reexecutar validações após a correção.
-- Para a opção "Corrigir todas", exibir revisão de todas as alterações, separar correções mecânicas de sugestões fiscais, permitir aprovação individual e desabilitar aplicação em massa de propostas que possam alterar tributação, CFOP, NCM ou outros campos sensíveis. Manter as explicações do assistente identificadas como demonstração.
+Cada entrada deve conter título, objetivo da tela, passos práticos recomendados, dicas fiscais/segurança e identificador de ícone.
 
-### R3. Importação Real de XML NF-e Modelo 55 no Navegador e Integração de Fluxo
-- Implementar importador funcional de XML NF-e modelo 55 executado exclusivamente no navegador (`app/documentos/importar/page.jsx` e `app/features/xml/`), utilizando File API, `File.text()`, `DOMParser` e seletores XML que respeitem namespaces da NF-e. Suportar layouts `nfeProc` e `NFe`, extraindo versão, chave de acesso, número, série, data de emissão, natureza da operação, emitente, destinatário, produtos (`cProd`, `xProd`, `NCM`, `CFOP`, `uCom`, `qCom`, `vUnCom`, `vProd`, `uTrib`, `qTrib`, `vUnTrib` e demais dados fiscais) e totais.
-- Validar formato e dígito verificador da chave de acesso, formato decimal de quantidades e valores, e tratar XML malformado sem quebrar a aplicação. Não carregar recursos externos do XML, não executar scripts do documento, não usar `dangerouslySetInnerHTML`, limitar tamanho de arquivos e não enviar documentos para serviços externos ou Vercel Functions.
-- Converter o XML importado para o mesmo contrato de dados usado por `app/features/invoiceRepository.js`, disponibilizando o documento para conferência, divisão e validação. Não salvar XML completo nem dados fiscais reais no `localStorage` persistente; manter dados reais apenas em memória de sessão temporária (avisando sobre perda ao fechar/atualizar a página) e não misturar documentos reais com mocks de fábrica.
+### R2. Componente de Tourtip Contextual (ScreenTourTip)
+Implementar o componente reutilizável em `app/components/feedback/ScreenTourTip.jsx` (ou similar em `app/components/`):
+- Exibição automática no primeiro acesso à tela correspondente, verificando e respeitando a flag `smartnfe_tour_seen_<routeKey>` no `localStorage`.
+- Fornecer ações interativas para o usuário: botão "Entendi / Não mostrar novamente", botão "Minimizar / Expandir" e suporte ao atalho de teclado `Escape` para fechar.
+- Garantir compatibilidade visual completa com Dark Mode e Tailwind CSS 4.
 
-### R4. Aprimoramentos de Interface na Conferência e na Divisão de Notas
-- Na tela de conferência, destacar a origem dos dados: adicionar indicador de documento XML, contagem real de produtos importados, totais originais vs recalculados, indicador de produtos alterados, comparação do valor original com editado, aviso de dados ausentes, ação para restaurar valor original, resumo de inconsistências e identificação visual do modo (demonstração vs importação local). Garantir navegação por teclado e foco estável durante a edição sem redesenhar a tela existente.
-- Na tela de divisão (`app/documentos/[id]/divisao/page.jsx`), utilizar o motor decimal para distribuir produtos por quantidades exatas, distribuir saldo restante para uma nota ou igualmente entre notas, impedir quantidade distribuída superior à original, permitir adicionar/remover notas e bloquear a finalização de divisões com inconsistências ou saldos pendentes.
+### R3. Ponto de Reabertura no Cabeçalho e Reinício nas Configurações
+- No cabeçalho global (`app/components/Layouts/SmartNFeHeader.jsx`), adicionar botão com ícone de ajuda/lâmpada que permite ao usuário reabrir o guia explicativo da tela ativa a qualquer momento, independentemente de já ter sido marcado como visto.
+- Na tela de configurações (`app/configuracoes/page.jsx`), adicionar botão/ação para "Reiniciar guias explicativos", limpando do `localStorage` as flags de tours visualizados para que os guias voltem a ser exibidos automaticamente no próximo acesso a cada tela.
 
-### R5. Reutilização de Componentes, Testes de Integração, Controle de Versão e Build
-- Não recriar o projeto do zero, não migrar para TypeScript (manter Next.js 16 App Router, React 19, JavaScript/JSX, Tailwind CSS 4) e não implementar backend. Reutilizar componentes existentes em `app/components/` preservando a compatibilidade com seus consumidores e evitando duplicação.
-- Trabalhar exclusivamente na branch `fix/frontend-xml-conferencia-v0.1.1` com commits coerentes, sem modificar a `master` diretamente e sem fazer merge na `master`.
-- Implementar testes de integração automatizados para: Fluxo A (Importação real de XML e conferência de totais), Fluxo B (Conferência com filtros, edição por `itemId`, recálculo e restauração), Fluxo C (Divisão entre notas com validação de saldos) e Fluxo D (Validação com revisão de sugestões fiscais e undo).
-- Garantir execução com 0 erros de `pnpm install`, `pnpm lint` e `pnpm build`, mantendo compatibilidade com Vercel.
+### R4. Escopo de Trabalho, Branch e Qualidade do Código
+- Manter todo o trabalho na branch `fix/frontend-xml-conferencia-v0.1.1`.
+- Não recriar testes existentes e não criar novos arquivos de teste automatizado, mantendo foco estrito na entrega da funcionalidade de tourtip.
+- Garantir que `pnpm lint` e `pnpm build` executem com 0 erros.
 
 ## Verification Resources
-- Testes automatizados executados via suite de testes frontend (`pnpm test` ou scripts equivalentes no repositório) utilizando fixtures sintéticas de XML NF-e modelo 55 (`nfeProc` e `NFe`), sem incluir documentos reais de clientes no repositório.
-- DANFEs em PDF de notas fiscais reais modelo 55 disponibilizados pelo usuário (ex: operação de remessa com fim específico de exportação CFOP 6501, NCM 84089090) para servirem como referência exata na modelagem das tags, tributos, produtos e totais das fixtures de XML sintético.
-- Validação estática e compilação via `pnpm lint` e `pnpm build`.
+- Validação estática: `pnpm lint`
+- Compilação e build de produção: `pnpm build`
 
 ## Acceptance Criteria
 
-### Tabela de Conferência e Edição Estável
-- [ ] A edição de produtos com tabela filtrada (por NCM ou por descrição) ou ordenada altera exclusivamente o item selecionado identificado por `itemId` e não modifica itens adjacentes ou incorretos.
-- [ ] A edição de itens com descrições ou códigos repetidos afeta apenas a linha editada.
-- [ ] Os dados originais do item permanecem acessíveis para comparação visual e restauração do valor original.
-- [ ] A tela de conferência exibe indicador de documento XML, contagem de produtos, comparação de totais originais vs recalculados e aviso de dados ausentes.
+### Dicionário de Rotas e Conteúdo
+- [ ] O arquivo `app/config/screenTours.js` exporta o conteúdo estruturado das 8 telas mapeadas contendo título, objetivo, passos práticos, dicas fiscais/segurança e ícone.
 
-### Cálculos Decimais e Precisão
-- [ ] Cálculos monetários e quantitativos utilizam strings decimais e o motor em `app/lib/calculations/` sem ocorrência de operações financeiras em ponto flutuante binário (`parseFloat`, `.toFixed(2)`, `Math.round`).
-- [ ] Quantidades com até 4 casas decimais e valores unitários com precisão estendida são manipulados e multiplicados sem perda de precisão ou arredondamento prematuro.
-- [ ] A conservação de saldos em divisões de notas reconcilia integralmente valores originais, incluindo componentes de frete, seguro e despesas acessórias quando presentes.
+### Comportamento e Interação do Tourtip
+- [ ] No primeiro acesso a qualquer uma das 8 rotas, o tourtip é renderizado automaticamente se a chave `smartnfe_tour_seen_<routeKey>` não existir no `localStorage`.
+- [ ] Acionar o botão "Entendi / Não mostrar novamente" salva a chave no `localStorage` e fecha o tourtip, impedindo que reabra automaticamente em acessos futuros.
+- [ ] O componente alterna corretamente entre o estado minimizado e expandido ao clicar no controle de minimização.
+- [ ] Pressionar a tecla `Escape` fecha o tourtip aberto.
+- [ ] O componente se adapta visualmente aos temas claro e escuro (Dark Mode).
 
-### Segurança e Revisão de Validações
-- [ ] Nenhuma correção fiscal é aplicada silenciosamente; cada alteração exibe valor atual, valor proposto e origem antes de ser confirmada.
-- [ ] A interface permite cancelar a correção e oferece mecanismo de desfazer (undo) que reverte a alteração e reexecuta as validações.
-- [ ] A funcionalidade "Corrigir todas" bloqueia aplicação em massa de campos fiscais sensíveis (tributação, CFOP, NCM) e exige revisão individual.
+### Integração Global (Header e Configurações)
+- [ ] O botão com ícone de ajuda/lâmpada em `SmartNFeHeader` reabre o tourtip da rota atual mesmo após ter sido marcado como visto.
+- [ ] A opção "Reiniciar guias explicativos" em `/configuracoes` remove as flags `smartnfe_tour_seen_*` do `localStorage`.
 
-### Importação de XML NF-e no Navegador
-- [ ] Arquivos XML de NF-e modelo 55 nos formatos `nfeProc` e `NFe` são analisados localmente no navegador via `DOMParser` e File API sem requisições HTTP externas nem dependência de backend.
-- [ ] Dados de cabeçalho, chave de acesso (com validação de formato e dígito verificador), emitente, destinatário, produtos e totais são extraídos e normalizados no contrato do `invoiceRepository`.
-- [ ] Documentos importados reais são mantidos em memória de sessão no navegador, sem salvar o XML completo ou dados reais em `localStorage` persistente.
-- [ ] Arquivos malformados ou inválidos são tratados de forma graciosa com mensagens informativas, sem travamentos de interface.
-
-### Divisão de Notas Fiscais
-- [ ] A tela de divisão impede a alocação de quantidades maiores do que as disponíveis no documento de origem.
-- [ ] As ações de distribuir saldo restante e dividir igualmente conservam os saldos com precisão decimal.
-- [ ] A finalização da divisão é impedida enquanto houver inconsistências ou saldos remanescentes não alocados.
-
-### Componentes, Testes e Build
-- [ ] Os componentes existentes em `app/components/` são reaproveitados sem duplicação de modais, inputs ou tabelas idênticas.
-- [ ] Os cenários mockados existentes (`demo-01` a `demo-05`) continuam operacionais.
-- [ ] Testes automatizados cobrindo os Fluxos A, B, C e D executam com sucesso.
-- [ ] O código reside na branch `fix/frontend-xml-conferencia-v0.1.1` sem alterações na branch `master`.
-- [ ] Os comandos `pnpm lint` e `pnpm build` executam sem nenhum erro.
+### Build e Qualidade
+- [ ] O trabalho é realizado na branch `fix/frontend-xml-conferencia-v0.1.1`.
+- [ ] Nenhum arquivo de teste desnecessário ou pré-existente foi recriado.
+- [ ] O comando `pnpm lint` executa sem nenhum erro ou warning impeditivo.
+- [ ] O comando `pnpm build` conclui a compilação de produção com 0 erros.

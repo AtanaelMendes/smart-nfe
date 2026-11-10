@@ -100,6 +100,25 @@ export function AppProvider({ children }) {
     info: (msg, duration) => addToast(msg, 'info', duration),
   }), [addToast]);
 
+  const [tourSignal, setTourSignal] = useState(0);
+  const [tourTargetKey, setTourTargetKey] = useState(null);
+
+  const openTour = useCallback((targetKey = null) => {
+    setTourTargetKey(targetKey);
+    setTourSignal(c => c + 1);
+    if (typeof window !== 'undefined') {
+      try {
+        window.dispatchEvent(
+          new CustomEvent('smartnfe:open-screen-tour', {
+            detail: { routeKey: targetKey },
+          })
+        );
+      } catch {
+        // ignore
+      }
+    }
+  }, []);
+
   const value = useMemo(() => ({
     loading,
     setLoading,
@@ -113,7 +132,10 @@ export function AppProvider({ children }) {
     updateSettings,
     DEFAULT_SETTINGS,
     mounted,
-  }), [loading, toasts, addToast, removeToast, toast, darkMode, toggleDarkMode, settings, updateSettings, mounted]);
+    tourSignal,
+    tourTargetKey,
+    openTour,
+  }), [loading, toasts, addToast, removeToast, toast, darkMode, toggleDarkMode, settings, updateSettings, mounted, tourSignal, tourTargetKey, openTour]);
 
   return (
     <AppContext.Provider value={value}>

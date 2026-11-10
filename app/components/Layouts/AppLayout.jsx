@@ -4,6 +4,7 @@ import SmartNFeSidebar from './SmartNFeSidebar';
 import SmartNFeHeader from './SmartNFeHeader';
 import ToastContainer from './ToastContainer';
 import DemoBadge from './DemoBadge';
+import ScreenTourTip from '../feedback/ScreenTourTip';
 
 export default function AppLayout({ children, breadcrumbs = [] }) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -19,6 +20,7 @@ export default function AppLayout({ children, breadcrumbs = [] }) {
         </main>
       </div>
 
+      <ScreenTourTip />
       <ToastContainer />
       <DemoBadge />
     </div>

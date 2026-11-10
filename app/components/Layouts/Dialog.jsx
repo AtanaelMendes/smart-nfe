@@ -55,6 +55,7 @@ export default function Dialog({
     if (!showDialog) return;
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
+        e.preventDefault();
         closeDialog();
       }
     };

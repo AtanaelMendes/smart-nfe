@@ -14,6 +14,7 @@ import {
   faClockRotateLeft,
   faCircleCheck,
   faTriangleExclamation,
+  faLightbulb,
 } from '@fortawesome/free-solid-svg-icons';
 
 import AppLayout from '@/components/Layouts/AppLayout';
@@ -23,6 +24,7 @@ import { useAppContext } from '@/context/AppContext';
 import { localStorageService } from '@/lib/storage/localStorageService';
 import { invoiceRepository } from '@/features/invoiceRepository';
 import { preparedInvoiceRepository } from '@/features/preparedInvoiceRepository';
+import { resetAllScreenTours } from '@/config/screenTours';
 
 export default function ConfiguracoesPage() {
   const { darkMode, toggleDarkMode, settings, updateSettings, toast, mounted } = useAppContext();
@@ -44,11 +46,19 @@ export default function ConfiguracoesPage() {
     toast.success('Preferências de interface salvas com sucesso!');
   };
 
+  const handleResetTours = () => {
+    resetAllScreenTours();
+    toast.success(
+      'Guias explicativos reiniciados com sucesso! Eles voltarão a ser exibidos no próximo acesso a cada tela.'
+    );
+  };
+
   const handleConfirmResetAll = async () => {
     try {
       setIsResetting(true);
       // 1. Limpa e restaura o storage versionado central
       localStorageService.resetAll();
+      resetAllScreenTours();
 
       // 2. Garante recarga dos repositórios de NF-e e notas preparadas
       await invoiceRepository.resetDemoData();
@@ -213,7 +223,38 @@ export default function ConfiguracoesPage() {
           </div>
         </div>
 
-        {/* Card 3: Restauração de Dados de Demonstração (resetAll) */}
+        {/* Card 3: Guias Explicativos e Onboarding */}
+        <div className="bg-white dark:bg-slate-800 p-5 rounded-lg border border-slate-200 dark:border-slate-700 shadow-xs space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400">
+                <FontAwesomeIcon icon={faLightbulb} className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                  Guias Explicativos e Onboarding
+                </h2>
+                <p className="text-xs text-slate-600 dark:text-slate-300">
+                  Reinicie as flags de visualização dos guias contextuais de todas as 8 telas para que sejam exibidos automaticamente no próximo acesso a cada etapa fiscal.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex-shrink-0">
+              <Button
+                buttonType="secondary"
+                size="small"
+                outline
+                onClick={handleResetTours}
+              >
+                <FontAwesomeIcon icon={faRotateRight} className="mr-1.5" />
+                Reiniciar guias explicativos
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Card 4: Restauração de Dados de Demonstração (resetAll) */}
         <div className="bg-white dark:bg-slate-800 p-5 rounded-lg border border-rose-200 dark:border-rose-900/60 shadow-xs space-y-3">
           <div className="flex items-start gap-3">
             <div className="p-2 rounded-lg bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400">
