@@ -1,42 +1,48 @@
-# BRIEFING — 2026-11-04T14:45:00Z
+# BRIEFING — 2026-11-09T19:42:00Z
 
 ## Mission
-Formulate the exact implementation and fix strategy for Milestone 1: Layout & Shell Components.
+Elaborar a estratégia de implementação e arquitetura exata para o módulo `app/features/xml/nfeXmlParser.js` cobrindo layouts nfeProc/NFe, v4.00/v3.10, busca imune a namespaces, resiliência a parsererror, suporte a browser + node --test, e mapeamento completo dos nós SEFAZ.
 
 ## 🔒 My Identity
 - Archetype: explorer
-- Roles: investigation, synthesis
+- Roles: Milestone 1 Explorer 1 (XML Parser Architecture & Schema Mapping)
 - Working directory: c:\www\smart-nfe\.agents\teamwork\teamwork_explorer_m1_1\
-- Original parent: 3aeeebdd-68a6-49e6-8f40-494114a9f1f7
-- Milestone: Milestone 1: Layout & Shell Components
+- Original parent: 71db8a14-4c80-4575-92ba-b52ae572b170
+- Milestone: Milestone 1 (M1 - XML Parser & Core Ingestion)
 
 ## 🔒 Key Constraints
 - Read-only investigation — do NOT implement
-- The project is already running at http://localhost:3000/dashboard. DO NOT run `pnpm build` or `pnpm dev`.
-- Recommend concrete changes with exact code snippets.
+- Strictly read-only on project source code (only write to our own folder)
+- Files for content delivery, Messages for coordination
+- Self-contained 5-component handoff.md report
 
 ## Current Parent
-- Conversation ID: 3aeeebdd-68a6-49e6-8f40-494114a9f1f7
-- Updated: 2026-11-04T14:45:00Z
+- Conversation ID: 71db8a14-4c80-4575-92ba-b52ae572b170
+- Updated: 2026-11-09T19:33:58Z
 
 ## Investigation State
-- **Explored paths**: `app/components/Layouts/DemoBadge.jsx`, `app/components/Layouts/SmartNFeSidebar.jsx`, `app/components/Layouts/SmartNFeHeader.jsx`, `app/components/Layouts/AppLayout.jsx`, `app/components/Layouts/ToastContainer.jsx`, `app/context/AppContext.jsx`, `app/layout.jsx`, `app/dashboard/page.jsx`, `app/components/Layouts/Dialog.jsx`, `app/components/inputs/InputFile.jsx`, `app/components/table/DataTable.jsx`.
+- **Explored paths**:
+  - `ORIGINAL_REQUEST.md`, `PROJECT.md`, `SCOPE.md`, `teamwork_spec_miner_survey_2/handoff.md`
+  - `app/features/invoiceRepository.js`, `app/lib/calculations/invoiceTotals.js`, `app/lib/data/mockInvoices.js`
+  - `tests/tier1/m1_foundation.test.mjs`, `tests/tier1/m2_domain.test.mjs`
+  - Node.js runtime DOMParser capabilities (undefined in Node 24 by default, zero external npm parser packages)
 - **Key findings**:
-  1. `DemoBadge.jsx` had `"DEMO"` instead of `"Modo Demonstração"` (acceptance criterion 60).
-  2. `SmartNFeSidebar.jsx` had `"Importar NF-e"` nested inside `Documentos` instead of root menu level (acceptance criterion 59).
-  3. Active route resolution needed nested document support without colliding with `/documentos/importar`.
-  4. `SmartNFeHeader.jsx` & `AppLayout.jsx` lacked dark mode classes (`dark:*`).
-  5. `ToastContainer.jsx` lacked `pointer-events-none` on outer wrapper.
-  6. `AppContext.jsx` lacked `useMemo` on `toast` and `value`, creating new references on every render.
-- **Unexplored areas**: None for M1 Layout & Shell.
+  - Dual environment challenge: browser has `window.DOMParser`, Node test runner (`node --test`) does not. Solution: built-in lightweight `NodeXmlDomParser` fallback in `nfeXmlParser.js` plus parser injection via options (`{ DOMParser }`), achieving 100% testability with zero npm dependencies.
+  - Namespace immunity: SEFAZ default `xmlns` and prefixes (like `<nfe:NFe>`) break naive selectors. Solution: helper suite combining `localName` stripping (`getElementLocalName`), `getElementsByTagNameNS('*', ...)`, and direct child navigation (`findDirectChildren`, `findDirectChild`) to prevent cross-level collision (e.g. `det/prod/vProd` vs `total/ICMSTot/vProd`).
+  - Layouts: `nfeProc` contains `protNFe` (`infProt`); standalone `NFe` does not contain `protNFe`. Parser extracts protocol if present and sets `protocolo: null` if absent without failing.
+  - Schema versions: v4.00 uses `dhEmi` (ISO 8601 with tz); v3.10 may use `dEmi` + `hEmi`. Parser supports fallback chain.
+  - Malformed XML: `DOMParser` inserts `<parsererror>`. Parser detects this at root or anywhere in tree and formats user-friendly Portuguese error message with line/column info.
+  - Validated via automated scratch script (`test_full_parser.mjs`) passing 5 test scenarios.
+- **Unexplored areas**: None for M1 XML parser architecture.
 
 ## Key Decisions Made
-- Provided complete code snippets for all 5 target files (`DemoBadge.jsx`, `SmartNFeSidebar.jsx`, `SmartNFeHeader.jsx`, `AppLayout.jsx`, `ToastContainer.jsx`, `AppContext.jsx`) in `strategy_layout.md`.
-- Formatted handoff in `handoff.md` strictly following the 5-component protocol.
+- Architecture of `nfeXmlParser.js` combines DOM traversal helpers, built-in Node fallback parser, explicit error detection, and complete field normalization.
+- No third-party npm packages needed; fully portable to browser ESM and Node.js.
 
 ## Artifact Index
-- `strategy_layout.md` — Detailed implementation and fix strategy with full code snippets
-- `handoff.md` — 5-component handoff report
-- `DISPATCH.md` — Dispatch message record
-- `progress.md` — Liveness heartbeat
-- `BRIEFING.md` — Persistent situational awareness
+- DISPATCH.md — Recorded dispatch instructions
+- progress.md — Liveness heartbeat and milestone tracking
+- BRIEFING.md — Situational awareness and working memory
+- test_mini_parser.mjs — Verification of mini DOM parser
+- test_full_parser.mjs — Comprehensive test suite for all 5 parser scenarios
+- handoff.md — 5-component handoff report with production-ready code for Worker

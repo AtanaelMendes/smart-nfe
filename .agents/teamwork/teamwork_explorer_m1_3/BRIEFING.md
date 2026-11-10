@@ -1,46 +1,50 @@
-# BRIEFING — 2026-11-04T14:51:10Z
+# BRIEFING — 2026-11-09T19:41:00Z
 
 ## Mission
-Formulate implementation strategy for Component Adaptations (DataTable, InputFile, Dialog), ESLint cleanup, and Verification test script for Milestone 1.
+Elaborar a estratégia de implementação e arquitetura exata para o isolamento em memória no repositório (`app/features/invoiceRepository.js`) e a tela de importação (`app/documentos/importar/page.jsx`).
 
 ## 🔒 My Identity
-- Archetype: teamwork_explorer
-- Roles: investigation, analysis, synthesis
-- Working directory: c:\www\smart-nfe\.agents\teamwork\teamwork_explorer_m1_3\
-- Original parent: 3aeeebdd-68a6-49e6-8f40-494114a9f1f7
-- Milestone: Milestone 1 Foundation
+- Archetype: explorer
+- Roles: Milestone 1 Explorer 3
+- Working directory: c:\www\smart-nfe\.agents\teamwork\teamwork_explorer_m1_3
+- Original parent: 71db8a14-4c80-4575-92ba-b52ae572b170
+- Milestone: Milestone 1 - XML Import & Repository Memory Isolation
 
 ## 🔒 Key Constraints
-- Read-only investigation — do NOT implement
-- Dev server is running at http://localhost:3000/dashboard. DO NOT run `pnpm build` or `pnpm dev`.
-- Output strategy_components_verification.md and handoff.md in working directory.
-- Send message to caller when done.
+- Read-only investigation — do NOT implement / modify source code directly
+- Strict isolation: real XML imports must NEVER be written to localStorage
+- Session invoices in-memory via `new Map()`
+- Maintain demo data functionality while seamlessly layering session invoices
+- Comprehensive handoff with ready-to-implement code snippets for the worker
 
 ## Current Parent
-- Conversation ID: 3aeeebdd-68a6-49e6-8f40-494114a9f1f7
-- Updated: 2026-11-04T14:51:10Z
+- Conversation ID: 71db8a14-4c80-4575-92ba-b52ae572b170
+- Updated: 2026-11-09T19:41:00Z
 
 ## Investigation State
 - **Explored paths**:
-  - `app/components/table/DataTable.jsx`: Diagnosed React anti-pattern (storing JSX in useState and updating in useEffect) and Tailwind 4 dynamic class issue. Formulated clean replacement with `useMemo`, `ALIGN_MAP`, explicit `columns` with `render`, and `dense` mode.
-  - `app/components/inputs/InputFile.jsx`: Audited XML/PDF handling, 10MB limit, clear button, and toast error. Verified 0 lint errors. Formulated minor hardening for uppercase extensions and dark mode.
-  - `app/components/Layouts/Dialog.jsx`: Diagnosed `react-hooks/set-state-in-effect` on `setDescription("")` inside `useEffect` and unused `useCallback`. Formulated fix resetting state in event handlers and adding Escape / backdrop click.
-  - `eslint.config.mjs`: Diagnosed invalid `nextTs` import in pure JS and missing `globalIgnores` for dead templates (`app/dev/`, `photo-modal.js`, `plugins/`). Also identified related `set-state-in-effect` in `AppContext.jsx` with lazy init solution.
-  - `tests/tier1/m1_foundation.test.mjs`: Designed full Node 24 native test suite covering sidebar, DemoBadge, formatters, mocks baseline, and live HTTP check.
-  - Live server at `http://localhost:3000/dashboard`: Verified status 200 via `fetch()`.
+  - `app/features/invoiceRepository.js`
+  - `app/documentos/importar/page.jsx`
+  - `app/documentos/page.jsx`
+  - `app/documentos/[id]/conferencia/page.jsx`
+  - `app/dashboard/page.jsx`
+  - `tests/tier1/m2_domain.test.mjs`
+  - `teamwork_spec_miner_survey_2/handoff.md`
 - **Key findings**:
-  - Full strategy formulated and written to `strategy_components_verification.md`.
-  - Handoff report completed and written to `handoff.md`.
-- **Unexplored areas**: None for M1 components, lint, and verification scope.
+  - `invoiceRepository.js`: Currently unconditionally saves every document to localStorage with `isDemo: true`.
+  - In-memory architecture: `const sessionInvoices = new Map()`, checking session first in `findById`, routing `create`, `update`, `updateItem` to memory when `isRealImport === true` or `isDemo === false`, and merging in `list` with real documents on top.
+  - Adding `delete(id)` and alias `resetAll = resetDemoData` solves missing methods currently called from `app/documentos/page.jsx`.
+  - `app/documentos/importar/page.jsx`: Currently uses dummy `setInterval` hardcoded to `demo-01`.
+  - Replacement: Real File API (`file.text()`), `parseNFeXml`, `validateAccessKey`, and `mapXmlToInvoice`. UI feedback: success card with details and direct CTA button to `/documentos/[id]/conferencia`, or error alert card. Added explicit banner regarding temporary in-memory session.
+- **Unexplored areas**: None. Ready for handoff compilation.
 
 ## Key Decisions Made
-- Formulated zero-dependency Node test runner architecture for Tier 1 test.
-- Replaced JSX state in `DataTable.jsx` with inline rendering & `useMemo`.
-- Eliminated `useEffect` with `setState` in `Dialog.jsx` and provided lazy init for `AppContext.jsx`.
-- Cleaned up `eslint.config.mjs` removing `nextTs` and adding `globalIgnores`.
+- `sessionInvoices = new Map()` exported as named export along with helper functions (`clearSession`, `getSessionCount`, `isSessionInvoice`).
+- In `create`, check `isRealImport === true || isDemo === false`.
+- In `list`, session invoices placed at the beginning of the merged list (`[...sessionInvoices.values(), ...persistedFiltered]`).
+- In `app/documentos/importar/page.jsx`, maintain the 5 demo scenario cards at the bottom for demo testing.
 
 ## Artifact Index
-- strategy_components_verification.md — Implementation strategy for components, lint, and verification test
-- handoff.md — 5-component handoff report
-- DISPATCH.md — Incoming message log
-- progress.md — Liveness heartbeat
+- DISPATCH.md — Recorded dispatch message
+- progress.md — Liveness heartbeat and step tracking
+- handoff.md — Final 5-component handoff report with complete code snippets for Worker

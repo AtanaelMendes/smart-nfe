@@ -1,14 +1,14 @@
-# BRIEFING — 2026-11-04T14:35:10Z
+# BRIEFING — 2026-11-09T19:22:00Z
 
 ## Mission
-Survey the existing codebase at c:\www\smart-nfe (routes, components, contexts, leftover RH vs SmartNFe, and R1 foundation items) in read-only mode.
+Survey codebase state, git branches, `app/documentos/[id]/conferencia/page.jsx`, and `app/components/` for R1 and R4 requirements.
 
 ## 🔒 My Identity
 - Archetype: teamwork_explorer
 - Roles: explorer, codebase survey
 - Working directory: c:\www\smart-nfe\.agents\teamwork\teamwork_explorer_survey_1
-- Original parent: 3aeeebdd-68a6-49e6-8f40-494114a9f1f7
-- Milestone: M0 Survey & Codebase Exploration
+- Original parent: 71db8a14-4c80-4575-92ba-b52ae572b170
+- Milestone: Survey & Analysis of Git, Conferencia & Components (R1 & R4)
 
 ## 🔒 Key Constraints
 - Read-only investigation — do NOT implement
@@ -17,37 +17,34 @@ Survey the existing codebase at c:\www\smart-nfe (routes, components, contexts, 
 - CRITICAL USER INSTRUCTION: External dev server running at http://localhost:3000/dashboard. DO NOT execute build commands (`pnpm build`, `npm run build`) and DO NOT launch dev servers (`pnpm dev`, `npm run dev`) to avoid port conflicts and environment hanging.
 
 ## Current Parent
-- Conversation ID: 3aeeebdd-68a6-49e6-8f40-494114a9f1f7
-- Updated: 2026-11-04T14:32:28Z
+- Conversation ID: 71db8a14-4c80-4575-92ba-b52ae572b170
+- Updated: 2026-11-09T19:22:00Z
 
 ## Investigation State
 - **Explored paths**:
-  - `package.json`, `next.config.js`, `.env.local`, `eslint.config.mjs`, `globals.css`
-  - `app/layout.jsx`, `app/page.jsx`, `app/dashboard/page.jsx`, `app/login/page.jsx`, `app/dev/page.jsx`
-  - `app/context/AppContext.jsx`
-  - `app/components/Layouts/*` (`Sidebar.jsx`, `SmartNFeSidebar.jsx`, `SmartNFeHeader.jsx`, `AppLayout.jsx`, `DemoBadge.jsx`, `ToastContainer.jsx`, `Loading.jsx`, `Dialog.jsx`, `Pagination.jsx`, `Skeleton.jsx`, `NoDataFound.jsx`, `PageTabs.jsx`, `Confirm.jsx`, `Accordion.jsx`, `Typography.jsx`, `TooltipComponent.jsx`)
-  - `app/components/buttons/*` (`Button.jsx`, `ButtonGroup.jsx`, `ButtonToggle.jsx`, `ButtonDropDown.jsx`, `PillsBadge.jsx`)
-  - `app/components/cards/*` (`Card.jsx`)
-  - `app/components/inputs/*` (`InputText.jsx`, `InputNumber.jsx`, `InputFile.jsx`, `Select.jsx`, `Checkbox.jsx`, `InputTextArea.jsx`, legacy Select2 and range sliders)
-  - `app/components/table/*` (`DataTable.jsx`)
-  - `app/assets/*` (`utils.js`, `dateUtils.js`, `permissoes.js`, `photo-modal.js`, `RefreshTokenCredentials.js`)
-  - `plugins/*` (`axios.js`, `moment.js`)
+  - Git repository branches and commit history (`git status`, `git branch -a`, `git log`)
+  - `app/documentos/[id]/conferencia/page.jsx` (entire file, 471 lines)
+  - `app/lib/calculations/decimal.js`, `invoiceTotals.js`, `divisionMath.js`
+  - `app/features/invoiceRepository.js`
+  - `app/lib/data/mockInvoices.js`
+  - `app/components/table/DataTable.jsx`, `buttons/Button.jsx`, `buttons/PillsBadge.jsx`, `Layouts/TooltipComponent.jsx`, `Layouts/Dialog.jsx`, `Layouts/Confirm.jsx`, `cards/Card.jsx`, `inputs/InputText.jsx`
+  - Test suites under `tests/` (`m1_foundation`, `m2_domain`, `m2_decimal_adversarial_stress`)
 - **Key findings**:
-  - `next.config.js` is already modified in working tree removing `basePath` and `output: 'export'`.
-  - Foundation components in working tree already have initial adaptations: `AppContext.jsx` has `toast` and `settings`; `InputFile.jsx` accepts XML/PDF with clear; `DataTable.jsx` accepts `columns`; `Loading.jsx` removed RH logo; `SmartNFeSidebar`, `SmartNFeHeader`, `ToastContainer`, `DemoBadge`, `AppLayout` created.
-  - `DemoBadge.jsx` text is "DEMO", whereas requirement says "Modo Demonstração".
-  - `app/dashboard/page.jsx` is still the legacy template with fake auth check redirecting to `/login`!
-  - No SmartNFe screens (Documentos, Importar, Conferencia, Divisao, Validacao, Notas Preparadas, Configuracoes) exist yet.
-  - No mocks (`app/lib/data`), formatters (`app/lib/formatters`), calculations (`app/lib/calculations`), storage (`app/lib/storage`), or features (`app/features/`) exist yet.
-  - `moment` is referenced in `plugins/moment.js`, `utils.js`, and legacy components, but is NOT installed in `package.json`.
-  - ESLint reports 228 problems (58 errors) due to legacy files and React 19 rules.
-- **Unexplored areas**: None for M0 scope.
+  - Git: Repository is already on branch `fix/frontend-xml-conferencia-v0.1.1` at commit `6474482`. Working tree is clean of source changes.
+  - Conferencia Bug 1: `handleItemChange` receives visual index from `filteredItems.map` instead of `itemId`, modifying the wrong product when filtered by NCM or description.
+  - Conferencia Bug 2: Line total and invoice totals use `parseFloat`, `*`, `reduce` and `.toFixed(2)`, causing IEEE 754 precision issues.
+  - Conferencia Bug 3: `handleSave` overwrites `valorTotalNota` with sum of products, wiping out freight, insurance, discounts and other expenses.
+  - Conferencia Bug 4: No snapshot of `valorOriginal` is retained in the page; no visual diff and no restore action exists.
+  - Conferencia Ergonomics: Inputs lack `onKeyDown` (Enter/Escape) and keyboard focus navigation across rows.
+  - Components: Reusable components in `app/components/` (`Button`, `PillsBadge`, `TooltipComponent`, `Dialog`, `Confirm`, `Card`) provide everything needed for R4 visual indicators without refactoring the whole table.
+- **Unexplored areas**: None for survey scope.
 
 ## Key Decisions Made
-- Fully documented all existing vs legacy components, APIs, props, integration points, and remaining requirements.
+- Outlined complete Proposed Fix Strategy for R1 and R4 for the Teamwork Implementer.
+- Documented verification method and commands in `handoff.md`.
 
 ## Artifact Index
-- `c:\www\smart-nfe\.agents\teamwork\teamwork_explorer_survey_1\survey_codebase.md` — Full detailed codebase survey report
-- `c:\www\smart-nfe\.agents\teamwork\teamwork_explorer_survey_1\handoff.md` — 5-component handoff report
-- `c:\www\smart-nfe\.agents\teamwork\teamwork_explorer_survey_1\progress.md` — Liveness heartbeat
-- `c:\www\smart-nfe\.agents\teamwork\teamwork_explorer_survey_1\DISPATCH.md` — Record of dispatches and messages
+- `c:\www\smart-nfe\.agents\teamwork\teamwork_explorer_survey_1\handoff.md` — Comprehensive 5-component report on Git, Conferencia (R1), and Components (R4).
+- `c:\www\smart-nfe\.agents\teamwork\teamwork_explorer_survey_1\progress.md` — Liveness heartbeat.
+- `c:\www\smart-nfe\.agents\teamwork\teamwork_explorer_survey_1\DISPATCH.md` — Dispatch logs.
+- `c:\www\smart-nfe\.agents\teamwork\teamwork_explorer_survey_1\BRIEFING.md` — Persistent agent memory.

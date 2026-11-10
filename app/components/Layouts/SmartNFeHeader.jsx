@@ -5,7 +5,8 @@ import { faSun, faMoon, faChevronRight, faBars } from '@fortawesome/free-solid-s
 import { useAppContext } from '@/context/AppContext';
 
 export default function SmartNFeHeader({ breadcrumbs = [], onMenuToggle }) {
-  const { darkMode, toggleDarkMode } = useAppContext();
+  const { darkMode, toggleDarkMode, mounted } = useAppContext();
+  const isDark = mounted ? darkMode : false;
 
   return (
     <header className="h-12 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 flex items-center px-4 gap-3 flex-shrink-0 transition-colors">
@@ -50,11 +51,12 @@ export default function SmartNFeHeader({ breadcrumbs = [], onMenuToggle }) {
         {/* Dark mode toggle */}
         <button
           onClick={toggleDarkMode}
-          title={darkMode ? 'Modo claro' : 'Modo escuro'}
-          aria-label={darkMode ? 'Alternar para modo claro' : 'Alternar para modo escuro'}
+          title={isDark ? 'Modo claro' : 'Modo escuro'}
+          aria-label={isDark ? 'Alternar para modo claro' : 'Alternar para modo escuro'}
+          suppressHydrationWarning
           className="p-1.5 rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800 transition-colors"
         >
-          <FontAwesomeIcon icon={darkMode ? faSun : faMoon} className="w-4 h-4" />
+          <FontAwesomeIcon icon={isDark ? faSun : faMoon} className="w-4 h-4" />
         </button>
       </div>
     </header>

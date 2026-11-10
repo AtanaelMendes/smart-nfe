@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useState, useCallback, useContext, useEffect, useMemo } from 'react';
+import { createContext, useState, useCallback, useContext, useEffect, useMemo, useSyncExternalStore } from 'react';
 
 export const DEFAULT_SETTINGS = {
   tableDensity: 'compact',      // 'compact' | 'normal' | 'relaxed'
@@ -10,38 +10,59 @@ export const DEFAULT_SETTINGS = {
   autoSave: true,
 };
 
+const emptySubscribe = () => () => {};
+
 export const AppContext = createContext();
 
 export function AppProvider({ children }) {
   const [loading, setLoading] = useState(false);
   const [toasts, setToasts] = useState([]);
+  
+  // useSyncExternalStore oficial do React para hidratação segura sem cascading renders
+  const mounted = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false
+  );
 
-  // Inicialização lazy para evitar setState síncrono em useEffect
-  const [darkMode, setDarkMode] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    try {
-      return localStorage.getItem('smartnfe_darkMode') === 'true';
-    } catch {
-      return false;
-    }
-  });
+  const [darkMode, setDarkMode] = useState(false);
+  const [settings, setSettings] = useState(DEFAULT_SETTINGS);
 
-  const [settings, setSettings] = useState(() => {
-    if (typeof window === 'undefined') return DEFAULT_SETTINGS;
+  // Carrega preferências do usuário após a montagem inicial segura
+  useEffect(() => {
+    let isDark = false;
     try {
-      const saved = localStorage.getItem('smartnfe_settings');
-      return saved ? { ...DEFAULT_SETTINGS, ...JSON.parse(saved) } : DEFAULT_SETTINGS;
-    } catch {
-      return DEFAULT_SETTINGS;
-    }
-  });
+      isDark = localStorage.getItem('smartnfe_darkMode') === 'true';
+    } catch (e) {}
+
+    let loadedSettings = null;
+    try {
+      const savedSettings = localStorage.getItem('smartnfe_settings');
+      if (savedSettings) {
+        loadedSettings = { ...DEFAULT_SETTINGS, ...JSON.parse(savedSettings) };
+      }
+    } catch (e) {}
+
+    const timer = setTimeout(() => {
+      if (isDark) {
+        setDarkMode(true);
+        document.documentElement.classList.toggle('dark', true);
+      }
+      if (loadedSettings) {
+        setSettings(loadedSettings);
+      }
+    }, 0);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
+    if (!mounted) return;
     try {
       localStorage.setItem('smartnfe_darkMode', darkMode.toString());
       document.documentElement.classList.toggle('dark', darkMode);
     } catch (e) {}
-  }, [darkMode]);
+  }, [darkMode, mounted]);
 
   const toggleDarkMode = useCallback(() => {
     setDarkMode(prev => !prev);
@@ -91,7 +112,8 @@ export function AppProvider({ children }) {
     settings,
     updateSettings,
     DEFAULT_SETTINGS,
-  }), [loading, toasts, addToast, removeToast, toast, darkMode, toggleDarkMode, settings, updateSettings]);
+    mounted,
+  }), [loading, toasts, addToast, removeToast, toast, darkMode, toggleDarkMode, settings, updateSettings, mounted]);
 
   return (
     <AppContext.Provider value={value}>

@@ -531,3 +531,90 @@ Regras rígidas para eliminar erros de ponto flutuante binário do IEEE 754:
 - [ ] A tela de validação fiscal expõe as inconsistências deliberadas do cenário `demo-04`.
 - [ ] A tela de notas preparadas lista adequadamente os desmembramentos realizados.
 - [ ] A tela de configurações permite alternar densidade e restaurar todos os cenários.
+
+---
+
+## 8. R3: Especificação da Importação Real de XML NF-e Modelo 55 no Navegador e Contrato de Dados (Atualização 09/11/2026)
+
+### 8.1 Visão Geral e Arquitetura do Módulo `app/features/xml/`
+A funcionalidade de importação de arquivos XML de NF-e modelo 55 é executada integralmente no cliente (navegador web), utilizando:
+- **File API** (`file.text()`) para leitura local assíncrona;
+- **DOMParser** (`new DOMParser().parseFromString(xmlString, 'application/xml')`) para análise estrutural de documentos XML sem dependências externas;
+- **Navegação Resiliente a Namespaces:** Uso de `getElementsByTagNameNS('*', localName)` ou busca iterativa por `localName`, tornando a leitura imune a declarações de namespace padrão (`xmlns="http://www.portalfiscal.inf.br/nfe"`), namespaces com prefixos (`<nfe:NFe>`) ou documentos de teste sem namespace;
+- **Validação Estrutural e Algorítmica da Chave de Acesso:** Verificação de 44 dígitos e cálculo do dígito verificador através do Módulo 11 com pesos de 2 a 9;
+- **Isolamento de Memória de Sessão:** Armazenamento dos documentos fiscais reais importados exclusivamente em memória volátil de sessão (`sessionInvoices = new Map()`), proibindo persistência no `localStorage` persistente e evitando contaminação dos mocks de fábrica.
+
+### 8.2 Matriz de Especificação de Tags SEFAZ (Layout 4.00 e 3.10)
+| Caminho XML SEFAZ | Tag | Obrigatoriedade | Tipo SEFAZ | Formato SEFAZ | Campo no SmartNFe (`invoiceRepository`) | Regra de Conversão / Normalização |
+|-------------------|-----|-----------------|------------|---------------|-----------------------------------------|-----------------------------------|
+| `nfeProc/NFe/infNFe/@Id` | `Id` | Obrigatório | String | `NFe` + 44 dígitos | `chaveAcesso`, `id` | Remove prefixo `NFe`. `id = 'nfe-' + chaveAcesso` |
+| `nfeProc/NFe/infNFe/@versao` | `versao` | Obrigatório | String | 4.00 ou 3.10 | `versaoLayout` | String |
+| `infNFe/ide/cUF` | `cUF` | Obrigatório | Inteiro | 2 dígitos (IBGE) | `codigoUfEmitente` | String/Number |
+| `infNFe/ide/cNF` | `cNF` | Obrigatório | Inteiro | 8 dígitos | `codigoAleatorio` | String |
+| `infNFe/ide/natOp` | `natOp` | Obrigatório | String | 1 a 60 caracteres | `naturezaOperacao` | Trim |
+| `infNFe/ide/mod` | `mod` | Obrigatório | String | 2 dígitos (`55`) | `modeloDocumento` | Deve ser estritamente `55` |
+| `infNFe/ide/serie` | `serie` | Obrigatório | Inteiro | 1 a 3 dígitos | `serie` | String limpa (ex: `1`) |
+| `infNFe/ide/nNF` | `nNF` | Obrigatório | Inteiro | 1 a 9 dígitos | `numero` | Formatar máscara `000.145.892` |
+| `infNFe/ide/dhEmi` | `dhEmi` | Obrigatório (v4.0) | Data/Hora ISO | `AAAA-MM-DDThh:mm:ssTZD` | `dataEmissao`, `emissao` | `dataEmissao = dhEmi`; `emissao = dhEmi.slice(0, 10)` |
+| `infNFe/ide/dEmi` | `dEmi` | Opcional (v3.1) | Data ISO | `AAAA-MM-DD` | `emissao`, `dataEmissao` | Fallback quando `dhEmi` ausente |
+| `infNFe/ide/tpNF` | `tpNF` | Obrigatório | Inteiro | 0=Entrada, 1=Saída | `tipoOperacao` | Number |
+| `infNFe/ide/idDest` | `idDest` | Obrigatório | Inteiro | 1=Interna, 2=Inter, 3=Ext | `destinoOperacao` | 3 indica exportação |
+| `infNFe/emit/CNPJ` | `CNPJ` | Condicional | String | 14 dígitos | `emitente.cnpj` | Formatar com máscara CNPJ |
+| `infNFe/emit/CPF` | `CPF` | Condicional | String | 11 dígitos | `emitente.cnpj` | Formatar com máscara CPF |
+| `infNFe/emit/xNome` | `xNome` | Obrigatório | String | 1 a 60 caracteres | `emitente.razaoSocial` | Trim |
+| `infNFe/emit/xFant` | `xFant` | Opcional | String | 1 a 60 caracteres | `emitente.nomeFantasia` | Trim |
+| `infNFe/emit/enderEmit/xMun` | `xMun` | Obrigatório | String | 2 a 60 caracteres | `emitente.municipio` | Trim |
+| `infNFe/emit/enderEmit/UF` | `UF` | Obrigatório | String | 2 caracteres | `emitente.uf` | Maiúsculas |
+| `infNFe/emit/IE` | `IE` | Obrigatório | String | 2 a 14 dígitos | `emitente.inscricaoEstadual` | String |
+| `infNFe/dest/CNPJ` | `CNPJ` | Condicional | String | 14 dígitos | `destinatario.cnpj` | Formatar se nacional |
+| `infNFe/dest/idEstrangeiro` | `idEstrangeiro` | Condicional | String | 5 a 20 caracteres | `destinatario.idEstrangeiro` | String se exterior |
+| `infNFe/dest/xNome` | `xNome` | Obrigatório | String | 1 a 60 caracteres | `destinatario.nome` | Trim |
+| `infNFe/dest/enderDest/xPais`| `xPais` | Opcional | String | 1 a 60 caracteres | `destinatario.pais` | Default: `'Brasil'` se vazio |
+| `infNFe/dest/enderDest/cPais`| `cPais` | Opcional | Inteiro | 2 a 4 dígitos | `destinatario.paisCodigo` | 'BR' se 1058 ou vazio |
+| `infNFe/dest/enderDest/UF` | `UF` | Obrigatório | String | 2 caracteres | `destinatario.uf` | 'EX' quando no exterior |
+| `infNFe/det/@nItem` | `nItem` | Obrigatório | Inteiro | 1 a 990 | `item.item` e compõe `item.id` | Inteiro 1-based |
+| `infNFe/det/prod/cProd` | `cProd` | Obrigatório | String | 1 a 60 caracteres | `item.codigo` | Trim |
+| `infNFe/det/prod/cEAN` | `cEAN` | Opcional | String | 0, 8, 12-14 caracteres | `item.cEAN` | String |
+| `infNFe/det/prod/xProd` | `xProd` | Obrigatório | String | 1 a 120 caracteres | `item.descricao` | Trim |
+| `infNFe/det/prod/NCM` | `NCM` | Obrigatório | String | 8 dígitos numéricos | `item.ncm` | 8 dígitos |
+| `infNFe/det/prod/CFOP` | `CFOP` | Obrigatório | String | 4 dígitos numéricos | `item.cfop` | 4 dígitos |
+| `infNFe/det/prod/uCom` | `uCom` | Obrigatório | String | 1 a 6 caracteres | `item.unidade` | Trim e maiúsculas |
+| `infNFe/det/prod/qCom` | `qCom` | Obrigatório | Decimal (11,4) | Até 4 decimais | `item.quantidade` | String decimal com 4 casas |
+| `infNFe/det/prod/vUnCom` | `vUnCom` | Obrigatório | Decimal (11,10)| Até 10 decimais | `item.valorUnitario` | String decimal com 4 casas |
+| `infNFe/det/prod/vProd` | `vProd` | Obrigatório | Decimal (13,2) | 2 decimais | `item.valorTotal` | String decimal com 2 casas |
+| `infNFe/det/prod/vFrete` | `vFrete` | Opcional | Decimal (13,2) | 2 decimais | `item.valorFrete` | String decimal (`0.00`) |
+| `infNFe/det/prod/vSeg` | `vSeg` | Opcional | Decimal (13,2) | 2 decimais | `item.valorSeguro` | String decimal (`0.00`) |
+| `infNFe/det/prod/vDesc` | `vDesc` | Opcional | Decimal (13,2) | 2 decimais | `item.valorDesconto` | String decimal (`0.00`) |
+| `infNFe/det/prod/vOutro` | `vOutro` | Opcional | Decimal (13,2) | 2 decimais | `item.outrasDespesas`| String decimal (`0.00`) |
+| `infNFe/total/ICMSTot/vProd`| `vProd` | Obrigatório | Decimal (13,2) | 2 decimais | `totais.valorProdutos` | String decimal com 2 casas |
+| `infNFe/total/ICMSTot/vFrete`| `vFrete`| Obrigatório | Decimal (13,2) | 2 decimais | `totais.valorFrete` | String decimal com 2 casas |
+| `infNFe/total/ICMSTot/vSeg` | `vSeg` | Obrigatório | Decimal (13,2) | 2 decimais | `totais.valorSeguro` | String decimal com 2 casas |
+| `infNFe/total/ICMSTot/vDesc`| `vDesc` | Obrigatório | Decimal (13,2) | 2 decimais | `totais.valorDesconto` | String decimal com 2 casas |
+| `infNFe/total/ICMSTot/vOutro`| `vOutro`| Obrigatório | Decimal (13,2) | 2 decimais | `totais.outrasDespesas`| String decimal com 2 casas |
+| `infNFe/total/ICMSTot/vNF` | `vNF` | Obrigatório | Decimal (13,2) | 2 decimais | `totais.valorTotalNota` | String decimal com 2 casas |
+| `infNFe/transp/vol/pesoL` | `pesoL` | Opcional | Decimal (12,3) | 3 decimais | `totais.pesoLiquido` | String decimal com 3 casas |
+| `infNFe/transp/vol/pesoB` | `pesoB` | Opcional | Decimal (12,3) | 3 decimais | `totais.pesoBruto` | String decimal com 3 casas |
+| `protNFe/infProt/nProt` | `nProt` | Condicional | String | 15 dígitos | `protocolo.numero` | String (se `protNFe` presente) |
+| `protNFe/infProt/dhRecbto` | `dhRecbto` | Condicional | Data/Hora ISO | `AAAA-MM-DDThh:mm:ssTZD` | `protocolo.dataAutorizacao` | String (se `protNFe` presente) |
+| `protNFe/infProt/cStat` | `cStat` | Condicional | Inteiro | 3 dígitos | `protocolo.status` | 100 = Autorizado |
+| `protNFe/infProt/xMotivo` | `xMotivo` | Condicional | String | 1 a 255 caracteres | `protocolo.motivo` | String SEFAZ |
+
+### 8.3 Algoritmo da Chave de Acesso (Módulo 11)
+A chave de acesso da NF-e possui 44 dígitos numéricos. Os primeiros 43 dígitos são submetidos à multiplicação pelos pesos `[2, 3, 4, 5, 6, 7, 8, 9]` da direita para a esquerda:
+- $\text{Soma} = \sum_{i=1}^{43} (\text{dígito}_i \times \text{peso}_i)$
+- $\text{Resto} = \text{Soma} \pmod{11}$
+- Se $\text{Resto} \in \{0, 1\} \implies \text{DV} = 0$; caso contrário, $\text{DV} = 11 - \text{Resto}$.
+- O resultado deve coincidir exatamente com o 44º dígito da chave.
+
+### 8.4 Geração de `itemId` Estável
+Para evitar o bug de edição em tabelas filtradas ou ordenadas (R1), cada produto extraído do XML recebe um identificador determinístico e imutável:
+$$\text{itemId} = \text{nfe-}\{\text{chaveAcesso}\}\text{-item-}\{\text{nItem}\}$$
+A localização e atualização do item no repositório e no estado React deve ser feita sempre via `item.id === itemId`, nunca por índice de array.
+
+### 8.5 Isolamento de Sessão e Não-Persistência em LocalStorage
+- Documentos importados via XML real são identificados por `isDemo: false` e `isRealImport: true`.
+- São mantidos exclusivamente na memória volátil de sessão (`sessionInvoices = new Map()`) dentro de `invoiceRepository.js`.
+- O método `create()` grava em memória volátil e **não chama `localStorageService.save()`**.
+- O método `list()` combina os documentos da sessão com os mocks persistidos.
+- A interface exibe aviso de que os dados serão descartados ao recarregar a página.
+- O comando `resetDemoData()` não afeta a sessão de documentos reais.
