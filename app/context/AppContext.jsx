@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useState, useCallback, useContext, useEffect, useMemo } from 'react';
+import { createContext, useState, useCallback, useContext, useEffect, useMemo, useSyncExternalStore } from 'react';
 
 export const DEFAULT_SETTINGS = {
   tableDensity: 'compact',      // 'compact' | 'normal' | 'relaxed'
@@ -10,33 +10,50 @@ export const DEFAULT_SETTINGS = {
   autoSave: true,
 };
 
+const emptySubscribe = () => () => {};
+
 export const AppContext = createContext();
 
 export function AppProvider({ children }) {
   const [loading, setLoading] = useState(false);
   const [toasts, setToasts] = useState([]);
-  const [mounted, setMounted] = useState(false);
+  
+  // useSyncExternalStore oficial do React para hidratação segura sem cascading renders
+  const mounted = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false
+  );
+
   const [darkMode, setDarkMode] = useState(false);
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
 
-  // Hidratação segura no cliente após o primeiro render
+  // Carrega preferências do usuário após a montagem inicial segura
   useEffect(() => {
-    setMounted(true);
+    let isDark = false;
     try {
-      const savedDark = localStorage.getItem('smartnfe_darkMode');
-      if (savedDark !== null) {
-        const isDark = savedDark === 'true';
-        setDarkMode(isDark);
-        document.documentElement.classList.toggle('dark', isDark);
-      }
+      isDark = localStorage.getItem('smartnfe_darkMode') === 'true';
     } catch (e) {}
 
+    let loadedSettings = null;
     try {
       const savedSettings = localStorage.getItem('smartnfe_settings');
       if (savedSettings) {
-        setSettings({ ...DEFAULT_SETTINGS, ...JSON.parse(savedSettings) });
+        loadedSettings = { ...DEFAULT_SETTINGS, ...JSON.parse(savedSettings) };
       }
     } catch (e) {}
+
+    const timer = setTimeout(() => {
+      if (isDark) {
+        setDarkMode(true);
+        document.documentElement.classList.toggle('dark', true);
+      }
+      if (loadedSettings) {
+        setSettings(loadedSettings);
+      }
+    }, 0);
+
+    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
