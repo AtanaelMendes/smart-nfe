@@ -15,33 +15,37 @@ export const AppContext = createContext();
 export function AppProvider({ children }) {
   const [loading, setLoading] = useState(false);
   const [toasts, setToasts] = useState([]);
+  const [mounted, setMounted] = useState(false);
+  const [darkMode, setDarkMode] = useState(false);
+  const [settings, setSettings] = useState(DEFAULT_SETTINGS);
 
-  // Inicialização lazy para evitar setState síncrono em useEffect
-  const [darkMode, setDarkMode] = useState(() => {
-    if (typeof window === 'undefined') return false;
+  // Hidratação segura no cliente após o primeiro render
+  useEffect(() => {
+    setMounted(true);
     try {
-      return localStorage.getItem('smartnfe_darkMode') === 'true';
-    } catch {
-      return false;
-    }
-  });
+      const savedDark = localStorage.getItem('smartnfe_darkMode');
+      if (savedDark !== null) {
+        const isDark = savedDark === 'true';
+        setDarkMode(isDark);
+        document.documentElement.classList.toggle('dark', isDark);
+      }
+    } catch (e) {}
 
-  const [settings, setSettings] = useState(() => {
-    if (typeof window === 'undefined') return DEFAULT_SETTINGS;
     try {
-      const saved = localStorage.getItem('smartnfe_settings');
-      return saved ? { ...DEFAULT_SETTINGS, ...JSON.parse(saved) } : DEFAULT_SETTINGS;
-    } catch {
-      return DEFAULT_SETTINGS;
-    }
-  });
+      const savedSettings = localStorage.getItem('smartnfe_settings');
+      if (savedSettings) {
+        setSettings({ ...DEFAULT_SETTINGS, ...JSON.parse(savedSettings) });
+      }
+    } catch (e) {}
+  }, []);
 
   useEffect(() => {
+    if (!mounted) return;
     try {
       localStorage.setItem('smartnfe_darkMode', darkMode.toString());
       document.documentElement.classList.toggle('dark', darkMode);
     } catch (e) {}
-  }, [darkMode]);
+  }, [darkMode, mounted]);
 
   const toggleDarkMode = useCallback(() => {
     setDarkMode(prev => !prev);
@@ -91,7 +95,8 @@ export function AppProvider({ children }) {
     settings,
     updateSettings,
     DEFAULT_SETTINGS,
-  }), [loading, toasts, addToast, removeToast, toast, darkMode, toggleDarkMode, settings, updateSettings]);
+    mounted,
+  }), [loading, toasts, addToast, removeToast, toast, darkMode, toggleDarkMode, settings, updateSettings, mounted]);
 
   return (
     <AppContext.Provider value={value}>

@@ -25,7 +25,8 @@ import { invoiceRepository } from '@/features/invoiceRepository';
 import { preparedInvoiceRepository } from '@/features/preparedInvoiceRepository';
 
 export default function ConfiguracoesPage() {
-  const { darkMode, toggleDarkMode, settings, updateSettings, toast } = useAppContext();
+  const { darkMode, toggleDarkMode, settings, updateSettings, toast, mounted } = useAppContext();
+  const isDark = mounted ? darkMode : false;
 
   const [localSettings, setLocalSettings] = useState({
     tableDensity: settings.tableDensity || 'compact',
@@ -82,7 +83,7 @@ export default function ConfiguracoesPage() {
         <div className="bg-white dark:bg-slate-800 p-5 rounded-lg border border-slate-200 dark:border-slate-700 space-y-4 shadow-xs">
           <div className="border-b border-slate-100 dark:border-slate-700 pb-2">
             <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-              <FontAwesomeIcon icon={darkMode ? faMoon : faSun} className="text-amber-500 w-4 h-4" />
+              <FontAwesomeIcon icon={isDark ? faMoon : faSun} className="text-amber-500 w-4 h-4" />
               Aparência e Tema Visual
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
@@ -96,14 +97,15 @@ export default function ConfiguracoesPage() {
                 Modo Escuro (Dark Mode)
               </p>
               <span className="text-[11px] text-slate-500">
-                {darkMode ? 'Tema escuro ativo (ideal para ambientes com pouca luz)' : 'Tema claro ativo (padrão de alta visibilidade)'}
+                {isDark ? 'Tema escuro ativo (ideal para ambientes com pouca luz)' : 'Tema claro ativo (padrão de alta visibilidade)'}
               </span>
             </div>
             <button
               type="button"
               onClick={toggleDarkMode}
+              suppressHydrationWarning
               className={`w-12 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors ${
-                darkMode ? 'bg-blue-600 justify-end' : 'bg-slate-300 justify-start'
+                isDark ? 'bg-blue-600 justify-end' : 'bg-slate-300 justify-start'
               }`}
               aria-label="Alternar Modo Escuro"
             >
