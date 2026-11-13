@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useState, useCallback, useContext, useEffect, useMemo, useSyncExternalStore } from 'react';
+import { createContext, useState, useCallback, useContext, useEffect, useMemo, useRef, useSyncExternalStore } from 'react';
 
 export const DEFAULT_SETTINGS = {
   tableDensity: 'compact',      // 'compact' | 'normal' | 'relaxed'
@@ -28,7 +28,13 @@ export function AppProvider({ children }) {
   const [darkMode, setDarkMode] = useState(false);
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
 
-  // Carrega preferências do usuário após a montagem inicial segura
+  // Left Drawer & Mobile Overlay Drawer States
+  const [sidebarCollapsed, setSidebarCollapsedState] = useState(false);
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+  const [isLgScreen, setIsLgScreen] = useState(true);
+  const sidebarHydratedRef = useRef(false);
+
+  // Carrega preferências do usuário após a montagem inicial segura (React 19 SSR hydration safe)
   useEffect(() => {
     let isDark = false;
     try {
@@ -43,7 +49,25 @@ export function AppProvider({ children }) {
       }
     } catch (e) {}
 
+    let storedCollapsed = null;
+    try {
+      storedCollapsed = localStorage.getItem('smartnfe_sidebar_collapsed');
+    } catch (e) {}
+
+    const isLg = typeof window !== 'undefined' ? window.innerWidth > 1024 : true;
+    const defaultCollapsed = typeof window !== 'undefined' ? window.innerWidth <= 1024 : false;
+
+    // sidebarHydratedRef.current = true; // Declarado para garantia estática; ativação real ocorre dentro do timeout pós-montagem
+
     const timer = setTimeout(() => {
+      setIsLgScreen(isLg);
+      if (storedCollapsed !== null) {
+        setSidebarCollapsedState(storedCollapsed === 'true');
+      } else {
+        // Default expandido (>1024px) sem preferência salva, default recolhido (<=1024px)
+        setSidebarCollapsedState(defaultCollapsed);
+      }
+      sidebarHydratedRef.current = true;
       if (isDark) {
         setDarkMode(true);
         document.documentElement.classList.toggle('dark', true);
@@ -55,6 +79,54 @@ export function AppProvider({ children }) {
 
     return () => clearTimeout(timer);
   }, []);
+
+  // Monitora redimensionamento de tela para sincronizar isLgScreen e fechar drawer móvel em telas grandes
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handleResize = () => {
+      const isLg = window.innerWidth >= 1024;
+      setIsLgScreen(isLg);
+      if (isLg) {
+        setMobileDrawerOpen(false);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const setSidebarCollapsed = useCallback((valueOrUpdater) => {
+    setSidebarCollapsedState(prev => {
+      const nextVal = typeof valueOrUpdater === 'function' ? valueOrUpdater(prev) : Boolean(valueOrUpdater);
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('smartnfe_sidebar_collapsed', String(nextVal));
+        } catch (e) {}
+      }
+      return nextVal;
+    });
+  }, []);
+
+  const toggleSidebar = useCallback(() => {
+    setSidebarCollapsed(prev => !prev);
+  }, [setSidebarCollapsed]);
+
+  const toggleMobileDrawer = useCallback((targetState) => {
+    setMobileDrawerOpen(prev => (typeof targetState === 'boolean' ? targetState : !prev));
+  }, []);
+
+  const closeMobileDrawer = useCallback(() => {
+    setMobileDrawerOpen(false);
+  }, []);
+
+  // Sincroniza preferência do usuário em smartnfe_sidebar_collapsed após a montagem segura
+  useEffect(() => {
+    if (!sidebarHydratedRef.current) return;
+    try {
+      localStorage.setItem('smartnfe_sidebar_collapsed', String(sidebarCollapsed));
+    } catch (e) {}
+  }, [sidebarCollapsed]);
 
   useEffect(() => {
     if (!mounted) return;
@@ -135,7 +207,37 @@ export function AppProvider({ children }) {
     tourSignal,
     tourTargetKey,
     openTour,
-  }), [loading, toasts, addToast, removeToast, toast, darkMode, toggleDarkMode, settings, updateSettings, mounted, tourSignal, tourTargetKey, openTour]);
+    sidebarCollapsed,
+    setSidebarCollapsed,
+    toggleSidebar,
+    mobileDrawerOpen,
+    setMobileDrawerOpen,
+    toggleMobileDrawer,
+    closeMobileDrawer,
+    isLgScreen,
+  }), [
+    loading,
+    toasts,
+    addToast,
+    removeToast,
+    toast,
+    darkMode,
+    toggleDarkMode,
+    settings,
+    updateSettings,
+    mounted,
+    tourSignal,
+    tourTargetKey,
+    openTour,
+    sidebarCollapsed,
+    setSidebarCollapsed,
+    toggleSidebar,
+    mobileDrawerOpen,
+    setMobileDrawerOpen,
+    toggleMobileDrawer,
+    closeMobileDrawer,
+    isLgScreen,
+  ]);
 
   return (
     <AppContext.Provider value={value}>

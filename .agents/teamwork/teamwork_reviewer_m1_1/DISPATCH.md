@@ -1,18 +1,24 @@
-## 2026-11-09T19:56:07Z
-Você é o Milestone 1 Reviewer 1 da equipe de engenharia do SmartNFe.
-Seu diretório de trabalho exclusivo é: c:\www\smart-nfe\.agents\teamwork\teamwork_reviewer_m1_1\
+## 2026-11-13T14:10:40Z
+You are Reviewer 1 for Milestone 1 (Core Allocation Engine & Repositories) of SmartNFe.
+Working directory: c:\www\smart-nfe
+State folder: c:\www\smart-nfe\.agents\teamwork\teamwork_reviewer_m1_1\
+Path to ORIGINAL_REQUEST.md: c:\www\smart-nfe\.agents\teamwork\ORIGINAL_REQUEST.md
+Path to PROJECT.md: c:\www\smart-nfe\.agents\teamwork\PROJECT.md
+Path to SCOPE.md: c:\www\smart-nfe\.agents\teamwork\sub_orch_m1\SCOPE.md
+Worker handoff report: c:\www\smart-nfe\.agents\teamwork\worker_m1_1\handoff.md
 
-Você DEVE ler os seguintes arquivos antes de iniciar:
-- c:\www\smart-nfe\.agents\teamwork\ORIGINAL_REQUEST.md
-- c:\www\smart-nfe\PROJECT.md
-- c:\www\smart-nfe\.agents\teamwork\sub_orch_m1_xml\SCOPE.md
-- c:\www\smart-nfe\.agents\teamwork\teamwork_worker_m1\handoff.md
+Objective:
+Read ORIGINAL_REQUEST.md, PROJECT.md, and SCOPE.md. Independently review the implementation of:
+- `app/lib/calculations/decimal.js`
+- `app/lib/calculations/allocationEngine.js`
 
-Foco da Revisão:
-Inspecionar minuciosamente `app/features/xml/nfeXmlParser.js` e `app/features/xml/accessKeyValidator.js`:
-1. Verificar a corretude técnica, completude e robustez da extração XML em layouts `nfeProc` e `NFe` avulso, resiliência a namespaces SEFAZ e tratamento de `<parsererror>`.
-2. Verificar o algoritmo Módulo 11 (pesos de 2 a 9 da direita para a esquerda, regra de resto 0/1 resultando em DV 0, validação de 44 dígitos, UF IBGE e modelo 55 estrito).
-3. Executar comandos de teste (`node --test tests/integration/flow_a_xml_import.test.mjs`, `node --test tests/tier1/m1_xml_engine.test.mjs`).
-4. Emitir um veredito formal explícito no seu `handoff.md`: `APPROVE` ou `REQUEST_CHANGES`.
+Verification checks:
+1. Mathematical rigor: Verify pure BigInt arithmetic, zero third-party arithmetic packages (no bignumber.js, decimal.js, mathjs).
+2. Conservation rule: Confirm `disponível = original - soma(alocações ativas)`.
+3. Non-negativity and excess blocking: Confirm `canSave` is false if any balance is negative or exceeded.
+4. Accessory expense apportionment: Confirm zero-drift cent conservation across multiple source invoices.
+5. Unit compatibility: Confirm checkUnitCompatibility correctly validates units across SEFAZ physical families.
+6. Run `npm test` and `npm run build` to verify that all tests pass and build succeeds.
 
-Mantenha `progress.md` atualizado com timestamp e envie mensagem ao orquestrador quando concluir.
+Deliverable:
+Write a comprehensive review report to `c:\www\smart-nfe\.agents\teamwork\teamwork_reviewer_m1_1\handoff.md` with explicit verdict: `APPROVE` or `REQUEST_CHANGES`. Send a message when complete.

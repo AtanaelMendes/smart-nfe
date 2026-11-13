@@ -8,8 +8,18 @@ import { getScreenTourByPath } from '@/config/screenTours';
 
 export default function SmartNFeHeader({ breadcrumbs = [], onMenuToggle, onOpenTour }) {
   const pathname = usePathname();
-  const { darkMode, toggleDarkMode, mounted, openTour } = useAppContext();
-  const isDark = mounted ? darkMode : false;
+  const {
+    darkMode,
+    toggleDarkMode,
+    mounted,
+    openTour,
+    mobileDrawerOpen,
+    toggleMobileDrawer,
+  } = useAppContext();
+
+  const isDark = mounted ? Boolean(darkMode) : false;
+  const handleMenuToggle = onMenuToggle || toggleMobileDrawer;
+  const isMobileOpen = Boolean(mobileDrawerOpen);
 
   const activeTour = getScreenTourByPath(pathname);
   const hasTour = Boolean(onOpenTour || activeTour);
@@ -44,13 +54,17 @@ export default function SmartNFeHeader({ breadcrumbs = [], onMenuToggle, onOpenT
 
   return (
     <header className="h-12 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 flex items-center px-4 gap-3 flex-shrink-0 transition-colors">
-      {/* Mobile menu toggle */}
-      {onMenuToggle && (
+      {/* Mobile menu toggle (visível em telas <= 1024px) */}
+      {handleMenuToggle && (
         <button
-          onClick={onMenuToggle}
-          className="md:hidden p-1.5 rounded text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800"
-          title="Menu"
-          aria-label="Abrir menu"
+          type="button"
+          onClick={handleMenuToggle}
+          className="lg:hidden p-1.5 rounded text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800 cursor-pointer"
+          title={isMobileOpen ? 'Fechar menu lateral' : 'Abrir menu lateral'}
+          aria-label={isMobileOpen ? 'Fechar menu lateral' : 'Abrir menu lateral'}
+          aria-expanded={isMobileOpen}
+          aria-controls="mobile-sidebar-drawer"
+          data-testid="header-mobile-toggle"
         >
           <FontAwesomeIcon icon={faBars} className="w-4 h-4" />
         </button>

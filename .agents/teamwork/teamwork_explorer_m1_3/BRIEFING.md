@@ -1,50 +1,55 @@
-# BRIEFING — 2026-11-09T19:41:00Z
+# BRIEFING — 2026-11-13T10:54:30-03:00
 
 ## Mission
-Elaborar a estratégia de implementação e arquitetura exata para o isolamento em memória no repositório (`app/features/invoiceRepository.js`) e a tela de importação (`app/documentos/importar/page.jsx`).
+Investigate divisionMath.js backward compatibility and design test suite for allocationEngine.js in Milestone 1.
 
 ## 🔒 My Identity
 - Archetype: explorer
-- Roles: Milestone 1 Explorer 3
-- Working directory: c:\www\smart-nfe\.agents\teamwork\teamwork_explorer_m1_3
-- Original parent: 71db8a14-4c80-4575-92ba-b52ae572b170
-- Milestone: Milestone 1 - XML Import & Repository Memory Isolation
+- Roles: explorer, analyst
+- Working directory: c:\www\smart-nfe
+- State folder: c:\www\smart-nfe\.agents\teamwork\teamwork_explorer_m1_3
+- Original parent: f64908f7-618d-4f21-bf78-58657f1ff50c
+- Milestone: Milestone 1 - Domain Model & Math Engine
 
 ## 🔒 Key Constraints
-- Read-only investigation — do NOT implement / modify source code directly
-- Strict isolation: real XML imports must NEVER be written to localStorage
-- Session invoices in-memory via `new Map()`
-- Maintain demo data functionality while seamlessly layering session invoices
-- Comprehensive handoff with ready-to-implement code snippets for the worker
+- Read-only investigation — do NOT implement
+- Investigate app/lib/calculations/divisionMath.js and tests compatibility
+- Design 100% backward-compatible refactor of divisionMath.js delegating to allocationEngine.js
+- Design tests/unit/allocationEngine.test.mjs
+- Output report.md and handoff.md in state folder
 
 ## Current Parent
-- Conversation ID: 71db8a14-4c80-4575-92ba-b52ae572b170
-- Updated: 2026-11-09T19:41:00Z
+- Conversation ID: f64908f7-618d-4f21-bf78-58657f1ff50c
+- Updated: 2026-11-13T10:54:30-03:00
 
 ## Investigation State
 - **Explored paths**:
-  - `app/features/invoiceRepository.js`
-  - `app/documentos/importar/page.jsx`
-  - `app/documentos/page.jsx`
-  - `app/documentos/[id]/conferencia/page.jsx`
-  - `app/dashboard/page.jsx`
+  - `app/lib/calculations/divisionMath.js` (518 lines)
+  - `app/lib/calculations/decimal.js` (427 lines)
+  - `app/lib/calculations/index.js`
+  - `app/documentos/[id]/divisao/page.jsx` (1109 lines)
+  - `tests/integration/flow_c_division_balances.test.mjs`
   - `tests/tier1/m2_domain.test.mjs`
-  - `teamwork_spec_miner_survey_2/handoff.md`
+  - `tests/tier5/m2_decimal_adversarial_stress.test.mjs`
+  - `tests/tier5/m4_challenger_division_traps_adversarial.test.mjs`
+  - `tests/tier5/m4_challenger_expenses_persistence_adversarial.test.mjs`
+  - Full test baseline (383 tests passing via `npm test`)
 - **Key findings**:
-  - `invoiceRepository.js`: Currently unconditionally saves every document to localStorage with `isDemo: true`.
-  - In-memory architecture: `const sessionInvoices = new Map()`, checking session first in `findById`, routing `create`, `update`, `updateItem` to memory when `isRealImport === true` or `isDemo === false`, and merging in `list` with real documents on top.
-  - Adding `delete(id)` and alias `resetAll = resetDemoData` solves missing methods currently called from `app/documentos/page.jsx`.
-  - `app/documentos/importar/page.jsx`: Currently uses dummy `setInterval` hardcoded to `demo-01`.
-  - Replacement: Real File API (`file.text()`), `parseNFeXml`, `validateAccessKey`, and `mapXmlToInvoice`. UI feedback: success card with details and direct CTA button to `/documentos/[id]/conferencia`, or error alert card. Added explicit banner regarding temporary in-memory session.
-- **Unexplored areas**: None. Ready for handoff compilation.
+  - `divisionMath.js` exports 6 functions with precise return types and bilingual expense keys.
+  - `/documentos/[id]/divisao` relies on `validateDivisionBatch` with legacy rule `canSave = notes.length >= 2 && !hasRemaining && !hasExcess && isBalanced`.
+  - In $N \to M$, partial allocation is allowed in drafts, but delegating from `divisionMath.js` can simply impose the legacy 1->M constraints.
+  - 383 tests currently pass in baseline; no regression can occur.
+  - Designed comprehensive unit test suite `tests/unit/allocationEngine.test.mjs` with 8 suites.
+- **Unexplored areas**: None within the scope of Milestone 1 Explorer 3.
 
 ## Key Decisions Made
-- `sessionInvoices = new Map()` exported as named export along with helper functions (`clearSession`, `getSessionCount`, `isSessionInvoice`).
-- In `create`, check `isRealImport === true || isDemo === false`.
-- In `list`, session invoices placed at the beginning of the merged list (`[...sessionInvoices.values(), ...persistedFiltered]`).
-- In `app/documentos/importar/page.jsx`, maintain the 5 demo scenario cards at the bottom for demo testing.
+- `divisionMath.js` refactored as a transparent facade over `allocationEngine.js`.
+- `allocationEngine.js` will export `calculateAllocationMatrix`, `checkUnitCompatibility`, `calculateItemBalance`, `distributeEqually`, `distributeRemainingEqually`, `apportionExpenses`, `apportionMultiSourceExpenses`, `makeSourceKey`, `parseSourceKey`.
+- `tests/unit/allocationEngine.test.mjs` covers all 8 domain requirements with zero float drift.
 
 ## Artifact Index
-- DISPATCH.md — Recorded dispatch message
-- progress.md — Liveness heartbeat and step tracking
-- handoff.md — Final 5-component handoff report with complete code snippets for Worker
+- `DISPATCH.md` — record of task assignment
+- `BRIEFING.md` — persistent working state
+- `progress.md` — liveness heartbeat and progress tracking
+- `report.md` — comprehensive technical analysis, refactoring strategy, and complete test suite code
+- `handoff.md` — 5-component self-contained handoff report for Sub-Orchestrator and Worker M1

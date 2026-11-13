@@ -1,127 +1,98 @@
-# BRIEFING — 2026-11-09T21:31:00Z
+# BRIEFING — 2026-11-13T13:45:30Z
 
 ## Mission
-Corrigir problemas funcionais do frontend SmartNFe e implementar a importação real de XML de NF-e modelo 55 diretamente no navegador, permitindo conferência de produtos, divisão de quantidades e validação fiscal com precisão decimal e segurança, cumprindo R1-R5 e comitando todas as alterações na branch `fix/frontend-xml-conferencia-v0.1.1` ao finalizar.
+Evoluir o SmartNFe para permitir preparação N origens → M destinos com motor unificado de alocação, persistência de drawer, upload múltiplo e gestão de saldos/itens sem backend.
 
 ## 🔒 My Identity
-- Archetype: teamwork_orchestrator
+- Archetype: orchestrator
 - Roles: orchestrator, user_liaison, human_reporter, successor
-- Working directory: c:\www\smart-nfe\.agents\teamwork\orchestrator\
-- Original parent: parent (sentinel)
-- Original parent conversation ID: 5b9042e8-b7f6-4f48-b6d2-96fde9311758
+- Working directory: c:\www\smart-nfe
+- State folder: c:\www\smart-nfe\.agents\teamwork\orchestrator\
+- Original parent: parent
+- Original parent conversation ID: 09293ff4-f471-4b14-b50f-3e045e70558b
 
 ## 🔒 My Workflow
 - **Pattern**: Project
-- **Scope document**: c:\www\smart-nfe\PROJECT.md
-1. **Decompose**: Survey (3 explorers) -> Feature Inventory -> Milestones & Interface contracts in PROJECT.md -> Dispatch Sub-orchestrators + E2E Testing Orchestrator
+- **Scope document**: c:\www\smart-nfe\.agents\teamwork\PROJECT.md
+1. **Decompose**: Map features via 3 Explorers Survey, partition into 3-7 milestones by module boundary, define interface contracts, assign all features in Feature Inventory, run Dual Track (Implementation + E2E Testing).
 2. **Dispatch & Execute**:
-   - **Direct (iteration loop)**: Explorer -> Worker -> Reviewer -> Challenger -> Auditor -> Gate
-   - **Delegate (sub-orchestrator)**: When supported; otherwise orchestrate directly up to 128 agent limit.
-3. **On failure** (in this order):
+   - **Delegate (sub-orchestrator)**: Each milestone delegated to a sub-orchestrator or run iteration loop (3 Explorers -> 1 Worker -> 2 Reviewers -> 2 Challengers -> 1 Auditor).
+3. **On failure**:
    - Retry: nudge stuck agent or re-send task
    - Replace: spawn fresh agent with partial progress
    - Skip: proceed without (only if non-critical)
    - Redistribute: split stuck agent's remaining work
    - Redesign: re-partition decomposition
-   - Escalate: report to parent (sub-orchestrators only, last resort)
-4. **Succession**: Evaluated per runtime capabilities (runtime restricts invoke_subagent to the 8 standard worker/reviewer types; maximum agent limit: 128).
+   - Escalate: report to parent (Project Orchestrator redesigns)
+4. **Succession**: At 16 spawns, write handoff.md, cancel crons, copy state to _gen<N>, spawn successor, update Succession Status.
 - **Work items**:
-  1. Survey & Feature Inventory [done]
-  2. PROJECT.md & TEST_INFRA.md decomposition [done]
-  3. Milestone 1 Execution: Browser XML Parser & Session Repository [done — GATE PASSED]
-  4. Parallel E2E Testing Track: Synthetic fixtures & Integration test suite [done — TEST_READY.md published]
-  5. Milestone 2 Execution: Conference Table & Decimal Recalc [done — GATE PASSED]
-  6. Milestone 3 Execution: Validation Assistant, Safety & Undo [done — GATE PASSED]
-  7. Milestone 4 Execution: Invoice Splitting & Balances [done — GATE PASSED]
-  8. Milestone 5 Execution: Integration Suite, Lint, Build Gate & Git Commit [done — GATE PASSED]
-- **Current phase**: 7 (Delivery & Human Report)
-- **Current focus**: Final delivery synthesis and user reporting
-- **Current work item**: Final Delivery
+  1. Survey & Map Scope (3 Explorers) [done]
+  2. Setup branch feature/preparacoes-unificadas & baseline verification (M0) [done]
+  3. Decompose Milestones & E2E Testing Track in PROJECT.md [done]
+  4. Milestone 1: Core Allocation Engine & Repositories [in-progress - expedited coding]
+  5. Milestone 2: Left Drawer & Responsive Layout [in-progress - expedited coding]
+  6. E2E Testing Track: Fixture Generator & E2E Suites [in-progress]
+  7. Milestone 3: Multi-XML Importer & Documents UI [pending]
+  8. Milestone 4: Preparation Flow & UI [pending]
+  9. Milestone 5: E2E Test Verification & Hardening [pending]
+- **Current phase**: 3 (Parallel Execution of M1, M2, and E2E Test Track)
+- **Current focus**: Accelerated direct implementation of code and tests across M1, M2, and E2E tracks
 
 ## 🔒 Key Constraints
-- NEVER write, modify, or create source code files directly.
-- NEVER run build/test commands yourself — require workers to do so.
-- NEVER investigate or explore the problem at the code level — dispatch Explorers for technical investigation.
-- Audit is a BINARY VETO — violation means milestone fails unconditionally.
-- Never reuse a subagent after it has delivered its handoff — always spawn fresh.
-- Always include ORIGINAL_REQUEST.md path in every dispatch.
-- Maximum subagent count: 128. Current count: 40 / 128.
-- Work exclusively on branch `fix/frontend-xml-conferencia-v0.1.1` with coherent commits, without modifying master or merging to master.
-- USER DIRECTIVE: Upon finishing, commit all source code, tests, components, and delivery artifacts to git on branch `fix/frontend-xml-conferencia-v0.1.1` with descriptive commit messages (strictly without merging to master).
-- Ensure 0 errors on pnpm install, pnpm lint, and pnpm build.
-- Browser-only XML parsing via DOMParser and File API; no backend, no external HTTP calls, no dangerouslySetInnerHTML.
-- In-memory session data for real XMLs; never save full XML or real fiscal data in persistent localStorage.
-- Pure decimal string arithmetic via app/lib/calculations; zero binary float imprecision in money/quantities.
+- Branch feature/preparacoes-unificadas must be created from current repo; do NOT touch master directly.
+- No deploy, merge, or unauthorized GitHub Actions.
+- Do NOT modify the PHP backend API.
+- Do NOT use pre-built libraries or frameworks for core functionality (BigInt decimal math, allocation engine, etc.).
+- Never write source code or run build/tests directly as orchestrator (dispatch-only).
+- Maintain backward compatibility with parentInvoiceId and /documentos/[id]/divisao.
+- Real tax data strictly in temporary memory; no real XMLs in localStorage; clear warning on session loss.
+- Must run autonomously on Vercel without backend.
+- Never reuse a subagent after it has delivered its handoff — always spawn fresh
 
 ## Current Parent
-- Conversation ID: 2abc9845-da79-48fd-bcde-ddb894009441
-- Updated: 2026-11-09T19:45:01Z
+- Conversation ID: 09293ff4-f471-4b14-b50f-3e045e70558b
+- Updated: 2026-11-13T13:44:51Z
 
 ## Key Decisions Made
-- Milestones 1, 2, and 3 passed all gates with unanimous approval.
-- Milestone 4 Worker implemented Features 16, 17, 18, 19 (pure BigInt division math, exact residual compensation, strict canSave blocker, and ancillary expense apportionment).
-- Dispatched 5 parallel gate verification agents for Milestone 4.
+- Project Pattern selected with Dual Track (Implementation + E2E Testing).
+- Survey completed; PROJECT.md and TEST_INFRA.md established with 25 inventoried features.
+- Milestone 0 passed (branch `feature/preparacoes-unificadas` active; 383 baseline tests pass).
+- Dispatched Sub-Orchestrator M1, Sub-Orchestrator M2, and E2E Testing Orchestrator in parallel.
+- Accelerated execution: Instructed M1 and M2 sub-orchestrators to bypass redundant exploratory loops and dispatch implementation Workers directly.
 
 ## Team Roster
 | Agent | Type | Work Item | Status | Conv ID |
 |-------|------|-----------|--------|---------|
-| teamwork_explorer_survey_1 | teamwork_explorer | Codebase & Conference Explorer | completed | 3bf64967-395c-4011-8231-94707301699e |
-| teamwork_spec_miner_survey_2 | teamwork_spec_miner | XML Model 55 & Contract Spec Miner | completed | 806da47c-f601-4fc0-804e-86c08cdd8540 |
-| teamwork_explorer_survey_3 | teamwork_explorer | Validation, Splitting & Test Explorer | completed | c49245ad-bd05-4b93-a4e6-e80b074bca8a |
-| teamwork_explorer_m1_1 | teamwork_explorer | M1 Explorer 1: DOMParser Engine | completed | c4284955-3ce8-4bee-b623-125970cfd32b |
-| teamwork_explorer_m1_2 | teamwork_explorer | M1 Explorer 2: Key & Mapper | completed | 69460c91-d15d-4649-8f6f-3552c226d59c |
-| teamwork_explorer_m1_3 | teamwork_explorer | M1 Explorer 3: Session & Import UI | completed | 8c8f0c64-c04e-4fe3-b6e5-73e10fb55a44 |
-| teamwork_test_writer_e2e | teamwork_test_writer | E2E Track: Synthetic Fixtures & Flows A-D | completed | dcde5986-ac98-46d0-8523-2e34a8557e0f |
-| teamwork_worker_m1 | teamwork_worker | Milestone 1 Implementation Worker | completed | e9355f37-6464-47a1-a7e0-a30cab0f19ec |
-| teamwork_reviewer_m1_1 | teamwork_reviewer | M1 Reviewer 1: Parser & Key | completed (APPROVE) | 21032f01-d7a6-4259-a2ad-bf22b3a5787a |
-| teamwork_reviewer_m1_2 | teamwork_reviewer | M1 Reviewer 2: Mapper & Session | completed (APPROVE) | e6da1cb6-c6da-4ccf-82c4-1a7e9808a4e5 |
-| teamwork_challenger_m1_1 | teamwork_challenger | M1 Challenger 1: XML & Key Adversarial | completed (APPROVE) | e70c794c-3cf4-488c-9bc2-03db28d08917 |
-| teamwork_challenger_m1_2 | teamwork_challenger | M1 Challenger 2: Session Storage Adversarial | completed (APPROVE) | 9b4b6fc4-40e3-4c41-9361-18df3e8a1909 |
-| teamwork_auditor_m1 | teamwork_auditor | M1 Forensic Integrity Auditor | completed (CLEAN) | 812ee73f-fddb-43e9-bb0c-99aa6e601bd2 |
-| teamwork_explorer_m2_1 | teamwork_explorer | M2 Explorer 1: itemId & Filter/Sort Stability | completed | ddf4d4d1-bc4b-4301-bdc2-203cc794fd23 |
-| teamwork_explorer_m2_2 | teamwork_explorer | M2 Explorer 2: Decimal Recalc & Expenses | completed | e36f57f2-e7b5-4d6e-8254-193b1c03671a |
-| teamwork_explorer_m2_3 | teamwork_explorer | M2 Explorer 3: Snapshot, Badges & Keyboard | completed | 72ccdfea-b5ba-44cd-9206-3d934ced897d |
-| teamwork_worker_m2 | teamwork_worker | M2 Worker: Conference Table Overhaul | completed | afe85ce2-0dc8-4eb7-a99f-473b84f606d4 |
-| teamwork_reviewer_m2_1 | teamwork_reviewer | M2 Reviewer 1: ItemId & Snapshot | completed (APPROVE) | ee6b64c0-1bf0-4534-a840-7ed597397290 |
-| teamwork_reviewer_m2_2 | teamwork_reviewer | M2 Reviewer 2: Decimal & Expenses | completed (APPROVE) | eee75b37-6f23-4f4d-91aa-6bdde3622be4 |
-| teamwork_challenger_m2_1 | teamwork_challenger | M2 Challenger 1: Filter/Sort Adversarial | completed (APPROVE) | dc6ed807-3ae5-41fc-b3ab-c1c5ce578654 |
-| teamwork_challenger_m2_2 | teamwork_challenger | M2 Challenger 2: Decimal Adversarial | completed (APPROVE) | d045c913-034a-4350-88e3-0266030f2e32 |
-| teamwork_auditor_m2 | teamwork_auditor | M2 Forensic Integrity Auditor | completed (CLEAN) | 24c0365a-d5a9-4452-9619-e162ef88edfe |
-| teamwork_explorer_m3_1 | teamwork_explorer | M3 Explorer 1: Fix Confirmation Modal | completed | 3a0294b7-bdb6-44f0-a731-a7ae4000c6e0 |
-| teamwork_explorer_m3_2 | teamwork_explorer | M3 Explorer 2: Undo Stack & Revalidation | completed | 8b952665-85e3-4211-be98-f2d59cdb8e6d |
-| teamwork_explorer_m3_3 | teamwork_explorer | M3 Explorer 3: Safe Mass Fix & Guardrails | completed | 8d443d3f-5b9f-4589-9f9a-2e22dde5e2c8 |
-| teamwork_worker_m3 | teamwork_worker | M3 Worker: Validation Safety Overhaul | completed | f44f70e0-99b6-42ec-9e0e-f6a9ea3cf3a2 |
-| teamwork_reviewer_m3_1 | teamwork_reviewer | M3 Reviewer 1: Confirmation & Undo | completed (APPROVE) | a6176dde-e033-48dd-8c9e-127d66f4233a |
-| teamwork_reviewer_m3_2 | teamwork_reviewer | M3 Reviewer 2: Bulk Fix & Repo | completed (APPROVE) | 78dd27a2-af65-4e97-8089-1f883ddb2f9c |
-| teamwork_challenger_m3_1 | teamwork_challenger | M3 Challenger 1: Undo Adversarial | completed (APPROVE) | 7a18fcd0-1b45-4a80-8e7c-0b3565886d1c |
-| teamwork_challenger_m3_2 | teamwork_challenger | M3 Challenger 2: Bulk Fix Adversarial | completed (APPROVE) | fd3bf328-f32b-47c5-9c07-0d08b784b8bf |
-| teamwork_auditor_m3 | teamwork_auditor | M3 Forensic Integrity Auditor | completed (CLEAN) | ea19580c-58c8-4d09-b525-2831637e4683 |
-| teamwork_explorer_m4_1 | teamwork_explorer | M4 Explorer 1: Decimal Engine & Traps | completed | 6e4e1ff0-be61-47fb-a348-f6482d0537cf |
-| teamwork_explorer_m4_2 | teamwork_explorer | M4 Explorer 2: Balance Allocation & Math | completed | c2f34962-4387-434f-93d4-3070b55e7734 |
-| teamwork_explorer_m4_3 | teamwork_explorer | M4 Explorer 3: Expenses & Persistence | completed | 14801c76-064d-4533-b7d3-c6ffb040df37 |
-| teamwork_worker_m4 | teamwork_worker | M4 Worker: Invoice Splitting Engine | completed | 0efc9815-5e4f-4394-8661-3b988fdfee24 |
-| teamwork_reviewer_m4_1 | teamwork_reviewer | M4 Reviewer 1: Decimal & Traps | completed (APPROVE) | 9ac20410-ceed-4f07-8687-247ad5de402a |
-| teamwork_reviewer_m4_2 | teamwork_reviewer | M4 Reviewer 2: Equal Division & Expenses | completed (APPROVE) | 84c5f319-44ae-4a5f-9bd3-09c21ea74dfd |
-| teamwork_challenger_m4_1 | teamwork_challenger | M4 Challenger 1: Division Traps Adversarial | completed (APPROVE) | 25a361e6-15b2-47b8-a760-cac671286eb4 |
-| teamwork_challenger_m4_2 | teamwork_challenger | M4 Challenger 2: Expenses Apportionment Adversarial | completed (APPROVE) | a7cfeae0-da86-4d75-a954-a02975dbec31 |
-| teamwork_auditor_m4 | teamwork_auditor | M4 Forensic Integrity Auditor | completed (CLEAN) | 00ebd576-3577-4790-86f6-c66f651a2614 |
-| teamwork_worker_m5_delivery | teamwork_worker | M5 Worker: Lint Fix, Build & Git Commit | completed | f9eec1ed-ec54-42a9-a013-aae442a59aea |
-| teamwork_reviewer_m5 | teamwork_reviewer | M5 Reviewer: Lint, Tests & Git Branch | completed (APPROVE) | d3305c5b-42ec-4291-a74f-d4cf734eb9d1 |
-| teamwork_auditor_m5 | teamwork_auditor | M5 Forensic Integrity Auditor | completed (CLEAN) | 373f557a-703e-4cee-9350-acefc0493c85 |
+| explorer_survey_1 | teamwork_explorer | Calculations, Allocation Engine & Repositories Survey | completed | 45ab5287-313b-4158-8393-0f3816c66512 |
+| explorer_survey_2 | teamwork_explorer | Layout, Left Drawer, Import & Documents UI Survey | completed | 882cf4e4-f890-4d16-98c8-ec4bc240e311 |
+| explorer_survey_3 | teamwork_explorer | Preparation Flow, Infrastructure, Tests & Mocks Survey | completed | 01608aa1-0024-408d-8058-03677b0ee197 |
+| worker_m0 | teamwork_worker | M0 Branch Setup & Baseline Verification | completed | 9ceacf18-23a4-4ba1-8727-0e5448bfb1e0 |
+| sub_orch_m1 | self | M1 Core Allocation Engine & Repositories | in-progress | f64908f7-618d-4f21-bf78-58657f1ff50c |
+| sub_orch_m2 | self | M2 Left Drawer & Responsive Layout | in-progress | 744fe86f-d6f1-40a4-833e-217247dbf06e |
+| sub_orch_e2e | self | E2E Testing Track (Fixtures & Suites) | in-progress | b46dc906-80ec-4470-92da-f6c8e7476b34 |
 
 ## Succession Status
 - Succession required: no
-- Spawn count: 48 / 128
-- Pending subagents: none
+- Spawn count: 7 / 16
+- Pending subagents: f64908f7-618d-4f21-bf78-58657f1ff50c, 744fe86f-d6f1-40a4-833e-217247dbf06e, b46dc906-80ec-4470-92da-f6c8e7476b34
+- Predecessor: none
+- Successor spawned: not yet spawned
+- Successor generation: none
+- Successor state folder: none
 
 ## Active Timers
-- Heartbeat cron: none
-- Safety timer: none
+- Heartbeat cron: c09bc610-72fd-41ec-bb07-185334e1e0d5/task-22
+- Safety timer: c09bc610-72fd-41ec-bb07-185334e1e0d5/task-126
+- On succession: kill all timers before spawning successor
+- On context truncation: handle timers as step 4 of the State Recovery section of your prompt says
 
 ## Artifact Index
-- c:\www\smart-nfe\.agents\teamwork\ORIGINAL_REQUEST.md — Original user request
-- c:\www\smart-nfe\PROJECT.md — Global architecture, feature inventory, milestones
-- c:\www\smart-nfe\TEST_INFRA.md — Test infrastructure and matrix
-- c:\www\smart-nfe\TEST_READY.md — E2E test suite ready status
-- c:\www\smart-nfe\.agents\teamwork\orchestrator\GATE_STATUS.md — Gate verdicts
-- c:\www\smart-nfe\.agents\teamwork\orchestrator\progress.md — Progress tracker
+- c:\www\smart-nfe\.agents\teamwork\ORIGINAL_REQUEST.md — Original request + follow-ups
+- c:\www\smart-nfe\.agents\teamwork\orchestrator\DISPATCH.md — Received dispatch messages
+- c:\www\smart-nfe\.agents\teamwork\orchestrator\progress.md — Liveness & iteration tracking
+- c:\www\smart-nfe\.agents\teamwork\orchestrator\GATE_STATUS.md — Gate verdicts per milestone
+- c:\www\smart-nfe\.agents\teamwork\PROJECT.md — Global architecture, milestones, feature inventory
+- c:\www\smart-nfe\.agents\teamwork\TEST_INFRA.md — Dual track test infrastructure specifications
+- c:\www\smart-nfe\.agents\teamwork\sub_orch_m1\SCOPE.md — M1 scope specification
+- c:\www\smart-nfe\.agents\teamwork\sub_orch_m2\SCOPE.md — M2 scope specification
+- c:\www\smart-nfe\.agents\teamwork\sub_orch_e2e\SCOPE.md — E2E Track scope specification

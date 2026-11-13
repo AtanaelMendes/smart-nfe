@@ -334,3 +334,286 @@ export function decimalAbs(val) {
 export function normalizeDecimal(val, scale = 2) {
   return roundDecimal(val, scale);
 }
+
+/**
+ * Formata um valor decimal com escala informada e arredondamento fiscal Half-Up.
+ * Alias para roundDecimal.
+ * @param {string|number|null|undefined} val
+ * @param {number} [scale=2]
+ * @returns {string}
+ */
+export function formatDecimal(val, scale = 2) {
+  return roundDecimal(val, scale);
+}
+
+/**
+ * Verifica se o valor decimal é estritamente positivo (> 0).
+ * @param {string|number|null|undefined} val
+ * @returns {boolean}
+ */
+export function isDecimalPositive(val) {
+  return decimalCompare(val, '0') > 0;
+}
+
+/**
+ * Soma um vetor/array de valores decimais utilizando BigInt sem arredondamento intermediário.
+ * @param {Array<string|number|null|undefined>} array - Lista de valores decimais
+ * @param {number|null} [targetScale=2] - Escala de saída desejada (null = escala máxima observada)
+ * @returns {string} Soma formatada
+ */
+export function decimalSum(array, targetScale = 2) {
+  if (!Array.isArray(array) || array.length === 0) {
+    if (targetScale === null || targetScale === undefined) return '0';
+    return targetScale > 0 ? '0.' + '0'.repeat(targetScale) : '0';
+  }
+
+  const parsed = array.map((item) => parseDecimal(item));
+  const maxScale = Math.max(0, ...parsed.map((p) => p.scale));
+
+  let totalBigInt = 0n;
+  for (const p of parsed) {
+    if (p.intVal !== 0n) {
+      const factor = 10n ** BigInt(maxScale - p.scale);
+      totalBigInt += p.sign * p.intVal * factor;
+    }
+  }
+
+  const sign = totalBigInt < 0n ? -1n : 1n;
+  const absVal = totalBigInt < 0n ? -totalBigInt : totalBigInt;
+
+  if (targetScale !== null && targetScale !== undefined && targetScale >= 0) {
+    const rounded = roundSignedBigInt(sign, absVal, maxScale, targetScale);
+    return formatBigInt(rounded.sign, rounded.absVal, rounded.scale);
+  }
+
+  return formatBigInt(sign, absVal, maxScale);
+}
+
+/**
+ * Retorna o menor valor decimal entre os argumentos informados.
+ * Aceita múltiplos argumentos ou um array único.
+ * @param  {...any} args
+ * @returns {string}
+ */
+export function decimalMin(...args) {
+  const list = args.length === 1 && Array.isArray(args[0]) ? args[0] : args;
+  if (!list || list.length === 0) return '0';
+
+  let minVal = list[0];
+  for (let i = 1; i < list.length; i++) {
+    if (decimalCompare(list[i], minVal) < 0) {
+      minVal = list[i];
+    }
+  }
+  return cleanDecimalString(minVal);
+}
+
+/**
+ * Retorna o maior valor decimal entre os argumentos informados.
+ * Aceita múltiplos argumentos ou um array único.
+ * @param  {...any} args
+ * @returns {string}
+ */
+export function decimalMax(...args) {
+  const list = args.length === 1 && Array.isArray(args[0]) ? args[0] : args;
+  if (!list || list.length === 0) return '0';
+
+  let maxVal = list[0];
+  for (let i = 1; i < list.length; i++) {
+    if (decimalCompare(list[i], maxVal) > 0) {
+      maxVal = list[i];
+    }
+  }
+  return cleanDecimalString(maxVal);
+}
+
+/**
+ * Verifica se dois valores decimais são numericamente equivalentes (a === b).
+ * @param {string|number|null|undefined} a
+ * @param {string|number|null|undefined} b
+ * @returns {boolean}
+ */
+export function decimalEquals(a, b) {
+  return decimalCompare(a, b) === 0;
+}
+
+/**
+ * Verifica se o primeiro valor decimal é estritamente maior que o segundo (a > b).
+ * @param {string|number|null|undefined} a
+ * @param {string|number|null|undefined} b
+ * @returns {boolean}
+ */
+export function decimalGreaterThan(a, b) {
+  return decimalCompare(a, b) > 0;
+}
+
+/**
+ * Verifica se o primeiro valor decimal é maior ou igual ao segundo (a >= b).
+ * @param {string|number|null|undefined} a
+ * @param {string|number|null|undefined} b
+ * @returns {boolean}
+ */
+export function decimalGreaterThanOrEqual(a, b) {
+  return decimalCompare(a, b) >= 0;
+}
+
+/**
+ * Verifica se o primeiro valor decimal é estritamente menor que o segundo (a < b).
+ * @param {string|number|null|undefined} a
+ * @param {string|number|null|undefined} b
+ * @returns {boolean}
+ */
+export function decimalLessThan(a, b) {
+  return decimalCompare(a, b) < 0;
+}
+
+/**
+ * Verifica se o primeiro valor decimal é menor ou igual ao segundo (a <= b).
+ * @param {string|number|null|undefined} a
+ * @param {string|number|null|undefined} b
+ * @returns {boolean}
+ */
+export function decimalLessThanOrEqual(a, b) {
+  return decimalCompare(a, b) <= 0;
+}
+
+/**
+ * Restringe o valor decimal ao intervalo [min, max].
+ * @param {string|number} val
+ * @param {string|number} min
+ * @param {string|number} max
+ * @returns {string}
+ */
+export function decimalClamp(val, min, max) {
+  if (decimalCompare(val, min) < 0) return cleanDecimalString(min);
+  if (decimalCompare(val, max) > 0) return cleanDecimalString(max);
+  return cleanDecimalString(val);
+}
+
+/**
+ * Calcula a média aritmética de um array de decimais.
+ * @param {Array<string|number>} array
+ * @param {number} [scale=2]
+ * @returns {string}
+ */
+export function decimalAverage(array, scale = 2) {
+  if (!Array.isArray(array) || array.length === 0) {
+    return scale >= 0 ? '0.' + '0'.repeat(scale) : '0.00';
+  }
+  const sum = decimalSum(array);
+  return decimalDivide(sum, String(array.length), scale);
+}
+
+/**
+ * Divide uma quantidade ou valor em partes estritamente iguais entre N partes,
+ * utilizando divisão inteira BigInt pura com alocação do resíduo (resto)
+ * na última parte para garantir conservação exata (zero drift).
+ * 
+ * Exemplo: '10.0000' em 3 notas -> ['3.3333', '3.3333', '3.3334']
+ * Exemplo: '1.0000' em 7 notas -> 6 x '0.1428', 1 x '0.1432'
+ * 
+ * @param {string|number} totalValue - Valor total a dividir
+ * @param {number} numParts - Quantidade de partes (N >= 1)
+ * @param {number} [scale=4] - Casas decimais de saída (padrão fiscal: 4)
+ * @returns {Array<string>} Array com N strings com soma idêntica ao total de entrada
+ */
+export function decimalDistributeEqually(totalValue, numParts, scale = 4) {
+  const n = parseInt(numParts, 10);
+  if (isNaN(n) || n <= 0) return [];
+
+  const p = parseDecimal(totalValue);
+  const targetScale = Math.max(scale >= 0 ? scale : 4, p.scale);
+
+  if (p.intVal === 0n || p.sign < 0n) {
+    return Array.from({ length: n }, () => formatBigInt(1n, 0n, targetScale));
+  }
+
+  if (n === 1) {
+    const factor = 10n ** BigInt(targetScale - p.scale);
+    return [formatBigInt(p.sign, p.intVal * factor, targetScale)];
+  }
+
+  const scaledTotal = p.intVal * (10n ** BigInt(targetScale - p.scale));
+  const bigN = BigInt(n);
+
+  const baseInt = scaledTotal / bigN;
+  const remInt = scaledTotal % bigN;
+
+  const result = [];
+  const baseFormatted = formatBigInt(1n, baseInt, targetScale);
+
+  for (let i = 0; i < n - 1; i++) {
+    result.push(baseFormatted);
+  }
+
+  const lastInt = baseInt + remInt;
+  result.push(formatBigInt(1n, lastInt, targetScale));
+
+  return result;
+}
+
+/**
+ * Rateia um valor total proporcionalmente a um array de pesos (valores ou quantidades),
+ * garantindo conservação exata de centavos ao absorver o resíduo no último elemento ativo.
+ * 
+ * @param {string|number} totalAmount - Valor total a ser rateado
+ * @param {Array<string|number>} weights - Pesos de cada destino (ex: valor dos produtos)
+ * @param {number} [scale=2] - Precisão decimal de saída (padrão monetário: 2)
+ * @returns {Array<string>} Array de valores rateados com soma identicamente igual ao totalAmount
+ */
+export function decimalApportionProportional(totalAmount, weights = [], scale = 2) {
+  if (!Array.isArray(weights) || weights.length === 0) return [];
+
+  const targetScale = scale >= 0 ? scale : 2;
+  const totalClean = roundDecimal(totalAmount || '0', targetScale);
+
+  if (weights.length === 1) {
+    return [totalClean];
+  }
+
+  const totalWeight = decimalSum(weights);
+
+  // Caso patológico: soma dos pesos é zero ou negativa -> divide igualmente
+  if (decimalCompare(totalWeight, '0') <= 0) {
+    return decimalDistributeEqually(totalClean, weights.length, targetScale);
+  }
+
+  // Identifica o índice do último item ativo com peso > 0
+  let lastActiveIdx = -1;
+  for (let i = weights.length - 1; i >= 0; i--) {
+    if (decimalCompare(weights[i], '0') > 0) {
+      lastActiveIdx = i;
+      break;
+    }
+  }
+
+  if (lastActiveIdx === -1) {
+    return decimalDistributeEqually(totalClean, weights.length, targetScale);
+  }
+
+  const result = new Array(weights.length).fill(formatBigInt(1n, 0n, targetScale));
+  let allocatedSum = formatBigInt(1n, 0n, targetScale);
+
+  for (let i = 0; i < weights.length; i++) {
+    const w = cleanDecimalString(weights[i]);
+    if (decimalCompare(w, '0') <= 0) {
+      result[i] = formatBigInt(1n, 0n, targetScale);
+      continue;
+    }
+
+    if (i !== lastActiveIdx) {
+      // ratio = w / totalWeight com 8 casas decimais de precisão interna
+      const ratio = decimalDivide(w, totalWeight, 8);
+      const slice = decimalMultiply(totalClean, ratio, targetScale);
+      result[i] = slice;
+      allocatedSum = decimalAdd(allocatedSum, slice, targetScale);
+    } else {
+      // O último item ativo absorve o resíduo exato (totalClean - allocatedSum)
+      result[i] = decimalSubtract(totalClean, allocatedSum, targetScale);
+    }
+  }
+
+  return result;
+}
+
+

@@ -1,7 +1,7 @@
-# BRIEFING — 2026-11-09T19:43:00Z
+# BRIEFING — 2026-11-13T13:52:00Z
 
 ## Mission
-Elaborar a estratégia de implementação e arquitetura exata para os módulos `accessKeyValidator.js` e `xmlToInvoiceMapper.js` para o Milestone 1.
+Investigar o vazamento de armazenamento em `app/features/preparedInvoiceRepository.js` (introduzindo isolamento volátil com `sessionPreparedInvoices = new Map()`) e projetar a arquitetura e implementação completa de `app/features/preparationRepository.js` para o Milestone 1.
 
 ## 🔒 My Identity
 - Archetype: explorer
@@ -9,45 +9,52 @@ Elaborar a estratégia de implementação e arquitetura exata para os módulos `
 - Working directory: c:\www\smart-nfe\.agents\teamwork\teamwork_explorer_m1_2\
 - Original parent: 71db8a14-4c80-4575-92ba-b52ae572b170
 - Milestone: milestone-1
+- Current dispatch: Explorer 2 (Milestone 1 — Core Allocation Engine & Repositories)
+- Working directory: c:\www\smart-nfe
+- State folder: c:\www\smart-nfe\.agents\teamwork\teamwork_explorer_m1_2\
+- Dispatch parent: f64908f7-618d-4f21-bf78-58657f1ff50c
 
 ## 🔒 Key Constraints
 - Read-only investigation — do NOT implement
 - Do not modify source code directly
 - Adhere to Teamwork protocol and layout compliance
 - Focus on accessKeyValidator.js and xmlToInvoiceMapper.js
+- ZERO third-party packages for core arithmetic: use pure native BigInt
+- Conservation rule: disponível = original - soma das alocações ativas
+- Real XML data retention strictly in volatile memory (sessionPreparedInvoices = new Map(), sessionPreparations = new Map())
+- 100% backward compatibility: existing 383 tests must continue passing
 
 ## Current Parent
-- Conversation ID: 71db8a14-4c80-4575-92ba-b52ae572b170
-- Updated: 2026-11-09T19:43:00Z
+- Conversation ID: f64908f7-618d-4f21-bf78-58657f1ff50c
+- Updated: 2026-11-13T13:44:25Z
 
 ## Investigation State
 - **Explored paths**:
-  - `ORIGINAL_REQUEST.md` (R1, R3, R5 requirements)
-  - `PROJECT.md` (Architecture, M1 scope, Interface Contracts 2 & 3)
-  - `sub_orch_m1_xml/SCOPE.md` (M1 boundaries)
-  - `teamwork_spec_miner_survey_2/handoff.md` (SEFAZ specs matrix & Modulo 11 math)
-  - `app/features/invoiceRepository.js` (invoice schema, item contract, findById, updateItem, create)
-  - `app/lib/calculations/decimal.js` (cleanDecimalString, roundDecimal, parseDecimal, decimalAdd, isDecimalZero)
-  - `app/lib/calculations/invoiceTotals.js` (calculateItemTotal, calculateInvoiceTotals)
-  - `app/lib/data/mockInvoices.js` (demo scenarios schema, item structure)
-  - `app/lib/formatters/numbers.js` (quantity and decimal formatting)
-  - `tests/tier1/m2_domain.test.mjs` (verified 44 tests pass with zero failures)
+  - `app/features/preparedInvoiceRepository.js` (diagnosed storage leakage: all prepared invoices unconditionally written to localStorage)
+  - `app/features/invoiceRepository.js` (analyzed in-memory session isolation pattern: sessionInvoices = new Map(), withMutationLock, deepClone, isReal/isDemo detection)
+  - `app/documentos/[id]/divisao/page.jsx` (traced division flow and invocation of preparedInvoiceRepository.create)
+  - `app/lib/storage/localStorageService.js` (STORAGE_KEYS, envelope, registration of defaults)
+  - `app/lib/calculations/decimal.js` (BigInt pure decimal functions: decimalAdd, decimalSum, cleanDecimalString, roundDecimal)
+  - `tests/tier5/m4_challenger_expenses_persistence_adversarial.test.mjs` (lifecycle of prepared invoices)
+  - `tests/tier5/m2_challenger1_concurrency_validation.test.mjs` (concurrency stress and queue healing)
+  - `tests/tier5/m1_challenger2_session_integrity.test.mjs` (session leak tests via localStorageService.save spying)
+  - `tests/tier1/m2_domain.test.mjs` (baseline repository tests)
 - **Key findings**:
-  - Modulo 11 weights [2..9] from right to left with remainder rules: rem 0 or 1 => DV 0, else 11 - rem.
-  - Test vectors verified for remainder 0, remainder 1, normal cases (rem 9 => DV 2), and invalid keys.
-  - Contract mapper requires deterministic item IDs: `nfe-${chaveAcesso}-item-${nItem}`.
-  - Decimal precision: `quantidade` normalized to 4 decimal places (`roundDecimal(val, 4)`), `valorUnitario` extended precision (min 4 places, preserving up to 10 decimals), monetary values (`valorTotal`, frete, seguro, etc.) normalized to 2 decimals.
-  - Strict flags: `isRealImport: true` and `isDemo: false`.
-  - Preserved `totais`: `valorProdutos`, `valorFrete`, `valorSeguro`, `outrasDespesas`, `valorDesconto`, `valorTotalNota`, `pesoLiquido`, `pesoBruto`.
-- **Unexplored areas**: None for M1-2 scope.
+  - `preparedInvoiceRepository.js` has a critical data privacy leak: prepared invoices from real XMLs are saved in `localStorageService.save(STORAGE_KEYS.PREPARED_INVOICES)`.
+  - Introduced blueprint for `sessionPreparedInvoices = new Map()` with origin detection checking `sessionInvoices.has(id)` for parent and source invoice IDs.
+  - `resetDemoData()` must clear `sessionPreparedInvoices` to prevent test cross-contamination.
+  - `app/features/preparationRepository.js` designed with full dual-storage, async CRUD, lifecycle state machine (`'draft'`, `'active'`, `'completed'`, `'cancelled'`), and BigInt `getActiveAllocations(excludePreparationId)` extraction.
+- **Unexplored areas**: None for M1-2 Explorer scope.
 
 ## Key Decisions Made
-- Validated Modulo 11 formula against official SEFAZ MOC guidelines.
-- Formulated exact mathematical rules and test vectors for `accessKeyValidator.js`.
-- Formulated complete code implementations ready for copy-paste by the Worker.
+- `preparedInvoiceRepository.js` will automatically detect real invoices via `isRealPreparedInvoice()` checking parent and source IDs against `sessionInvoices`.
+- `preparationRepository.js` provides `getActiveAllocations` returning a `Map` augmented with `.toObject()` for seamless interoperability.
+- All quantity summations in `getActiveAllocations` use `decimalAdd(current, qty, 4)` from `decimal.js`, maintaining pure BigInt arithmetic.
+- Full proposed implementations written to `report.md` and synthesized in `handoff.md`.
 
 ## Artifact Index
-- DISPATCH.md — incoming dispatch instructions
-- BRIEFING.md — persistent working memory
-- progress.md — liveness heartbeat
-- handoff.md — final handoff report
+- `DISPATCH.md` — incoming dispatch instructions
+- `BRIEFING.md` — persistent working memory
+- `progress.md` — liveness heartbeat
+- `report.md` — comprehensive technical analysis and ready-to-use proposed code
+- `handoff.md` — 5-component handoff report

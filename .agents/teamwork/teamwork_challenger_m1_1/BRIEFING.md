@@ -1,7 +1,7 @@
-# BRIEFING — 2026-11-09T20:05:00Z
+# BRIEFING — 2026-11-13T14:32:00Z
 
 ## Mission
-Estressar e desafiar empiricamente o motor XML (`app/features/xml/nfeXmlParser.js`) e validador de chaves de acesso (`app/features/xml/accessKeyValidator.js`) com testes de limite (27 UFs, restos 0/1/10, modelos inválidos), estresse de namespaces e resiliência a XML malformado/cargas de 5MB.
+Empiricamente verificar e estressar o motor unificado de alocação (`app/lib/calculations/allocationEngine.js`) e aritmética decimal pura (`app/lib/calculations/decimal.js`) sob 5 cenários adversariais: (1) conservação de centavos em rateios indivisíveis, (2) extrema precisão e números gigantes em BigInt, (3) oráculo de invariante de conservação N->M com entradas randômicas, (4) ataques de injeção de quantidades negativas, e (5) oráculo de compatibilidade de unidades de medida SEFAZ. Emitir veredito APPROVE/FAIL.
 
 ## 🔒 My Identity
 - Archetype: EMPIRICAL CHALLENGER
@@ -12,6 +12,8 @@ Estressar e desafiar empiricamente o motor XML (`app/features/xml/nfeXmlParser.j
 - Instance: 1 of 1
 - Sub-Orchestrator M1 XML Parent: 71db8a14-4c80-4575-92ba-b52ae572b170
 - Milestone: Milestone 1 XML (sub_orch_m1_xml)
+- Milestone 1 Allocation Engine Parent: f64908f7-618d-4f21-bf78-58657f1ff50c
+- Current Milestone: Milestone 1 — Core Allocation Engine & Repositories
 
 ## 🔒 Key Constraints
 - Review-only — do NOT modify implementation code.
@@ -19,46 +21,50 @@ Estressar e desafiar empiricamente o motor XML (`app/features/xml/nfeXmlParser.j
 - Run tests and empirical verifications directly.
 - .agents/teamwork/ holds only metadata (plans, progress, handoffs, reports).
 - Do not trust claims or logs; execute verification code directly and reproduce every finding empirically.
+- Write tests strictly to `tests/` directory (e.g. `tests/tier5/m1_challenger1_allocation_adversarial.test.mjs`).
 
 ## Current Parent
-- Conversation ID: 71db8a14-4c80-4575-92ba-b52ae572b170
-- Updated: 2026-11-09T20:05:00Z
+- Conversation ID: f64908f7-618d-4f21-bf78-58657f1ff50c
+- Updated: 2026-11-13T14:32:00Z
 
 ## Review Scope
 - **Files to review**:
-  - `app/features/xml/accessKeyValidator.js`
-  - `app/features/xml/nfeXmlParser.js`
-  - `app/features/xml/xmlToInvoiceMapper.js`
-  - `app/features/xml/index.js`
-  - `app/features/invoiceRepository.js`
-- **Interface contracts**: `c:\www\smart-nfe\.agents\teamwork\sub_orch_m1_xml\SCOPE.md`, `PROJECT.md`
+  - `app/lib/calculations/decimal.js`
+  - `app/lib/calculations/allocationEngine.js`
+  - `app/lib/calculations/divisionMath.js`
+  - `app/features/preparationRepository.js`
+  - `app/features/preparedInvoiceRepository.js`
+- **Interface contracts**: `PROJECT.md`, `c:\www\smart-nfe\.agents\teamwork\sub_orch_m1\SCOPE.md`
 - **Review criteria**:
-  - 1. Chaves de acesso no limite (27 UFs, restos 0, 1 e 10, comprimentos 43/45, alfanuméricos, modelos != 55).
-  - 2. Parsing de XML com estresse de namespaces (default, aninhados com prefixos arbitrários, sem namespace, vazias/omitidas).
-  - 3. Resiliência a XML malformado (tags não fechadas, caracteres de controle, strings gigantes de 5 MB, parsererror interceptado sem unhandled exceptions).
+  - 1. Cent conservation remainder stress (indivisible apportionments: 100/3, 10/7, 0.01/10, etc.)
+  - 2. BigInt extreme precision (4 decimals for qty, 10 decimals for unit price, numbers > 10^15 without overflow)
+  - 3. Conservation invariant oracle (randomized N->M allocations, invariant remaining = original - allocs, canSave validation)
+  - 4. Negative quantity attack (rejection of negative numbers, preventing balance inflation)
+  - 5. Unit compatibility oracle (synonyms within 15 families, rejection of incompatible pairs, case/accent resilience)
 
 ## Attack Surface
 - **Hypotheses tested**:
-  - 1. `accessKeyValidator.js`: 27 UFs sintéticas geradas; rejeição de UFs espúrias; casos de borda Módulo 11 (resto 0 -> DV 0, resto 1 -> DV 0, resto 10 -> DV 1); comprimentos anômalos (43 e 45 dígitos); alfanuméricos e injeções; bloqueio de modelos diferentes de 55 (65, 57, 01, 58, 67, 99).
-  - 2. `nfeXmlParser.js`: namespaces default (`xmlns="..."`); prefixos arbitrários (`<fiscal:nfeProc>`); XML sem namespace; tags auto-fechadas e campos opcionais omitidos.
-  - 3. `nfeXmlParser.js`: XML truncado; tag mismatch; injeções de script e controle; carga pesada de 5.38 MB (8.000 itens); carga pesada malformada de 5.0 MB; entradas não-string e nulas.
-  - 4. Pipeline E2E: estabilidade de `itemId`; isolamento estrito de sessão em `sessionInvoices = new Map()`; preservação em `resetDemoData()`.
-- **Vulnerabilities found**: Nenhuma vulnerabilidade encontrada no código de implementação. Comportamento 100% resiliente e conforme a especificação técnica.
-- **Untested angles**: Concorrência multi-aba (fora de escopo para memória volátil de sessão); validação de certificado digital X.509 (desnecessária no frontend).
+  - H1: Distributing indivisible cents across 3, 7, 11, 33 destinations may drop or create a cent in `decimalDistributeEqually`, `decimalApportionProportional`, `apportionExpenses`, or `calculateAllocationMatrix`. [PROVEN ROBUST — 0 cents dropped or created]
+  - H2: BigInt operations may throw TypeError, overflow safe integer bounds, or truncate 10-decimal unit prices during multiplication. [PROVEN ROBUST — 10-decimal precision and 10^24 products supported without IEEE-754 drift]
+  - H3: Randomized N->M allocations could violate the conservation invariant `remainingQty === originalQty - priorAllocated - sum(allocated)` due to scale mismatch or state leaks. [PROVEN ROBUST — 200/200 Monte Carlo trials passed]
+  - H4: Injecting negative allocations could cause `availableQty` to increase or bypass `canSave = false`. [PROVEN ROBUST — Direct negatives and Trojan zero-sum attacks strictly blocked]
+  - H5: Unit compatibility dictionary could fail on accented characters, alternate spellings, or multi-word synonyms with spaces. [VULNERABILITY FOUND — `normalizeUnit` strips spaces, causing `getUnitFamily` to return null for `METRO QUADRADO`, `METROS QUADRADOS`, `METRO CUBICO`, `METROS CUBICOS`].
+- **Vulnerabilities found**:
+  - In `app/lib/calculations/allocationEngine.js`: `getUnitFamily(normalizedUnit)` checks raw un-normalized members array while `normalizeUnit` strips spaces. Multi-word units (`METRO QUADRADO`, `METRO CUBICO`) return `null` and evaluate to `false` in `checkUnitCompatibility('M2', 'METRO QUADRADO')`.
+- **Untested angles**: UI rendering of matrix (Milestone 4 scope).
 
 ## Loaded Skills
 - None specified in dispatch.
 
 ## Key Decisions Made
-- Desenvolvida suíte `tests/tier5/m1_xml_adversarial_stress.test.mjs` com 22 asserções de estresse.
-- 100% de aprovação (22/22) em 1.017 s.
-- 79/79 testes de integração e regressão aprovados.
-- Veredito formal: **APPROVE**.
+- Authored `tests/tier5/m1_challenger1_allocation_adversarial.test.mjs` with 26 adversarial stress assertions across 5 suites.
+- 25 assertions passed, 1 assertion failed (reproducing the unit compatibility space bug).
+- Issued formal verdict: **FAIL** with concrete fix instructions for Worker M1.
 
 ## Artifact Index
-- `c:\www\smart-nfe\.agents\teamwork\teamwork_challenger_m1_1\DISPATCH.md` — Histórico de dispatches
-- `c:\www\smart-nfe\.agents\teamwork\teamwork_challenger_m1_1\BRIEFING.md` — Memória persistente
-- `c:\www\smart-nfe\.agents\teamwork\teamwork_challenger_m1_1\progress.md` — Liveness e progresso
-- `c:\www\smart-nfe\tests\tier5\m1_xml_adversarial_stress.test.mjs` — Suíte de testes de estresse adversariais empíricos M1 XML
-- `c:\www\smart-nfe\.agents\teamwork\teamwork_challenger_m1_1\challenge_report.md` — Relatório técnico detalhado de estresse adversarial
-- `c:\www\smart-nfe\.agents\teamwork\teamwork_challenger_m1_1\handoff.md` — Handoff formal com veredito APPROVE
+- `c:\www\smart-nfe\.agents\teamwork\teamwork_challenger_m1_1\DISPATCH.md` — Dispatch history
+- `c:\www\smart-nfe\.agents\teamwork\teamwork_challenger_m1_1\BRIEFING.md` — Working memory
+- `c:\www\smart-nfe\.agents\teamwork\teamwork_challenger_m1_1\progress.md` — Liveness and progress
+- `c:\www\smart-nfe\tests\tier5\m1_challenger1_allocation_adversarial.test.mjs` — Empirical adversarial test suite
+- `c:\www\smart-nfe\.agents\teamwork\teamwork_challenger_m1_1\challenge_report.md` — Detailed stress test results
+- `c:\www\smart-nfe\.agents\teamwork\teamwork_challenger_m1_1\handoff.md` — Handoff report with formal FAIL verdict
