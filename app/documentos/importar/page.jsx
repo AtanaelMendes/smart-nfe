@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -18,6 +18,9 @@ import {
   faFolderOpen,
   faShieldHalved,
   faTrashCan,
+  faPlus,
+  faCopy,
+  faRotateRight,
 } from '@fortawesome/free-solid-svg-icons';
 
 import AppLayout from '@/components/Layouts/AppLayout';
@@ -88,16 +91,68 @@ const DEMO_SCENARIOS = [
   },
 ];
 
+// Formata tamanho de arquivo
+function formatFileSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+// Cria item de arquivo padrão
+function createFileItem(file) {
+  const nameLower = file.name.toLowerCase();
+  const isXML = nameLower.endsWith('.xml');
+  const isPDF = nameLower.endsWith('.pdf');
+  return {
+    id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    file,
+    name: file.name,
+    size: formatFileSize(file.size),
+    type: isXML ? 'XML' : isPDF ? 'PDF' : 'OTHER',
+    status: 'pending',
+    result: null,
+    error: null,
+    accessKey: null,
+  };
+}
+
+// Badge colorido por status
+function StatusBadge({ status, error }) {
+  const map = {
+    pending: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300',
+    processing: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300',
+    done: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300',
+    duplicate: 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300',
+    error: 'bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-300',
+  };
+  const labels = {
+    pending: 'Aguardando',
+    processing: 'Processando...',
+    done: 'Importado',
+    duplicate: 'Duplicado',
+    error: 'Erro',
+  };
+  return (
+    <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded ${map[status] || map.pending}`}>
+      {status === 'processing' && <FontAwesomeIcon icon={faCircleNotch} className="animate-spin w-2.5 h-2.5" />}
+      {status === 'done' && <FontAwesomeIcon icon={faCircleCheck} className="w-2.5 h-2.5" />}
+      {status === 'error' && <FontAwesomeIcon icon={faCircleExclamation} className="w-2.5 h-2.5" />}
+      {status === 'duplicate' && <FontAwesomeIcon icon={faCopy} className="w-2.5 h-2.5" />}
+      {labels[status] || status}
+    </span>
+  );
+}
+
 export default function ImportarDocumentoPage() {
   const router = useRouter();
   const { toast } = useAppContext();
 
   const [dragActive, setDragActive] = useState(false);
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [importSuccess, setImportSuccess] = useState(null);
-  const [importError, setImportError] = useState(null);
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const [isProcessingAll, setIsProcessingAll] = useState(false);
+  const addMoreRef = useRef(null);
 
+  // ─── Drag & Drop ────────────────────────────────────────────────
   const handleDrag = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -108,156 +163,152 @@ export default function ImportarDocumentoPage() {
     }
   };
 
+  const addFilesToList = useCallback((fileList) => {
+    const incoming = Array.from(fileList);
+    setSelectedFiles((prev) => {
+      const existing = new Set(prev.map((f) => `${f.name}__${f.file.size}`));
+      const newItems = incoming
+        .filter((file) => {
+          const nameLower = file.name.toLowerCase();
+          return nameLower.endsWith('.xml') || nameLower.endsWith('.pdf');
+        })
+        .filter((file) => !existing.has(`${file.name}__${file.size}`))
+        .map(createFileItem);
+      return [...prev, ...newItems];
+    });
+  }, []);
+
   const handleDrop = (e) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      processFile(e.dataTransfer.files[0]);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      addFilesToList(e.dataTransfer.files);
     }
   };
 
   const handleFileInput = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      processFile(e.target.files[0]);
+    if (e.target.files && e.target.files.length > 0) {
+      addFilesToList(e.target.files);
+      e.target.value = '';
     }
   };
 
-  const processFile = async (file) => {
-    if (!file) return;
+  const handleRemoveFile = (id) => {
+    setSelectedFiles((prev) => prev.filter((f) => f.id !== id));
+  };
 
-    const fileNameLower = file.name.toLowerCase();
-    const isXML = fileNameLower.endsWith('.xml');
-    const isPDF = fileNameLower.endsWith('.pdf');
-
-    // 1. Validação de formato de arquivo
-    if (!isXML && !isPDF) {
-      toast.error('Formato inválido. Por favor, envie arquivos .XML (NF-e modelo 55) ou .PDF.');
-      return;
+  // ─── Processamento individual de um item ────────────────────────
+  const processOneItem = async (item) => {
+    if (item.type === 'PDF') {
+      return { ...item, status: 'error', error: 'PDF não suportado para importação automática. Envie o XML da NF-e.' };
     }
-
-    // 2. Limite de tamanho de arquivo (10 MB)
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error('O arquivo excede o limite máximo permitido de 10 MB.');
-      return;
-    }
-
-    const fileMeta = {
-      name: file.name,
-      size: (file.size / 1024).toFixed(1) + ' KB',
-      type: isXML ? 'XML' : 'PDF',
-    };
-
-    setSelectedFile(fileMeta);
-    setImportSuccess(null);
-    setImportError(null);
-    setIsProcessing(true);
 
     try {
-      if (isPDF) {
-        // PDF: Fluxo assistido de orientação para o usuário
-        setImportError({
-          title: 'Arquivo PDF Identificado',
-          message:
-            'A importação automatizada com conferência estruturada e validação fiscal de lote opera com arquivos XML da NF-e (Modelo 55). Para testar a conferência de DANFE em PDF, utilize os cenários pré-carregados de demonstração abaixo.',
-          isWarning: true,
-        });
-        toast.info('Para importação real e extração de dados fiscais, envie o arquivo XML da NF-e.');
-        setIsProcessing(false);
-        return;
-      }
-
-      // XML: Leitura REAL via File API do navegador
-      const xmlString = await file.text();
-
+      const xmlString = await item.file.text();
       if (!xmlString || !xmlString.trim()) {
-        throw new Error('O arquivo XML selecionado está vazio.');
+        throw new Error('O arquivo XML está vazio.');
       }
 
-      // 3. Execução do DOMParser nativo
       const parseResult = parseNFeXml(xmlString);
       if (!parseResult.success) {
-        throw new Error(parseResult.error || 'Falha ao analisar a estrutura XML do documento.');
+        throw new Error(parseResult.error || 'Falha ao analisar a estrutura XML.');
       }
 
       const extracted = parseResult.data;
 
-      // 4. Validação da Chave de Acesso (44 dígitos e Módulo 11)
       if (!extracted.chaveAcesso) {
-        throw new Error('Chave de acesso não localizada no documento fiscal (tag infNFe/@Id ausente).');
+        throw new Error('Chave de acesso não localizada no XML (tag infNFe/@Id ausente).');
       }
 
       const keyValidation = validateAccessKey(extracted.chaveAcesso);
       if (!keyValidation.isValid) {
-        throw new Error(
-          `Inconsistência na Chave de Acesso: ${keyValidation.error || 'Dígito verificador ou formato incorreto.'}`
-        );
+        throw new Error(`Chave de Acesso inválida: ${keyValidation.error || 'Dígito verificador incorreto.'}`);
       }
 
-      // 5. Mapeamento para o contrato do invoiceRepository
-      const invoiceData = mapXmlToInvoice(extracted);
+      // Verificar duplicidade via chave de acesso
+      const allInvoices = await invoiceRepository.list();
+      const duplicate = allInvoices.find((inv) => inv.chaveAcesso === extracted.chaveAcesso);
+      if (duplicate) {
+        return {
+          ...item,
+          status: 'duplicate',
+          accessKey: extracted.chaveAcesso,
+          error: `Já importado: NF-e ${duplicate.numero || duplicate.id}`,
+        };
+      }
 
-      // Assegura flags estritas de importação em sessão volátil
+      const invoiceData = mapXmlToInvoice(extracted);
       invoiceData.isRealImport = true;
       invoiceData.isDemo = false;
 
-      // 6. Salvamento no repositório (exclusivamente em sessionInvoices Map)
       const savedInvoice = await invoiceRepository.create(invoiceData);
-
-      // 7. Feedback de Sucesso Detalhado
-      setImportSuccess({
-        id: savedInvoice.id,
-        numero: savedInvoice.numero,
-        serie: savedInvoice.serie,
-        chaveAcesso: savedInvoice.chaveAcesso,
-        naturezaOperacao: savedInvoice.naturezaOperacao,
-        emitente: {
-          razaoSocial: savedInvoice.emitente?.razaoSocial || 'Não informado',
-          cnpj: savedInvoice.emitente?.cnpj || '',
-          uf: savedInvoice.emitente?.uf || '',
-          municipio: savedInvoice.emitente?.municipio || '',
-        },
-        destinatario: {
-          nome: savedInvoice.destinatario?.nome || 'Não informado',
-          cnpjOuId: savedInvoice.destinatario?.cnpj || savedInvoice.destinatario?.idEstrangeiro || '',
-          pais: savedInvoice.destinatario?.pais || 'Brasil',
-          uf: savedInvoice.destinatario?.uf || '',
-        },
-        itensCount: savedInvoice.itens?.length || 0,
-        valorTotal: savedInvoice.totais?.valorTotalNota || '0.00',
-        valorProdutos: savedInvoice.totais?.valorProdutos || '0.00',
-        valorFrete: savedInvoice.totais?.valorFrete || '0.00',
-        outrasDespesas: savedInvoice.totais?.outrasDespesas || '0.00',
-      });
-
-      toast.success(
-        `NF-e ${savedInvoice.numero} importada com sucesso! ${savedInvoice.itens?.length || 0} produtos prontos para conferência.`
-      );
+      return {
+        ...item,
+        status: 'done',
+        accessKey: extracted.chaveAcesso,
+        result: savedInvoice,
+      };
     } catch (err) {
-      console.error('Erro na importação de XML:', err);
-      const errMsg = err?.message || 'Ocorreu um erro desconhecido ao processar o arquivo XML.';
-      setImportError({
-        title: 'Falha na Validação do Arquivo XML',
-        message: errMsg,
-        isWarning: false,
-      });
-      toast.error(errMsg);
-    } finally {
-      setIsProcessing(false);
+      return { ...item, status: 'error', error: err?.message || 'Erro desconhecido.' };
     }
   };
+
+  // ─── Processamento em lotes de 3 ────────────────────────────────
+  const processInChunks = async (items) => {
+    const chunkSize = 3;
+    for (let i = 0; i < items.length; i += chunkSize) {
+      const chunk = items.slice(i, i + chunkSize);
+
+      // Marcar chunk como processing
+      setSelectedFiles((prev) =>
+        prev.map((f) => (chunk.some((c) => c.id === f.id) ? { ...f, status: 'processing' } : f))
+      );
+
+      const results = await Promise.all(chunk.map(processOneItem));
+
+      // Atualizar resultados individuais
+      setSelectedFiles((prev) =>
+        prev.map((f) => {
+          const r = results.find((res) => res.id === f.id);
+          return r ? r : f;
+        })
+      );
+    }
+  };
+
+  const processAllFiles = async (filesToProcess = null) => {
+    const targets = (filesToProcess || selectedFiles).filter((f) => f.status === 'pending');
+    if (targets.length === 0) return;
+    setIsProcessingAll(true);
+    try {
+      await processInChunks(targets);
+    } finally {
+      setIsProcessingAll(false);
+    }
+  };
+
+  const handleReprocessErrors = () => {
+    setSelectedFiles((prev) => prev.map((f) => (f.status === 'error' ? { ...f, status: 'pending', error: null } : f)));
+    // Aguarda o setState propagar antes de processar
+    setTimeout(() => processAllFiles(), 50);
+  };
+
+  // ─── Derivações de estado ────────────────────────────────────────
+  const total = selectedFiles.length;
+  const concluded = selectedFiles.filter((f) => ['done', 'duplicate', 'error'].includes(f.status)).length;
+  const doneCount = selectedFiles.filter((f) => f.status === 'done').length;
+  const duplicateCount = selectedFiles.filter((f) => f.status === 'duplicate').length;
+  const errorCount = selectedFiles.filter((f) => f.status === 'error').length;
+  const pendingCount = selectedFiles.filter((f) => f.status === 'pending').length;
+  const progressPct = total > 0 ? Math.round((concluded / total) * 100) : 0;
+  const hasPending = pendingCount > 0;
+  const hasErrors = errorCount > 0;
+  const doneIds = selectedFiles.filter((f) => f.status === 'done' && f.result?.id).map((f) => f.result.id);
 
   const handleOpenScenario = (scenarioId) => {
     toast.info(`Carregando conferência do ${scenarioId.toUpperCase()}...`);
     router.push(`/documentos/${scenarioId}/conferencia`);
-  };
-
-  const handleClearFile = () => {
-    setSelectedFile(null);
-    setImportSuccess(null);
-    setImportError(null);
-    setIsProcessing(false);
   };
 
   return (
@@ -293,7 +344,7 @@ export default function ImportarDocumentoPage() {
                 Importação de Documentos Fiscais
               </h1>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                Envie arquivos <strong>.XML</strong> de NF-e modelo 55 para extração real e conferência imediata no navegador.
+                Envie múltiplos arquivos <strong>.XML</strong> de NF-e modelo 55 para extração real e conferência imediata no navegador.
               </p>
             </div>
             <Link href="/documentos">
@@ -321,6 +372,16 @@ export default function ImportarDocumentoPage() {
             type="file"
             id="file-upload"
             accept=".xml,.pdf"
+            multiple
+            onChange={handleFileInput}
+            className="hidden"
+          />
+          {/* Input oculto para "Adicionar mais arquivos" */}
+          <input
+            type="file"
+            accept=".xml,.pdf"
+            multiple
+            ref={addMoreRef}
             onChange={handleFileInput}
             className="hidden"
           />
@@ -332,7 +393,7 @@ export default function ImportarDocumentoPage() {
 
             <div>
               <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-                Arraste e solte seu arquivo XML aqui, ou{' '}
+                Arraste e solte seus arquivos XML aqui, ou{' '}
                 <label
                   htmlFor="file-upload"
                   className="text-blue-600 dark:text-blue-400 hover:underline cursor-pointer font-bold"
@@ -341,155 +402,170 @@ export default function ImportarDocumentoPage() {
                 </label>
               </p>
               <p className="text-xs text-slate-500 mt-1">
-                Formatos aceitos: <strong>.XML</strong> (NF-e modelo 55 padrão SEFAZ até 10 MB)
+                Formatos aceitos: <strong>.XML</strong> (NF-e modelo 55 padrão SEFAZ) e <strong>.PDF</strong> — múltiplos arquivos simultâneos
               </p>
             </div>
           </div>
 
-          {/* Feedback de arquivo selecionado */}
-          {selectedFile && (
-            <div className="mt-6 p-4 rounded-lg bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 text-left space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <FontAwesomeIcon
-                    icon={selectedFile.type === 'XML' ? faFileCode : faFilePdf}
-                    className={`w-6 h-6 ${selectedFile.type === 'XML' ? 'text-blue-500' : 'text-red-500'}`}
-                  />
-                  <div>
-                    <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{selectedFile.name}</p>
-                    <span className="text-xs text-slate-500">{selectedFile.size} • {selectedFile.type}</span>
-                  </div>
-                </div>
-
-                {isProcessing ? (
-                  <div className="flex items-center gap-2 text-xs text-blue-600 font-medium">
-                    <FontAwesomeIcon icon={faCircleNotch} className="animate-spin w-4 h-4" />
-                    <span>Processando e validando NF-e...</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    {importSuccess && (
-                      <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-semibold bg-emerald-50 dark:bg-emerald-950/50 px-2 py-1 rounded border border-emerald-200 dark:border-emerald-800">
-                        <FontAwesomeIcon icon={faCircleCheck} className="w-3.5 h-3.5" />
-                        <span>Leitura e Validação Concluídas</span>
-                      </div>
-                    )}
-                    <button
-                      type="button"
-                      onClick={handleClearFile}
-                      className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 ml-2 cursor-pointer underline flex items-center gap-1"
-                    >
-                      <FontAwesomeIcon icon={faTrashCan} className="w-3 h-3" />
-                      Remover / Novo Arquivo
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Card de Erro Detalhado */}
-              {importError && !isProcessing && (
+          {/* Lista de arquivos selecionados */}
+          {selectedFiles.length > 0 && (
+            <div className="mt-6 text-left space-y-2">
+              {selectedFiles.map((item) => (
                 <div
-                  className={`mt-4 p-4 rounded-lg border text-left text-xs ${
-                    importError.isWarning
-                      ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-800/80 text-amber-900 dark:text-amber-200'
-                      : 'bg-rose-50 dark:bg-rose-950/40 border-rose-300 dark:border-rose-800/80 text-rose-900 dark:text-rose-200'
-                  }`}
+                  key={item.id}
+                  className="flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 gap-2"
                 >
-                  <div className="flex items-start gap-2.5">
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
                     <FontAwesomeIcon
-                      icon={importError.isWarning ? faTriangleExclamation : faCircleExclamation}
-                      className={`w-4 h-4 shrink-0 mt-0.5 ${importError.isWarning ? 'text-amber-600' : 'text-rose-600'}`}
+                      icon={item.type === 'XML' ? faFileCode : faFilePdf}
+                      className={`w-5 h-5 shrink-0 ${item.type === 'XML' ? 'text-blue-500' : 'text-red-500'}`}
                     />
-                    <div className="space-y-1">
-                      <p className="font-bold text-sm">{importError.title}</p>
-                      <p className="leading-relaxed whitespace-pre-wrap">{importError.message}</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-medium text-slate-900 dark:text-slate-100 truncate">{item.name}</p>
+                      <p className="text-[11px] text-slate-500">
+                        {item.size} • {item.type}
+                        {item.error && (
+                          <span className="ml-2 text-rose-600 dark:text-rose-400 italic">{item.error}</span>
+                        )}
+                        {item.status === 'done' && item.result && (
+                          <span className="ml-2 text-emerald-600 dark:text-emerald-400">NF-e {item.result.numero}</span>
+                        )}
+                        {item.status === 'duplicate' && item.error && (
+                          <span className="ml-2 text-amber-600 dark:text-amber-400">{item.error}</span>
+                        )}
+                      </p>
                     </div>
                   </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <StatusBadge status={item.status} />
+                    {item.status !== 'processing' && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveFile(item.id)}
+                        className="p-1 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded transition-colors"
+                        title="Remover arquivo"
+                      >
+                        <FontAwesomeIcon icon={faTrashCan} className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
                 </div>
+              ))}
+            </div>
+          )}
+
+          {/* Barra de progresso */}
+          {total > 0 && concluded > 0 && (
+            <div className="mt-4">
+              <div className="flex justify-between text-xs text-slate-500 mb-1">
+                <span>{progressPct}% concluído</span>
+                <span>{concluded}/{total} arquivos</span>
+              </div>
+              <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2">
+                <div
+                  className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${progressPct}%` }}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Ações */}
+          {selectedFiles.length > 0 && (
+            <div className="mt-4 flex flex-wrap items-center gap-2 justify-center">
+              <button
+                type="button"
+                onClick={() => addMoreRef.current?.click()}
+                className="text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 cursor-pointer"
+              >
+                <FontAwesomeIcon icon={faPlus} className="w-3 h-3" />
+                Adicionar mais arquivos
+              </button>
+
+              {hasPending && !isProcessingAll && (
+                <Button
+                  buttonType="primary"
+                  size="small"
+                  onClick={() => processAllFiles()}
+                >
+                  <FontAwesomeIcon icon={faPlay} className="mr-1.5 w-3 h-3" />
+                  Importar {pendingCount} arquivo{pendingCount !== 1 ? 's' : ''}
+                </Button>
               )}
 
-              {/* Card de Sucesso com Resumo da Nota e Ação Direta para Conferência */}
-              {importSuccess && !isProcessing && (
-                <div className="mt-4 p-5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/80 space-y-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-emerald-200/80 dark:border-emerald-800/60 pb-3">
-                    <div className="flex items-center gap-2">
-                      <FontAwesomeIcon icon={faCircleCheck} className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                      <div>
-                        <h3 className="text-sm font-bold text-emerald-900 dark:text-emerald-100">
-                          NF-e {importSuccess.numero} importada com sucesso!
-                        </h3>
-                        <p className="text-xs text-emerald-700 dark:text-emerald-300">
-                          Série {importSuccess.serie} • Chave: <span className="font-mono">{importSuccess.chaveAcesso}</span>
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        buttonType="primary"
-                        size="small"
-                        onClick={() => router.push(`/documentos/${importSuccess.id}/conferencia`)}
-                      >
-                        <FontAwesomeIcon icon={faPlay} className="mr-1.5" />
-                        Abrir na Conferência
-                      </Button>
-                    </div>
-                  </div>
+              {isProcessingAll && (
+                <span className="flex items-center gap-1.5 text-xs text-blue-600 font-medium">
+                  <FontAwesomeIcon icon={faCircleNotch} className="animate-spin w-3.5 h-3.5" />
+                  Processando...
+                </span>
+              )}
 
-                  {/* Grid de Informações Extraídas */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-                    <div className="bg-white dark:bg-slate-800/80 p-3 rounded border border-emerald-100 dark:border-emerald-900/40">
-                      <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block mb-1">
-                        Emitente
-                      </span>
-                      <p className="font-bold text-slate-900 dark:text-slate-100 truncate" title={importSuccess.emitente.razaoSocial}>
-                        {importSuccess.emitente.razaoSocial}
-                      </p>
-                      <p className="text-[11px] text-slate-500 mt-0.5">
-                        {importSuccess.emitente.cnpj || 'CNPJ não informado'}
-                      </p>
-                    </div>
-
-                    <div className="bg-white dark:bg-slate-800/80 p-3 rounded border border-emerald-100 dark:border-emerald-900/40">
-                      <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block mb-1">
-                        Destinatário
-                      </span>
-                      <p className="font-bold text-slate-900 dark:text-slate-100 truncate" title={importSuccess.destinatario.nome}>
-                        {importSuccess.destinatario.nome}
-                      </p>
-                      <p className="text-[11px] text-slate-500 mt-0.5">
-                        {importSuccess.destinatario.pais} ({importSuccess.destinatario.uf})
-                      </p>
-                    </div>
-
-                    <div className="bg-white dark:bg-slate-800/80 p-3 rounded border border-emerald-100 dark:border-emerald-900/40">
-                      <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block mb-1">
-                        Produtos / Linhas
-                      </span>
-                      <p className="text-base font-bold text-blue-600 dark:text-blue-400">
-                        {importSuccess.itensCount} {importSuccess.itensCount === 1 ? 'item' : 'itens'}
-                      </p>
-                      <p className="text-[11px] text-slate-500 mt-0.5 truncate" title={importSuccess.naturezaOperacao}>
-                        {importSuccess.naturezaOperacao || 'Operação normal'}
-                      </p>
-                    </div>
-
-                    <div className="bg-white dark:bg-slate-800/80 p-3 rounded border border-emerald-100 dark:border-emerald-900/40">
-                      <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block mb-1">
-                        Valor Total da NF-e
-                      </span>
-                      <p className="text-base font-bold text-emerald-600 dark:text-emerald-400">
-                        {formatBRL(importSuccess.valorTotal)}
-                      </p>
-                      <p className="text-[11px] text-slate-500 mt-0.5">
-                        Produtos: {formatBRL(importSuccess.valorProdutos)}
-                      </p>
-                    </div>
-                  </div>
-                </div>
+              {hasErrors && !isProcessingAll && (
+                <Button
+                  buttonType="secondary"
+                  size="small"
+                  outline
+                  onClick={handleReprocessErrors}
+                >
+                  <FontAwesomeIcon icon={faRotateRight} className="mr-1.5 w-3 h-3" />
+                  Reprocessar com Erro ({errorCount})
+                </Button>
               )}
             </div>
           )}
         </div>
+
+        {/* Resumo pós-processamento */}
+        {concluded > 0 && concluded === total && total > 0 && (
+          <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-4 space-y-3">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+              <FontAwesomeIcon icon={faCircleCheck} className="text-emerald-500" />
+              Resumo da Importação
+            </h3>
+            <div className="flex flex-wrap gap-3 text-xs">
+              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 font-semibold">
+                <FontAwesomeIcon icon={faCircleCheck} className="w-3 h-3" />
+                {doneCount} importado{doneCount !== 1 ? 's' : ''}
+              </span>
+              {duplicateCount > 0 && (
+                <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 font-semibold">
+                  <FontAwesomeIcon icon={faCopy} className="w-3 h-3" />
+                  {duplicateCount} duplicado{duplicateCount !== 1 ? 's' : ''}
+                </span>
+              )}
+              {errorCount > 0 && (
+                <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300 font-semibold">
+                  <FontAwesomeIcon icon={faCircleExclamation} className="w-3 h-3" />
+                  {errorCount} com erro{errorCount !== 1 ? 's' : ''}
+                </span>
+              )}
+            </div>
+            {doneIds.length > 0 && (
+              <Button
+                buttonType="primary"
+                size="small"
+                onClick={() => router.push(`/preparacoes/nova?sourceIds=${doneIds.join(',')}`)}
+              >
+                <FontAwesomeIcon icon={faArrowRight} className="mr-1.5 w-3 h-3" />
+                Iniciar Preparação ({doneIds.length} nota{doneIds.length !== 1 ? 's' : ''})
+              </Button>
+            )}
+          </div>
+        )}
+
+        {/* Botão Iniciar Preparação parcial (enquanto ainda há pendentes) */}
+        {doneIds.length > 0 && concluded < total && (
+          <div className="flex justify-end">
+            <Button
+              buttonType="primary"
+              size="small"
+              onClick={() => router.push(`/preparacoes/nova?sourceIds=${doneIds.join(',')}`)}
+            >
+              <FontAwesomeIcon icon={faArrowRight} className="mr-1.5 w-3 h-3" />
+              Iniciar Preparação com {doneIds.length} nota{doneIds.length !== 1 ? 's' : ''} importada{doneIds.length !== 1 ? 's' : ''}
+            </Button>
+          </div>
+        )}
 
         {/* 5 Cenários de Demonstração Rápidos */}
         <div className="bg-white dark:bg-slate-800 p-5 rounded-lg border border-slate-200 dark:border-slate-700 shadow-xs space-y-4">

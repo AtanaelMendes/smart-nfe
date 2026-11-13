@@ -55,8 +55,9 @@ export function AppProvider({ children }) {
     } catch (e) {}
 
     const isLg = typeof window !== 'undefined' ? window.innerWidth > 1024 : true;
+    const defaultCollapsed = typeof window !== 'undefined' ? window.innerWidth <= 1024 : false;
 
-    sidebarHydratedRef.current = true;
+    // sidebarHydratedRef.current = true; // Declarado para garantia estática; ativação real ocorre dentro do timeout pós-montagem
 
     const timer = setTimeout(() => {
       setIsLgScreen(isLg);
@@ -64,8 +65,9 @@ export function AppProvider({ children }) {
         setSidebarCollapsedState(storedCollapsed === 'true');
       } else {
         // Default expandido (>1024px) sem preferência salva, default recolhido (<=1024px)
-        setSidebarCollapsedState(!isLg);
+        setSidebarCollapsedState(defaultCollapsed);
       }
+      sidebarHydratedRef.current = true;
       if (isDark) {
         setDarkMode(true);
         document.documentElement.classList.toggle('dark', true);
@@ -83,7 +85,7 @@ export function AppProvider({ children }) {
     if (typeof window === 'undefined') return;
 
     const handleResize = () => {
-      const isLg = window.innerWidth > 1024;
+      const isLg = window.innerWidth >= 1024;
       setIsLgScreen(isLg);
       if (isLg) {
         setMobileDrawerOpen(false);

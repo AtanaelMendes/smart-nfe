@@ -1,5 +1,5 @@
 'use client';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -80,6 +80,7 @@ export default function SmartNFeSidebar({
   onMobileClose: propOnMobileClose,
 } = {}) {
   const pathname = usePathname();
+  const prevPathnameRef = useRef(pathname);
   const appContext = useAppContext();
 
   const collapsed = propCollapsed !== undefined ? propCollapsed : appContext?.sidebarCollapsed ?? false;
@@ -115,10 +116,13 @@ export default function SmartNFeSidebar({
     };
   }, [mobileOpen]);
 
-  // Fecha o drawer móvel automaticamente na navegação de rotas
+  // Fecha o drawer móvel automaticamente na navegação de rotas (apenas se a rota realmente mudou)
   useEffect(() => {
-    if (mobileOpen && onMobileClose) {
-      onMobileClose();
+    if (prevPathnameRef.current !== pathname) {
+      prevPathnameRef.current = pathname;
+      if (mobileOpen && onMobileClose) {
+        onMobileClose();
+      }
     }
   }, [pathname, mobileOpen, onMobileClose]);
 
