@@ -3,7 +3,7 @@
 export default function DemoBadge() {
   return (
     <div
-      className="fixed bottom-3 left-1/2 -translate-x-1/2 z-50 pointer-events-none select-none"
+      className="fixed bottom-3 left-1/2 -translate-x-1/2 z-30 pointer-events-none select-none"
       data-testid="demo-badge"
       aria-hidden="true"
     >

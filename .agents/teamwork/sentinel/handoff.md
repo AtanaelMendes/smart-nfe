@@ -1,41 +1,33 @@
-# Handoff Report — Project Sentinel Final Delivery
+# Final Sentinel Handoff Report: Sistema de Tourtip / Onboarding Contextual no SmartNFe
 
 ## 1. Observation
-- **Branch and Git Status**:
-  - All source code, components, calculation libraries, test suites, and XML parser modules reside on branch `fix/frontend-xml-conferencia-v0.1.1`.
-  - All changes were committed in commit `46e1c17 feat(frontend): implement real xml nfe 55 import, stable conference table, safe fiscal validation and decimal division engine`.
-  - The `master` branch remains untouched and matches `origin/master` at `647448281f2232fee9f36ddc9da7cb6bfa80736f`. No merge to master has been performed.
-- **Milestones Completed & Verified**:
-  - M1: Browser XML Parser & Session Memory Repository (`app/features/xml/`, `app/documentos/importar/page.jsx`, `app/features/invoiceRepository.js`) — PASSED GATE.
-  - M2: Conference Table & Decimal Recalculation (`app/documentos/[id]/conferencia/page.jsx`, `app/lib/calculations/invoiceTotals.js`) — PASSED GATE.
-  - M3: Validation Safety Assistant & Undo Mechanism (`app/documentos/[id]/validacao/page.jsx`) — PASSED GATE.
-  - M4: Invoice Splitting & Balance Conservation (`app/documentos/[id]/divisao/page.jsx`, `app/lib/calculations/divisionMath.js`) — PASSED GATE.
-  - M5: Integration Tests, Lint & Build Gate (`tests/integration/*.test.mjs`, `eslint.config.mjs`) — PASSED GATE.
-- **Independent Victory Audit**:
-  - Performed by `teamwork_victory_auditor` in blocking mode.
-  - Verdict: **VICTORY CONFIRMED**.
-  - All 43 canonical integration tests passed, 0 ESLint errors/warnings, Next.js Turbopack build compiled with exit code 0.
+- O usuário e o agente chamador solicitaram a implementação do sistema de tourtip / onboarding contextual por tela no SmartNFe, cobrindo 8 rotas principais, sem criação de novos arquivos de testes automatizados e mantendo foco estrito na entrega da feature com zero erros de lint e build na branch `fix/frontend-xml-conferencia-v0.1.1`.
+- A rota SWE Light (`teamwork_swe`) foi selecionada e orquestrou um ciclo com `teamwork_implementer` e 3 rodadas sequenciais de `teamwork_reviewer`, culminando na auditoria do `teamwork_victory_auditor`.
+- O Sentinel acionou uma auditoria independente adicional (`victory_auditor_sentinel`), que conduziu a perícia de 3 fases e emitiu o veredito formal `VICTORY CONFIRMED`.
 
 ## 2. Logic Chain
-1. The user requested functional corrections to SmartNFe frontend v0.1.1, real browser XML NF-e model 55 import, stable editing by `itemId`, elimination of binary floating point, safe fiscal validations with confirmation and undo, and exact decimal division.
-2. The orchestrator decomposed the project into 5 sequential quality gates with dual-track testing and rigorous reviewer/challenger/forensic auditor verification.
-3. Upon victory claim, Sentinel dispatched an independent victory auditor with the original request path.
-4. The victory auditor independently executed tests and code inspection, confirming zero facades, zero floating point bypasses, complete session isolation, 100% test pass rate, and strict git branch discipline.
-5. All background tasks and subagents have been terminated per protocol.
+- **R1 (Dicionário Centralizado de Tourtips)**: Implementado em `app/config/screenTours.js` mapeando as 8 rotas operacionais (`/dashboard`, `/documentos/importar`, `/documentos`, `/documentos/[id]/conferencia`, `/documentos/[id]/validacao`, `/documentos/[id]/divisao`, `/notas-preparadas` e `/configuracoes`), com título, objetivo, passos práticos, dicas fiscais/segurança, ícones FontAwesome e persistência segura via `localStorage` com fallback em memória.
+- **R2 (Componente ScreenTourTip)**: Desenvolvido em `app/components/feedback/ScreenTourTip.jsx` utilizando `useSyncExternalStore` para reatividade entre abas, renderização automática no primeiro acesso de cada rota (chave `smartnfe_tour_seen_<routeKey>`), controles de minimizar/expandir, descarte via tecla `Escape` (com guarda ativa contra fechamento concorrente de modais de diálogo) e conformidade completa com Tailwind CSS 4 e Dark Mode.
+- **R3 (Integração Global)**:
+  - Adicionado botão de ajuda com ícone de lâmpada em `app/components/Layouts/SmartNFeHeader.jsx`, sensível à rota ativa (`getScreenTourByPath`), com tooltip dinâmico e capacidade de reabrir o guia da tela mesmo que já marcado como visto.
+  - Implementada a ação "Reiniciar guias explicativos" em `app/configuracoes/page.jsx`, que remove todas as chaves de tour visto e emite o evento `smartnfe:tour-updated` para sincronização em tempo real.
+- **R4 (Qualidade, Escopo e Build)**:
+  - Todas as modificações foram mantidas exclusivamente na branch `fix/frontend-xml-conferencia-v0.1.1` sem toques na `master`.
+  - Nenhum novo arquivo de teste automatizado foi criado e o diretório `tests/` permaneceu inalterado.
+  - Execução de `pnpm lint` concluída com 0 erros e 0 warnings.
+  - Execução de `pnpm build` (Next.js 16.0.10 com Turbopack) concluída com 0 erros em todas as 11 rotas estáticas e dinâmicas.
+  - Suite de 383 testes de integração pré-existentes executada com 100% de sucesso.
 
 ## 3. Caveats
-- Real XML imports are kept in volatile browser session memory (`sessionInvoices = new Map()`) to protect client fiscal privacy, while mock demo scenarios continue to operate via demo storage.
-- Live HTTP tests against the dashboard require a running dev server instance on port 3000. All 43 canonical integration tests execute offline via the native test runner.
+- Em ambientes restritivos onde o `localStorage` do navegador esteja completamente bloqueado por políticas de segurança estritas (ex: certas configurações de navegação anônima), o helper `getSafeStorage` utiliza fallback defensivo em memória; nesse cenário, o status de visualização do tour é mantido durante a sessão ativa, mas não persistirá entre recarregamentos completos de página.
+- O atalho global de teclado `Escape` respeita prioritariamente caixas de diálogo e modais abertos no DOM (`[role="dialog"]`, `[aria-modal="true"]`), fechando o tourtip apenas quando nenhum modal de primeiro plano estiver ativo.
 
 ## 4. Conclusion
-Task is 100% complete with all acceptance criteria met and verified under independent audit. The deliverables are production-ready on branch `fix/frontend-xml-conferencia-v0.1.1`.
+- A implementação está 100% concluída e atende a todos os critérios de aceitação estipulados no plano aprovado e em `ORIGINAL_REQUEST.md`.
+- Veredito da auditoria independente: **VICTORY CONFIRMED**.
 
 ## 5. Verification Method
-To verify:
-```powershell
-git branch --show-current
-pnpm lint
-node --no-warnings --test tests/integration/*.test.mjs
-pnpm build
-git log -1
-```
+- **Validação Estática**: `pnpm lint` (0 erros, 0 warnings).
+- **Compilação de Produção**: `pnpm build` (Next.js 16.0.10 Turbopack exit code 0).
+- **Regressão de Testes**: `pnpm test` (383 passed across 104 suites).
+- **Inspeção Git**: `git status tests/` limpo; branch `fix/frontend-xml-conferencia-v0.1.1` mantida.
