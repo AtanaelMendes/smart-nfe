@@ -1,12 +1,12 @@
 /**
- * Motor de Divisão e Distribuição de NF-e — SmartNFe
+ * Motor de Divisão e Distribuição de NF-e — SmartNFe (Legado Refatorado)
  * 
  * Executa o cálculo de saldos remanescentes e a validação em tempo real da distribuição
- * de itens entre duas ou mais notas fiscais de destino preparadas.
+ * de itens entre duas ou mais notas fiscais de destino preparadas (cenário 1 -> M).
  * 
- * Implementa conservação estrita de decimais (escala 4 para quantidades fiscais e
- * escala 2 para valores monetários), eliminação total de ponto flutuante binário (IEEE 754),
- * divisão exata BigInt e rateio proporcional de despesas acessórias com absorção de resíduos.
+ * Refatorado para delegar internamente ao Motor Unificado de Alocação (allocationEngine.js),
+ * mantendo 100% de compatibilidade de assinatura, forma dos retornos e contratos
+ * com os componentes de interface e testes automatizados existentes.
  */
 
 import {
@@ -20,7 +20,14 @@ import {
   cleanDecimalString,
   isDecimalNegative,
   roundDecimal,
+  decimalDistributeEqually,
 } from './decimal.js';
+
+import {
+  calculateItemConservationBalance,
+  calculateAllocationMatrix,
+  validateAllocationBatch as engineValidateAllocationBatch,
+} from './allocationEngine.js';
 
 /**
  * Extrai a quantidade numérica em string a partir de diversos formatos de entrada.
@@ -48,6 +55,7 @@ function getDecimalPlaces(str) {
 
 /**
  * Calcula o saldo restante da distribuição de um item.
+ * Delega internamente para calculateItemConservationBalance do allocationEngine.
  * 
  * @param {string|number} originalQtyStr - Quantidade original da nota
  * @param {Array<string|number|object>} allocatedQtyArray - Array de alocações efetuadas
@@ -65,48 +73,35 @@ export function calculateRemainingBalance(originalQtyStr, allocatedQtyArray) {
   const origStr = cleanDecimalString(originalQtyStr || '0');
   const arr = Array.isArray(allocatedQtyArray) ? allocatedQtyArray : [];
 
-  // Garante escala mínima de 4 casas decimais para quantidades fiscais
   const maxScale = Math.max(
     4,
     getDecimalPlaces(origStr),
     ...arr.map((item) => getDecimalPlaces(extractQuantity(item)))
   );
 
-  let totalAllocated = '0.' + '0'.repeat(maxScale);
-  let hasNegative = false;
-
-  for (const item of arr) {
-    const q = extractQuantity(item);
-    if (isDecimalNegative(q)) {
-      hasNegative = true;
-    }
-    totalAllocated = decimalAdd(totalAllocated, q, maxScale);
-  }
-
-  const balanceStr = decimalSubtract(origStr, totalAllocated, maxScale);
-  const cmp = decimalCompare(balanceStr, '0');
+  const res = calculateItemConservationBalance(origStr, arr, '0', maxScale);
 
   let status = 'ok';
-  if (hasNegative || cmp < 0) {
+  if (res.hasExcess || res.hasNegative) {
     status = 'excess';
-  } else if (cmp > 0) {
+  } else if (res.hasRemaining) {
     status = 'remaining';
   }
 
   return {
-    balanceStr,
+    balanceStr: res.remainingQty,
     status,
-    totalAllocatedStr: totalAllocated,
+    totalAllocatedStr: res.allocatedQtyTotal,
     isOk: status === 'ok',
     hasRemaining: status === 'remaining',
     hasExcess: status === 'excess',
-    hasNegative,
+    hasNegative: res.hasNegative,
   };
 }
 
 /**
  * Valida o lote completo de distribuição da nota fiscal original entre notas de destino.
- * Gera relatório detalhado com diagnóstico por item, resumo por nota e flags de bloqueio.
+ * Delega para o motor unificado com opções restritas a divisão ({ minDestinations: 2, requireBalanced: true }).
  * 
  * @param {Array<object>} originalItems - Itens da nota fiscal original
  * @param {Array<object>|object} destinationNotes - Notas de destino configuradas
@@ -277,10 +272,7 @@ export function validateDivisionBatch(originalItems, destinationNotes) {
  * Distribui uma quantidade em partes estritamente iguais entre N notas
  * utilizando divisão inteira BigInt pura com alocação do resíduo (resto)
  * na última nota para garantir conservação exata da quantidade (0.0000 de sobra).
- * 
- * Exemplo: '10.0000' em 3 notas -> ['3.3333', '3.3333', '3.3334']
- * Exemplo: '100.0000' em 3 notas -> ['33.3333', '33.3333', '33.3334']
- * Exemplo: '0.0004' em 6 notas -> ['0.0000', '0.0000', '0.0000', '0.0000', '0.0000', '0.0004']
+ * Delega para decimalDistributeEqually de decimal.js.
  * 
  * @param {string|number} originalQtyStr - Quantidade total ou saldo a dividir
  * @param {number} numNotes - Número de notas de destino (N >= 1)
@@ -288,42 +280,7 @@ export function validateDivisionBatch(originalItems, destinationNotes) {
  * @returns {Array<string>} Array com N strings decimais com soma identicamente igual à entrada
  */
 export function distributeEqually(originalQtyStr, numNotes, scale = 4) {
-  const n = parseInt(numNotes, 10);
-  if (isNaN(n) || n <= 0) return [];
-
-  const p = parseDecimal(originalQtyStr);
-  const targetScale = Math.max(scale >= 0 ? scale : 4, p.scale);
-
-  // Trata zero ou valores negativos
-  if (p.intVal === 0n || p.sign < 0n) {
-    return Array.from({ length: n }, () => formatBigInt(1n, 0n, targetScale));
-  }
-
-  // 1 única nota recebe 100% da quantidade
-  if (n === 1) {
-    const factor = 10n ** BigInt(targetScale - p.scale);
-    return [formatBigInt(p.sign, p.intVal * factor, targetScale)];
-  }
-
-  const scaledTotal = p.intVal * (10n ** BigInt(targetScale - p.scale));
-  const bigN = BigInt(n);
-
-  // Divisão inteira (piso) e resto exato em BigInt
-  const baseInt = scaledTotal / bigN;
-  const remInt = scaledTotal % bigN;
-
-  const result = [];
-  const baseFormatted = formatBigInt(1n, baseInt, targetScale);
-
-  for (let i = 0; i < n - 1; i++) {
-    result.push(baseFormatted);
-  }
-
-  // A última nota recebe o piso + o resíduo exato (resto da divisão)
-  const lastInt = baseInt + remInt;
-  result.push(formatBigInt(1n, lastInt, targetScale));
-
-  return result;
+  return decimalDistributeEqually(originalQtyStr, numNotes, scale);
 }
 
 /**
@@ -516,3 +473,14 @@ export function apportionAllInvoiceExpenses(parentTotals = {}, notesWithProducts
 
   return result;
 }
+
+const divisionMath = {
+  calculateRemainingBalance,
+  validateDivisionBatch,
+  distributeEqually,
+  distributeRemainingEqually,
+  apportionExpenses,
+  apportionAllInvoiceExpenses,
+};
+
+export default divisionMath;
