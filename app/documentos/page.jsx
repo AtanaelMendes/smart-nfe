@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -12,11 +12,14 @@ import {
   faTrashCan,
   faPenToSquare,
   faRotateRight,
-  faArrowRight,
-  faChevronDown,
-  faChevronRight,
+  faBoxesStacked,
   faXmark,
-  faUser,
+  faBuilding,
+  faGlobe,
+  faTag,
+  faCheckSquare,
+  faSquare,
+  faUserTie,
 } from '@fortawesome/free-solid-svg-icons';
 
 import AppLayout from '@/components/Layouts/AppLayout';
@@ -30,110 +33,13 @@ import { formatDateBR } from '@/lib/formatters/dates';
 import { getStatusLabel, getStatusColor } from '@/lib/formatters/status';
 import { invoiceRepository } from '@/features/invoiceRepository';
 
-// ─── Clientes de Exportação mockados ──────────────────────────────
-const EXPORT_CUSTOMERS = [
+export const EXPORT_CUSTOMERS = [
   { id: 'cust-001', name: 'Global Trading Corporation', country: 'Estados Unidos', foreignId: 'US-12345' },
   { id: 'cust-002', name: 'Asian Grain Corporation', country: 'China', foreignId: 'CN-98765' },
   { id: 'cust-003', name: 'Industrial Supply Corp.', country: 'Estados Unidos', foreignId: 'US-TX-9874125' },
   { id: 'cust-004', name: 'Global Trading Logistics B.V.', country: 'Holanda', foreignId: 'NL884920192B01' },
   { id: 'cust-005', name: 'Auto Assembly Europe GmbH', country: 'Alemanha', foreignId: 'DE-HH-20200' },
 ];
-
-// ─── Hook useDebouncedValue ────────────────────────────────────────
-function useDebouncedValue(value, delay = 350) {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const timer = setTimeout(() => setDebounced(value), delay);
-    return () => clearTimeout(timer);
-  }, [value, delay]);
-  return debounced;
-}
-
-// ─── Componente: pill de filtro ativo ─────────────────────────────
-function FilterPill({ label, onRemove }) {
-  return (
-    <span className="inline-flex items-center gap-1 pl-2.5 pr-1.5 py-0.5 rounded-full text-[11px] font-medium bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-700">
-      {label}
-      <button
-        type="button"
-        onClick={onRemove}
-        className="ml-0.5 hover:text-blue-900 dark:hover:text-blue-100 cursor-pointer"
-      >
-        <FontAwesomeIcon icon={faXmark} className="w-2.5 h-2.5" />
-      </button>
-    </span>
-  );
-}
-
-// ─── Componente: Dialog de atribuição de cliente ──────────────────
-function CustomerDialog({ invoice, onClose, onSave }) {
-  const [selectedId, setSelectedId] = useState(invoice?.clienteExportacao?.id || '');
-  if (!invoice) return null;
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
-      <div
-        className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-sm p-5 space-y-4"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-            <FontAwesomeIcon icon={faUser} className="text-blue-500 w-4 h-4" />
-            Atribuir Cliente de Exportação
-          </h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-pointer">
-            <FontAwesomeIcon icon={faXmark} className="w-4 h-4" />
-          </button>
-        </div>
-        <p className="text-xs text-slate-500">NF-e {invoice.numero} — {invoice.emitente?.razaoSocial}</p>
-        <select
-          value={selectedId}
-          onChange={(e) => setSelectedId(e.target.value)}
-          className="w-full text-xs py-2 px-3 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
-        >
-          <option value="">— Sem cliente atribuído —</option>
-          {EXPORT_CUSTOMERS.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name} ({c.country})
-            </option>
-          ))}
-        </select>
-        <div className="flex justify-end gap-2">
-          <Button buttonType="secondary" size="small" outline onClick={onClose}>
-            Cancelar
-          </Button>
-          <Button
-            buttonType="primary"
-            size="small"
-            onClick={() => {
-              const customer = EXPORT_CUSTOMERS.find((c) => c.id === selectedId) || null;
-              onSave(invoice.id, customer ? { id: customer.id, name: customer.name, country: customer.country } : null);
-            }}
-          >
-            Salvar
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Componente: Grupo colapsável ─────────────────────────────────
-function GroupHeader({ label, count, total, collapsed, onToggle }) {
-  return (
-    <tr
-      className="cursor-pointer select-none bg-slate-100 dark:bg-slate-700/60 hover:bg-slate-200 dark:hover:bg-slate-700"
-      onClick={onToggle}
-    >
-      <td colSpan={99} className="px-4 py-2">
-        <div className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-200">
-          <FontAwesomeIcon icon={collapsed ? faChevronRight : faChevronDown} className="w-3 h-3 text-slate-400" />
-          <span>{label}</span>
-          <span className="ml-auto font-mono text-slate-500">{count} nota{count !== 1 ? 's' : ''} • {formatBRL(total)}</span>
-        </div>
-      </td>
-    </tr>
-  );
-}
 
 export default function DocumentosPage() {
   const router = useRouter();
@@ -142,22 +48,35 @@ export default function DocumentosPage() {
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // ─── Filtros ───────────────────────────────────────────────────
+  // Search & Debounce
+  const [rawSearchTerm, setRawSearchTerm] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  const debouncedSearch = useDebouncedValue(searchTerm, 350);
-  const [statusFilter, setStatusFilter] = useState('ALL');
-  const [typeFilter, setTypeFilter] = useState('ALL');
-  const [saldoFilter, setSaldoFilter] = useState(false);
-  const [clienteFilter, setClienteFilter] = useState('ALL');
-  const [groupBy, setGroupBy] = useState('lista');
-  const [collapsedGroups, setCollapsedGroups] = useState({});
 
-  // ─── Seleção ──────────────────────────────────────────────────
+  // Filters
+  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [typeFilter, setTypeFilter] = useState('ALL'); // 'ALL' | 'XML' | 'PDF'
+  const [customerFilter, setCustomerFilter] = useState('ALL'); // 'ALL' | 'UNASSIGNED' | customerId
+  const [supplierFilter, setSupplierFilter] = useState('ALL');
+  const [onlyAvailableBalance, setOnlyAvailableBalance] = useState(false);
+  const [visualGrouping, setVisualGrouping] = useState('list'); // 'list' | 'customer' | 'supplier' | 'status'
+
+  // Stable selection across filtering/pages
   const [selectedIds, setSelectedIds] = useState(new Set());
 
-  // ─── Dialogs ─────────────────────────────────────────────────
+  // Customer Assignment Dialog
+  const [assignDialog, setAssignDialog] = useState({ open: false, invoiceId: null });
+  const [selectedCustomerId, setSelectedCustomerId] = useState('');
+
+  // Delete Dialog
   const [deleteDialog, setDeleteDialog] = useState({ open: false, invoice: null });
-  const [customerDialog, setCustomerDialog] = useState(null); // invoice object
+
+  // Debounce search term by 300ms
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchTerm(rawSearchTerm);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [rawSearchTerm]);
 
   const loadData = useCallback(async () => {
     try {
@@ -177,6 +96,7 @@ export default function DocumentosPage() {
 
   const handleReset = async () => {
     await invoiceRepository.resetAll();
+    setSelectedIds(new Set());
     await loadData();
     toast.success('Dados demonstrativos restaurados com sucesso!');
   };
@@ -185,12 +105,12 @@ export default function DocumentosPage() {
     if (!deleteDialog.invoice) return;
     try {
       await invoiceRepository.delete(deleteDialog.invoice.id);
-      toast.success(`Documento ${deleteDialog.invoice.numero} removido.`);
       setSelectedIds((prev) => {
         const next = new Set(prev);
         next.delete(deleteDialog.invoice.id);
         return next;
       });
+      toast.success(`Documento ${deleteDialog.invoice.numero} removido.`);
       await loadData();
     } catch (e) {
       toast.error('Não foi possível remover o documento.');
@@ -199,109 +119,82 @@ export default function DocumentosPage() {
     }
   };
 
-  const handleSaveCustomer = async (invoiceId, customerObj) => {
+  const handleAssignCustomer = async () => {
+    if (!assignDialog.invoiceId) return;
+    const customerObj = EXPORT_CUSTOMERS.find((c) => c.id === selectedCustomerId) || null;
     try {
-      await invoiceRepository.update(invoiceId, { clienteExportacao: customerObj });
-      toast.success(customerObj ? `Cliente atribuído: ${customerObj.name}` : 'Cliente removido.');
+      await invoiceRepository.update(assignDialog.invoiceId, {
+        clienteExportacao: customerObj,
+      });
+      toast.success('Cliente de exportação atualizado!');
+      setAssignDialog({ open: false, invoiceId: null });
       await loadData();
     } catch (e) {
-      toast.error('Erro ao atribuir cliente.');
-    } finally {
-      setCustomerDialog(null);
+      toast.error('Falha ao associar cliente de exportação.');
     }
   };
 
-  // ─── Lista de clientes únicos para o filtro ───────────────────
-  const uniqueClientes = useMemo(() => {
-    const names = new Set();
+  // Distinct suppliers for filter dropdown
+  const uniqueSuppliers = useMemo(() => {
+    const map = new Map();
     invoices.forEach((inv) => {
-      if (inv.clienteExportacao?.nome || inv.clienteExportacao?.name) {
-        names.add(inv.clienteExportacao.nome || inv.clienteExportacao.name);
+      if (inv.emitente?.razaoSocial) {
+        map.set(inv.emitente.razaoSocial, inv.emitente.razaoSocial);
       }
     });
-    return Array.from(names);
+    return Array.from(map.values()).sort();
   }, [invoices]);
 
-  // ─── Filtragem ────────────────────────────────────────────────
+  // Filter application
   const filteredInvoices = useMemo(() => {
     return invoices.filter((inv) => {
-      // Status
+      // 1. Status
       if (statusFilter !== 'ALL' && inv.status !== statusFilter) return false;
 
-      // Tipo
-      if (typeFilter !== 'ALL' && String(inv.tipoDocumento || '').toUpperCase() !== typeFilter) return false;
+      // 2. Type
+      if (typeFilter !== 'ALL' && inv.tipoDocumento !== typeFilter) return false;
 
-      // Saldo
-      if (saldoFilter && inv.status === 'utilizado') return false;
-
-      // Cliente
-      if (clienteFilter === '__SEM_CLIENTE__') {
-        if (inv.clienteExportacao?.nome || inv.clienteExportacao?.name) return false;
-      } else if (clienteFilter !== 'ALL') {
-        const clientName = inv.clienteExportacao?.nome || inv.clienteExportacao?.name || '';
-        if (clientName !== clienteFilter) return false;
+      // 3. Customer
+      if (customerFilter === 'UNASSIGNED') {
+        if (inv.clienteExportacao?.id) return false;
+      } else if (customerFilter !== 'ALL') {
+        if (inv.clienteExportacao?.id !== customerFilter) return false;
       }
 
-      // Busca textual
-      if (debouncedSearch) {
-        const term = debouncedSearch.toLowerCase();
-        const matches =
-          String(inv.numero || '').toLowerCase().includes(term) ||
-          String(inv.serie || '').toLowerCase().includes(term) ||
-          String(inv.chaveAcesso || '').toLowerCase().includes(term) ||
-          String(inv.emitente?.cnpj || '').toLowerCase().includes(term) ||
-          String(inv.emitente?.razaoSocial || '').toLowerCase().includes(term) ||
-          String(inv.destinatario?.nome || '').toLowerCase().includes(term);
-        if (!matches) return false;
+      // 4. Supplier
+      if (supplierFilter !== 'ALL' && inv.emitente?.razaoSocial !== supplierFilter) return false;
+
+      // 5. Balance
+      if (onlyAvailableBalance && (inv.status === 'utilizado' || inv.status === 'concluido')) return false;
+
+      // 6. Text search (Number, Serie, Access key, CNPJ, Supplier name, Product code, Product description, NCM)
+      if (searchTerm.trim()) {
+        const term = searchTerm.toLowerCase();
+        const matchNum = inv.numero?.toLowerCase().includes(term);
+        const matchSerie = inv.serie?.toLowerCase().includes(term);
+        const matchChave = inv.chaveAcesso?.toLowerCase().includes(term);
+        const matchEmitente = inv.emitente?.razaoSocial?.toLowerCase().includes(term);
+        const matchCnpj = inv.emitente?.cnpj?.replace(/\D/g, '').includes(term.replace(/\D/g, ''));
+        const matchCliente = inv.clienteExportacao?.name?.toLowerCase().includes(term);
+
+        const matchItem = inv.itens?.some((it) => {
+          return (
+            it.codigo?.toLowerCase().includes(term) ||
+            it.descricao?.toLowerCase().includes(term) ||
+            it.ncm?.toLowerCase().includes(term)
+          );
+        });
+
+        if (!matchNum && !matchSerie && !matchChave && !matchEmitente && !matchCnpj && !matchCliente && !matchItem) {
+          return false;
+        }
       }
 
       return true;
     });
-  }, [invoices, debouncedSearch, statusFilter, typeFilter, saldoFilter, clienteFilter]);
+  }, [invoices, statusFilter, typeFilter, customerFilter, supplierFilter, onlyAvailableBalance, searchTerm]);
 
-  // ─── Filtros ativos (pills) ────────────────────────────────────
-  const activeFilters = useMemo(() => {
-    const filters = [];
-    if (searchTerm) filters.push({ key: 'search', label: `Busca: "${searchTerm}"`, clear: () => setSearchTerm('') });
-    if (statusFilter !== 'ALL') filters.push({ key: 'status', label: `Status: ${statusFilter}`, clear: () => setStatusFilter('ALL') });
-    if (typeFilter !== 'ALL') filters.push({ key: 'type', label: `Tipo: ${typeFilter}`, clear: () => setTypeFilter('ALL') });
-    if (saldoFilter) filters.push({ key: 'saldo', label: 'Com saldo disponível', clear: () => setSaldoFilter(false) });
-    if (clienteFilter !== 'ALL') {
-      const label = clienteFilter === '__SEM_CLIENTE__' ? 'Sem cliente' : `Cliente: ${clienteFilter}`;
-      filters.push({ key: 'cliente', label, clear: () => setClienteFilter('ALL') });
-    }
-    return filters;
-  }, [searchTerm, statusFilter, typeFilter, saldoFilter, clienteFilter]);
-
-  const clearAllFilters = () => {
-    setSearchTerm('');
-    setStatusFilter('ALL');
-    setTypeFilter('ALL');
-    setSaldoFilter(false);
-    setClienteFilter('ALL');
-  };
-
-  // ─── Seleção ──────────────────────────────────────────────────
-  const visibleIds = useMemo(() => filteredInvoices.map((inv) => inv.id), [filteredInvoices]);
-  const allVisibleSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedIds.has(id));
-  const someVisibleSelected = visibleIds.some((id) => selectedIds.has(id));
-
-  const toggleSelectAll = () => {
-    if (allVisibleSelected) {
-      setSelectedIds((prev) => {
-        const next = new Set(prev);
-        visibleIds.forEach((id) => next.delete(id));
-        return next;
-      });
-    } else {
-      setSelectedIds((prev) => {
-        const next = new Set(prev);
-        visibleIds.forEach((id) => next.add(id));
-        return next;
-      });
-    }
-  };
-
+  // Selection handlers
   const toggleSelect = (id) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
@@ -311,68 +204,106 @@ export default function DocumentosPage() {
     });
   };
 
-  // ─── Totais da seleção ────────────────────────────────────────
-  const selectionStats = useMemo(() => {
-    const selected = filteredInvoices.filter((inv) => selectedIds.has(inv.id));
-    const totalItems = selected.reduce((acc, inv) => acc + (inv.itens?.length || 0), 0);
-    const totalValue = selected.reduce((acc, inv) => acc + parseFloat(inv.totais?.valorTotalNota || 0), 0);
-    return { count: selected.length, items: totalItems, value: totalValue };
-  }, [filteredInvoices, selectedIds]);
-
-  // ─── Agrupamento ─────────────────────────────────────────────
-  const groupedData = useMemo(() => {
-    if (groupBy === 'lista') return null;
-
-    const getKey = (inv) => {
-      if (groupBy === 'fornecedor') return inv.emitente?.razaoSocial || 'Sem emitente';
-      if (groupBy === 'status') return getStatusLabel(inv.status) || inv.status || 'Sem status';
-      if (groupBy === 'cliente') return inv.clienteExportacao?.name || inv.clienteExportacao?.nome || 'Sem cliente atribuído';
-      return 'Todos';
-    };
-
-    const groups = {};
-    filteredInvoices.forEach((inv) => {
-      const key = getKey(inv);
-      if (!groups[key]) groups[key] = { key, items: [], totalValue: 0 };
-      groups[key].items.push(inv);
-      groups[key].totalValue += parseFloat(inv.totais?.valorTotalNota || 0);
+  const selectAllFiltered = () => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      filteredInvoices.forEach((inv) => next.add(inv.id));
+      return next;
     });
-
-    return Object.values(groups).sort((a, b) => a.key.localeCompare(b.key));
-  }, [filteredInvoices, groupBy]);
-
-  const toggleGroupCollapse = (key) => {
-    setCollapsedGroups((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  // ─── Colunas ─────────────────────────────────────────────────
+  const clearSelection = () => {
+    setSelectedIds(new Set());
+  };
+
+  const invertSelection = () => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      filteredInvoices.forEach((inv) => {
+        if (next.has(inv.id)) next.delete(inv.id);
+        else next.add(inv.id);
+      });
+      return next;
+    });
+  };
+
+  // Selected metrics
+  const selectedMetrics = useMemo(() => {
+    const selectedList = invoices.filter((inv) => selectedIds.has(inv.id));
+    const count = selectedList.length;
+    const totalItems = selectedList.reduce((acc, inv) => acc + (inv.itens?.length || 0), 0);
+    const totalValue = selectedList.reduce(
+      (acc, inv) => acc + parseFloat(inv.totais?.valorTotalNota || 0),
+      0
+    );
+    const suppliers = new Set(selectedList.map((inv) => inv.emitente?.razaoSocial).filter(Boolean));
+    const customers = new Set(selectedList.map((inv) => inv.clienteExportacao?.id).filter(Boolean));
+    const hasMultipleCustomers = customers.size > 1;
+
+    return {
+      count,
+      totalItems,
+      totalValue,
+      suppliersCount: suppliers.size,
+      customersCount: customers.size,
+      hasMultipleCustomers,
+      selectedList,
+    };
+  }, [invoices, selectedIds]);
+
+  const handleStartPreparationWithSelected = () => {
+    if (selectedIds.size === 0) return;
+    const ids = Array.from(selectedIds).join(',');
+    router.push(`/preparacoes/nova?sourceIds=${ids}`);
+  };
+
+  // Active filters count & reset
+  const hasActiveFilters =
+    statusFilter !== 'ALL' ||
+    typeFilter !== 'ALL' ||
+    customerFilter !== 'ALL' ||
+    supplierFilter !== 'ALL' ||
+    onlyAvailableBalance ||
+    Boolean(searchTerm);
+
+  const resetFilters = () => {
+    setStatusFilter('ALL');
+    setTypeFilter('ALL');
+    setCustomerFilter('ALL');
+    setSupplierFilter('ALL');
+    setOnlyAvailableBalance(false);
+    setRawSearchTerm('');
+    setSearchTerm('');
+  };
+
+  // Table columns
   const columns = useMemo(() => [
     {
-      key: 'select',
-      label: (
-        <input
-          type="checkbox"
-          checked={allVisibleSelected}
-          ref={(el) => { if (el) el.indeterminate = someVisibleSelected && !allVisibleSelected; }}
-          onChange={toggleSelectAll}
-          className="cursor-pointer w-3.5 h-3.5 accent-blue-600"
-          title="Selecionar todos visíveis"
-        />
-      ),
+      key: 'selection',
+      label: '',
       align: 'center',
-      render: (item) => (
-        <input
-          type="checkbox"
-          checked={selectedIds.has(item.id)}
-          onChange={() => toggleSelect(item.id)}
-          onClick={(e) => e.stopPropagation()}
-          className="cursor-pointer w-3.5 h-3.5 accent-blue-600"
-        />
-      ),
+      render: (item) => {
+        const isSelected = selectedIds.has(item.id);
+        return (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleSelect(item.id);
+            }}
+            className="text-slate-400 hover:text-blue-600 cursor-pointer p-1"
+          >
+            <FontAwesomeIcon
+              icon={isSelected ? faCheckSquare : faSquare}
+              className={`w-4 h-4 ${isSelected ? 'text-blue-600' : 'text-slate-300 dark:text-slate-600'}`}
+            />
+          </button>
+        );
+      },
     },
     {
       key: 'numero',
-      label: 'Número / Série',
+      label: 'Número / Chave',
       align: 'left',
       render: (item) => (
         <div className="flex flex-col">
@@ -390,56 +321,66 @@ export default function DocumentosPage() {
               {item.tipoDocumento}
             </span>
           </div>
-          <span className="text-xs text-slate-500 font-mono truncate max-w-[200px]" title={item.chaveAcesso}>
-            Chave: {item.chaveAcesso?.substring(0, 20)}...
+          <span className="text-[11px] text-slate-500 font-mono truncate max-w-[190px]" title={item.chaveAcesso}>
+            {item.chaveAcesso}
           </span>
         </div>
       ),
     },
     {
       key: 'emitente',
-      label: 'Emitente',
+      label: 'Fornecedor (Origem)',
       align: 'left',
       render: (item) => (
-        <div className="flex flex-col max-w-[220px]">
-          <span className="font-medium text-slate-900 dark:text-slate-100 text-sm truncate" title={item.emitente?.razaoSocial}>
-            {item.emitente?.razaoSocial}
+        <div className="flex flex-col max-w-[200px]">
+          <span className="font-medium text-slate-900 dark:text-slate-100 text-xs truncate" title={item.emitente?.razaoSocial}>
+            {item.emitente?.razaoSocial || '—'}
           </span>
-          <span className="text-xs text-slate-500">
-            CNPJ: {item.emitente?.cnpj}
+          <span className="text-[11px] text-slate-500">
+            CNPJ: {item.emitente?.cnpj || '—'}
           </span>
         </div>
       ),
     },
     {
       key: 'cliente',
-      label: 'Cliente',
+      label: 'Cliente Exportação',
       align: 'left',
-      render: (item) => {
-        const nome = item.clienteExportacao?.name || item.clienteExportacao?.nome;
-        return (
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); setCustomerDialog(item); }}
-            className={`text-xs flex items-center gap-1 group cursor-pointer ${
-              nome
-                ? 'text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400'
-                : 'text-slate-400 dark:text-slate-500 hover:text-blue-500 dark:hover:text-blue-400 italic'
-            }`}
-            title="Clique para atribuir cliente"
-          >
-            <FontAwesomeIcon icon={faUser} className="w-3 h-3 text-slate-400 group-hover:text-blue-500" />
-            {nome || '—'}
-          </button>
-        );
-      },
+      render: (item) => (
+        <div className="flex items-center gap-1.5">
+          {item.clienteExportacao ? (
+            <span
+              onClick={() => {
+                setSelectedCustomerId(item.clienteExportacao.id);
+                setAssignDialog({ open: true, invoiceId: item.id });
+              }}
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-purple-50 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 cursor-pointer hover:bg-purple-100 border border-purple-200 dark:border-purple-800 truncate max-w-[150px]"
+              title={`${item.clienteExportacao.name} (${item.clienteExportacao.country})`}
+            >
+              <FontAwesomeIcon icon={faGlobe} className="w-2.5 h-2.5 shrink-0" />
+              <span className="truncate">{item.clienteExportacao.name}</span>
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedCustomerId('');
+                setAssignDialog({ open: true, invoiceId: item.id });
+              }}
+              className="text-[11px] text-slate-400 hover:text-blue-600 underline cursor-pointer"
+            >
+              + Atribuir
+            </button>
+          )}
+        </div>
+      ),
     },
     {
       key: 'data',
       label: 'Emissão',
       align: 'left',
       render: (item) => (
-        <span className="text-sm text-slate-700 dark:text-slate-300">
+        <span className="text-xs text-slate-700 dark:text-slate-300 whitespace-nowrap">
           {formatDateBR(item.dataEmissao || item.emissao)}
         </span>
       ),
@@ -459,7 +400,7 @@ export default function DocumentosPage() {
       label: 'Valor Total',
       align: 'right',
       render: (item) => (
-        <span className="font-bold text-slate-900 dark:text-slate-100 text-sm">
+        <span className="font-bold text-slate-900 dark:text-slate-100 text-xs">
           {formatBRL(item.totais?.valorTotalNota)}
         </span>
       ),
@@ -471,7 +412,7 @@ export default function DocumentosPage() {
       render: (item) => {
         const color = getStatusColor(item.status);
         return (
-          <span className={`inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full border ${color.bg} ${color.text} ${color.border}`}>
+          <span className={`inline-flex items-center px-2 py-0.5 text-[11px] font-semibold rounded-full border ${color.bg} ${color.text} ${color.border}`}>
             {getStatusLabel(item.status)}
           </span>
         );
@@ -482,7 +423,7 @@ export default function DocumentosPage() {
       label: 'Ações',
       align: 'center',
       render: (item) => (
-        <div className="flex items-center justify-center gap-1.5">
+        <div className="flex items-center justify-center gap-1">
           <Button
             buttonType="primary"
             size="small"
@@ -490,12 +431,12 @@ export default function DocumentosPage() {
             title="Conferir documento"
             onClick={() => router.push(`/documentos/${item.id}/conferencia`)}
           >
-            <FontAwesomeIcon icon={faPenToSquare} className="w-3.5 h-3.5 mr-1" />
+            <FontAwesomeIcon icon={faPenToSquare} className="w-3 h-3 mr-1" />
             Conferir
           </Button>
           <button
             onClick={() => setDeleteDialog({ open: true, invoice: item })}
-            className="p-1.5 text-slate-400 hover:text-red-600 rounded transition-colors"
+            className="p-1.5 text-slate-400 hover:text-red-600 rounded transition-colors cursor-pointer"
             title="Excluir documento"
           >
             <FontAwesomeIcon icon={faTrashCan} className="w-3.5 h-3.5" />
@@ -503,63 +444,35 @@ export default function DocumentosPage() {
         </div>
       ),
     },
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  ], [router, selectedIds, allVisibleSelected, someVisibleSelected]);
+  ], [router, selectedIds]);
 
-  // ─── Dados por grupo para renderização ────────────────────────
-  const flatDataWithGroups = useMemo(() => {
-    if (!groupedData) return filteredInvoices;
-    // Flatten com marcadores de grupo
-    const rows = [];
-    groupedData.forEach((group) => {
-      rows.push({ __isGroupHeader: true, key: group.key, count: group.items.length, totalValue: group.totalValue });
-      if (!collapsedGroups[group.key]) {
-        group.items.forEach((item) => rows.push(item));
+  // Visual grouping helper
+  const groupedInvoices = useMemo(() => {
+    if (visualGrouping === 'list') return null;
+
+    const map = new Map();
+    filteredInvoices.forEach((inv) => {
+      let groupKey = 'Outros';
+      if (visualGrouping === 'customer') {
+        groupKey = inv.clienteExportacao?.name || 'Sem cliente atribuído';
+      } else if (visualGrouping === 'supplier') {
+        groupKey = inv.emitente?.razaoSocial || 'Fornecedor não identificado';
+      } else if (visualGrouping === 'status') {
+        groupKey = getStatusLabel(inv.status);
       }
+
+      if (!map.has(groupKey)) {
+        map.set(groupKey, []);
+      }
+      map.get(groupKey).push(inv);
     });
-    return rows;
-  }, [groupedData, filteredInvoices, collapsedGroups]);
+
+    return Array.from(map.entries());
+  }, [filteredInvoices, visualGrouping]);
 
   return (
     <AppLayout breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Documentos' }]}>
       <div className="space-y-4">
-
-        {/* Barra de seleção flutuante */}
-        {selectedIds.size > 0 && (
-          <div className="sticky top-0 z-30 bg-blue-600 dark:bg-blue-700 text-white rounded-lg px-4 py-2.5 flex flex-wrap items-center gap-3 shadow-lg">
-            <span className="text-sm font-semibold">
-              {selectionStats.count} nota{selectionStats.count !== 1 ? 's' : ''} selecionada{selectionStats.count !== 1 ? 's' : ''}
-            </span>
-            <span className="text-blue-200 text-xs">|</span>
-            <span className="text-xs text-blue-100">
-              {selectionStats.items} iten{selectionStats.items !== 1 ? 's' : ''}
-            </span>
-            <span className="text-blue-200 text-xs">|</span>
-            <span className="text-xs text-blue-100 font-mono">
-              Total: {formatBRL(selectionStats.value)}
-            </span>
-            <div className="ml-auto flex items-center gap-2">
-              <button
-                onClick={() => setSelectedIds(new Set())}
-                className="text-xs text-blue-200 hover:text-white underline cursor-pointer"
-              >
-                Limpar seleção
-              </button>
-              <Button
-                buttonType="secondary"
-                size="small"
-                onClick={() => {
-                  const ids = Array.from(selectedIds).join(',');
-                  router.push(`/preparacoes/nova?sourceIds=${ids}`);
-                }}
-              >
-                <FontAwesomeIcon icon={faArrowRight} className="mr-1.5 w-3 h-3" />
-                Iniciar Preparação
-              </Button>
-            </div>
-          </div>
-        )}
-
         {/* Top Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-800 p-4 rounded-lg border border-slate-200 dark:border-slate-700 shadow-xs">
           <div>
@@ -568,11 +481,11 @@ export default function DocumentosPage() {
               Documentos Fiscais de Origem
             </h1>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Gerencie, confira e prepare as notas fiscais importadas para desmembramento e exportação.
+              Gerencie, filtre e selecione NF-e recebidas de fornecedores para agrupamento e preparação de exportação.
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Button
               buttonType="secondary"
               size="small"
@@ -594,253 +507,264 @@ export default function DocumentosPage() {
           </div>
         </div>
 
-        {/* Filtros Avançados */}
-        <div className="bg-white dark:bg-slate-800 p-3 rounded-lg border border-slate-200 dark:border-slate-700 space-y-3">
-          {/* Linha 1: Busca + Status + Tipo */}
-          <div className="flex flex-col sm:flex-row items-stretch gap-2">
-            {/* Busca textual */}
-            <div className="relative flex-1">
+        {/* Stable Selection Floating Bar */}
+        {selectedIds.size > 0 && (
+          <div className="bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800 rounded-lg p-3 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-xs">
+            <div className="flex items-center gap-3 flex-wrap text-xs">
+              <span className="font-bold text-blue-900 dark:text-blue-200 flex items-center gap-1.5">
+                <FontAwesomeIcon icon={faCheckSquare} className="text-blue-600" />
+                {selectedMetrics.count} {selectedMetrics.count === 1 ? 'nota selecionada' : 'notas selecionadas'}
+              </span>
+              <span className="text-blue-800 dark:text-blue-300">
+                • {selectedMetrics.totalItems} itens • Total: {formatBRL(selectedMetrics.totalValue)}
+              </span>
+              <span className="text-blue-700 dark:text-blue-400">
+                • {selectedMetrics.suppliersCount} fornecedores
+              </span>
+              {selectedMetrics.hasMultipleCustomers && (
+                <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300 font-semibold text-[11px]">
+                  ⚠️ Clientes de exportação divergentes
+                </span>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={clearSelection}
+                className="text-xs text-slate-600 dark:text-slate-300 hover:underline px-2 py-1 cursor-pointer"
+              >
+                Limpar seleção
+              </button>
+              <Button
+                buttonType="primary"
+                size="small"
+                onClick={handleStartPreparationWithSelected}
+              >
+                <FontAwesomeIcon icon={faBoxesStacked} className="mr-1.5" />
+                Iniciar Preparação ({selectedMetrics.count})
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Filters & Visual Grouping Section */}
+        <div className="bg-white dark:bg-slate-800 p-4 rounded-lg border border-slate-200 dark:border-slate-700 space-y-3">
+          {/* Row 1: Search & Main Filters */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5">
+            {/* Search Input */}
+            <div className="relative col-span-1 sm:col-span-2">
               <FontAwesomeIcon icon={faMagnifyingGlass} className="absolute left-3 top-2.5 text-slate-400 w-3.5 h-3.5" />
               <input
                 type="text"
-                placeholder="Buscar por nº, série, chave, CNPJ ou razão social..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Buscar por NF-e, fornecedor, CNPJ, produto ou NCM..."
+                value={rawSearchTerm}
+                onChange={(e) => setRawSearchTerm(e.target.value)}
                 className="w-full pl-9 pr-3 py-1.5 text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-blue-500"
               />
             </div>
 
-            {/* Status */}
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="sm:w-44 py-1.5 px-2 text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
-            >
-              <option value="ALL">Todos os status</option>
-              <option value="IMPORTADO">Importado</option>
-              <option value="CONFERENCIA_PENDENTE">Conferência Pendente</option>
-              <option value="EM_PREPARACAO">Em Preparação</option>
-              <option value="COM_INCONSISTENCIAS">Com Inconsistências</option>
-              <option value="PRONTO_REVISAO">Pronto para Revisão</option>
-            </select>
+            {/* Status Dropdown */}
+            <div>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="w-full py-1.5 px-2 text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
+              >
+                <option value="ALL">Todos os status</option>
+                <option value="importado">Importado</option>
+                <option value="em_conferencia">Em Conferência</option>
+                <option value="conferido">Conferido</option>
+                <option value="em_preparacao">Em Preparação</option>
+                <option value="com_inconsistencias">Com Inconsistências</option>
+                <option value="utilizado">Totalmente Utilizado</option>
+              </select>
+            </div>
 
-            {/* Tipo */}
-            <select
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}
-              className="sm:w-32 py-1.5 px-2 text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
-            >
-              <option value="ALL">Todos os tipos</option>
-              <option value="XML">XML</option>
-              <option value="PDF">PDF</option>
-            </select>
+            {/* Visual Grouping */}
+            <div>
+              <select
+                value={visualGrouping}
+                onChange={(e) => setVisualGrouping(e.target.value)}
+                className="w-full py-1.5 px-2 text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-medium text-blue-700 dark:text-blue-400"
+              >
+                <option value="list">Agrupamento: Lista Geral</option>
+                <option value="customer">Agrupar por Cliente de Exportação</option>
+                <option value="supplier">Agrupar por Fornecedor</option>
+                <option value="status">Agrupar por Situação</option>
+              </select>
+            </div>
           </div>
 
-          {/* Linha 2: Cliente + Saldo + Agrupamento */}
-          <div className="flex flex-wrap items-center gap-3">
-            {/* Cliente */}
-            <div className="flex items-center gap-1.5">
-              <FontAwesomeIcon icon={faFilter} className="text-slate-400 w-3 h-3" />
+          {/* Row 2: Secondary Filters & Actions */}
+          <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t border-slate-100 dark:border-slate-700/60 text-xs">
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Customer Filter */}
               <select
-                value={clienteFilter}
-                onChange={(e) => setClienteFilter(e.target.value)}
+                value={customerFilter}
+                onChange={(e) => setCustomerFilter(e.target.value)}
                 className="py-1 px-2 text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
               >
                 <option value="ALL">Todos os clientes</option>
-                <option value="__SEM_CLIENTE__">Sem cliente atribuído</option>
-                {uniqueClientes.map((name) => (
-                  <option key={name} value={name}>{name}</option>
+                <option value="UNASSIGNED">Sem cliente atribuído</option>
+                {EXPORT_CUSTOMERS.map((cust) => (
+                  <option key={cust.id} value={cust.id}>
+                    {cust.name} ({cust.country})
+                  </option>
                 ))}
               </select>
-            </div>
 
-            {/* Saldo */}
-            <label className="flex items-center gap-1.5 text-xs text-slate-700 dark:text-slate-300 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={saldoFilter}
-                onChange={(e) => setSaldoFilter(e.target.checked)}
-                className="w-3.5 h-3.5 accent-blue-600 cursor-pointer"
-              />
-              Apenas com saldo disponível
-            </label>
-
-            {/* Agrupamento */}
-            <div className="flex items-center gap-1.5 ml-auto">
-              <span className="text-xs text-slate-500">Agrupar por:</span>
+              {/* Supplier Filter */}
               <select
-                value={groupBy}
-                onChange={(e) => setGroupBy(e.target.value)}
+                value={supplierFilter}
+                onChange={(e) => setSupplierFilter(e.target.value)}
+                className="py-1 px-2 text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 max-w-[180px] truncate"
+              >
+                <option value="ALL">Todos fornecedores</option>
+                {uniqueSuppliers.map((supp) => (
+                  <option key={supp} value={supp}>
+                    {supp}
+                  </option>
+                ))}
+              </select>
+
+              {/* Type Filter */}
+              <select
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value)}
                 className="py-1 px-2 text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
               >
-                <option value="lista">Lista simples</option>
-                <option value="fornecedor">Fornecedor</option>
-                <option value="status">Status</option>
-                <option value="cliente">Cliente</option>
+                <option value="ALL">XML e PDF</option>
+                <option value="XML">Apenas XML</option>
+                <option value="PDF">Apenas PDF</option>
               </select>
-            </div>
-          </div>
 
-          {/* Pills de filtros ativos */}
-          {activeFilters.length > 0 && (
-            <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-slate-100 dark:border-slate-700">
-              <span className="text-[11px] text-slate-400 font-medium">Filtros ativos:</span>
-              {activeFilters.map((f) => (
-                <FilterPill key={f.key} label={f.label} onRemove={f.clear} />
-              ))}
+              {/* Balance Checkbox */}
+              <label className="flex items-center gap-1.5 text-slate-700 dark:text-slate-300 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={onlyAvailableBalance}
+                  onChange={(e) => setOnlyAvailableBalance(e.target.checked)}
+                  className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span>Apenas com saldo disponível</span>
+              </label>
+            </div>
+
+            {/* Selection fast actions */}
+            <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={clearAllFilters}
-                className="text-[11px] text-rose-600 dark:text-rose-400 hover:underline ml-1 cursor-pointer"
+                onClick={selectAllFiltered}
+                className="text-blue-600 hover:underline cursor-pointer"
               >
-                Limpar todos
+                Selecionar visíveis ({filteredInvoices.length})
               </button>
+              <span>•</span>
+              <button
+                type="button"
+                onClick={invertSelection}
+                className="text-slate-500 hover:underline cursor-pointer"
+              >
+                Inverter
+              </button>
+              {hasActiveFilters && (
+                <>
+                  <span>•</span>
+                  <button
+                    type="button"
+                    onClick={resetFilters}
+                    className="text-rose-600 hover:underline cursor-pointer flex items-center gap-1"
+                  >
+                    <FontAwesomeIcon icon={faXmark} />
+                    Limpar filtros
+                  </button>
+                </>
+              )}
             </div>
-          )}
+          </div>
         </div>
 
-        {/* Tabela de Dados */}
-        <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-xs overflow-hidden">
-          {groupBy === 'lista' ? (
+        {/* Data Presentation (Standard or Grouped) */}
+        {groupedInvoices ? (
+          <div className="space-y-4">
+            {groupedInvoices.map(([groupName, groupItems]) => {
+              const groupTotal = groupItems.reduce(
+                (acc, inv) => acc + parseFloat(inv.totais?.valorTotalNota || 0),
+                0
+              );
+              return (
+                <div
+                  key={groupName}
+                  className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden shadow-xs"
+                >
+                  <div className="bg-slate-50 dark:bg-slate-900/50 px-4 py-2.5 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between text-xs">
+                    <span className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                      <FontAwesomeIcon icon={faBuilding} className="text-blue-600" />
+                      {groupName} ({groupItems.length} {groupItems.length === 1 ? 'documento' : 'documentos'})
+                    </span>
+                    <span className="font-semibold text-slate-700 dark:text-slate-300">
+                      Total: {formatBRL(groupTotal)}
+                    </span>
+                  </div>
+                  <DataTable
+                    data={groupItems}
+                    columns={columns}
+                    dense={true}
+                    mainText=""
+                  />
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-xs overflow-hidden">
             <DataTable
               data={filteredInvoices}
               columns={columns}
               dense={false}
               mainText={`Listagem de Documentos (${filteredInvoices.length} encontrados)`}
             />
-          ) : (
-            <div>
-              <div className="px-4 py-2.5 border-b border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-500">
-                {filteredInvoices.length} documento{filteredInvoices.length !== 1 ? 's' : ''} — agrupado por {groupBy}
-              </div>
-              <table className="w-full text-xs">
-                <thead className="bg-slate-50 dark:bg-slate-900/40 border-b border-slate-200 dark:border-slate-700">
-                  <tr>
-                    <th className="px-4 py-2 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider w-8">
-                      <input
-                        type="checkbox"
-                        checked={allVisibleSelected}
-                        onChange={toggleSelectAll}
-                        className="cursor-pointer w-3.5 h-3.5 accent-blue-600"
-                      />
-                    </th>
-                    <th className="px-4 py-2 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Número</th>
-                    <th className="px-4 py-2 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Emitente</th>
-                    <th className="px-4 py-2 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Cliente</th>
-                    <th className="px-4 py-2 text-center text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Itens</th>
-                    <th className="px-4 py-2 text-right text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Valor</th>
-                    <th className="px-4 py-2 text-center text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Status</th>
-                    <th className="px-4 py-2 text-center text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Ações</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
-                  {groupedData && groupedData.map((group) => (
-                    <>
-                      <GroupHeader
-                        key={`group-${group.key}`}
-                        label={group.key}
-                        count={group.items.length}
-                        total={group.totalValue}
-                        collapsed={!!collapsedGroups[group.key]}
-                        onToggle={() => toggleGroupCollapse(group.key)}
-                      />
-                      {!collapsedGroups[group.key] && group.items.map((item) => {
-                        const isSelected = selectedIds.has(item.id);
-                        const color = getStatusColor(item.status);
-                        const clienteNome = item.clienteExportacao?.name || item.clienteExportacao?.nome;
-                        return (
-                          <tr
-                            key={item.id}
-                            className={`transition-colors ${isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : 'hover:bg-slate-50 dark:hover:bg-slate-700/30'}`}
-                          >
-                            <td className="px-4 py-2.5 text-center">
-                              <input
-                                type="checkbox"
-                                checked={isSelected}
-                                onChange={() => toggleSelect(item.id)}
-                                className="cursor-pointer w-3.5 h-3.5 accent-blue-600"
-                              />
-                            </td>
-                            <td className="px-4 py-2.5">
-                              <div className="flex flex-col">
-                                <div className="flex items-center gap-1">
-                                  <span className="font-semibold text-slate-900 dark:text-slate-100">NF-e {item.numero}</span>
-                                  <span className={`text-[10px] font-bold px-1 py-0.5 rounded ${item.tipoDocumento === 'XML' ? 'bg-blue-100 text-blue-700' : 'bg-rose-100 text-rose-700'}`}>
-                                    {item.tipoDocumento}
-                                  </span>
-                                </div>
-                                <span className="text-[11px] text-slate-500 font-mono">{item.chaveAcesso?.substring(0, 16)}...</span>
-                              </div>
-                            </td>
-                            <td className="px-4 py-2.5 max-w-[180px]">
-                              <span className="text-slate-800 dark:text-slate-200 truncate block text-xs" title={item.emitente?.razaoSocial}>
-                                {item.emitente?.razaoSocial}
-                              </span>
-                            </td>
-                            <td className="px-4 py-2.5">
-                              <button
-                                type="button"
-                                onClick={() => setCustomerDialog(item)}
-                                className={`text-xs flex items-center gap-1 cursor-pointer group ${clienteNome ? 'text-slate-700 dark:text-slate-300 hover:text-blue-600' : 'italic text-slate-400 hover:text-blue-500'}`}
-                              >
-                                <FontAwesomeIcon icon={faUser} className="w-3 h-3 text-slate-400 group-hover:text-blue-500" />
-                                {clienteNome || '—'}
-                              </button>
-                            </td>
-                            <td className="px-4 py-2.5 text-center">
-                              <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
-                                {item.itens?.length || 0}
-                              </span>
-                            </td>
-                            <td className="px-4 py-2.5 text-right font-bold text-slate-900 dark:text-slate-100">
-                              {formatBRL(item.totais?.valorTotalNota)}
-                            </td>
-                            <td className="px-4 py-2.5 text-center">
-                              <span className={`inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full border ${color.bg} ${color.text} ${color.border}`}>
-                                {getStatusLabel(item.status)}
-                              </span>
-                            </td>
-                            <td className="px-4 py-2.5 text-center">
-                              <div className="flex items-center justify-center gap-1.5">
-                                <Button
-                                  buttonType="primary"
-                                  size="small"
-                                  outline
-                                  onClick={() => router.push(`/documentos/${item.id}/conferencia`)}
-                                >
-                                  <FontAwesomeIcon icon={faPenToSquare} className="w-3 h-3 mr-1" />
-                                  Conferir
-                                </Button>
-                                <button
-                                  onClick={() => setDeleteDialog({ open: true, invoice: item })}
-                                  className="p-1.5 text-slate-400 hover:text-red-600 rounded"
-                                >
-                                  <FontAwesomeIcon icon={faTrashCan} className="w-3 h-3" />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
-      {/* Dialog de cliente */}
-      {customerDialog && (
-        <CustomerDialog
-          invoice={customerDialog}
-          onClose={() => setCustomerDialog(null)}
-          onSave={handleSaveCustomer}
-        />
-      )}
+      {/* Customer Assignment Modal */}
+      <Dialog
+        showDialog={assignDialog.open}
+        setDialogControl={(open) => setAssignDialog({ open, invoiceId: null })}
+        title="Atribuir Cliente de Exportação"
+        hideTextArea={true}
+        btnAccept="Salvar Associação"
+        btnCancel="Cancelar"
+        confirmActionCallback={handleAssignCustomer}
+      >
+        <div className="p-4 space-y-3 text-xs">
+          <p className="text-slate-600 dark:text-slate-300">
+            Associe esta NF-e de entrada ao cliente final de destino na exportação. Esta informação é comercial e será utilizada na preparação das notas de saída:
+          </p>
 
-      {/* Confirmação de Exclusão */}
+          <div className="space-y-1">
+            <label className="font-bold text-slate-700 dark:text-slate-200">
+              Selecione o Cliente de Exportação:
+            </label>
+            <select
+              value={selectedCustomerId}
+              onChange={(e) => setSelectedCustomerId(e.target.value)}
+              className="w-full p-2 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-xs"
+            >
+              <option value="">— Remover cliente atribuído —</option>
+              {EXPORT_CUSTOMERS.map((cust) => (
+                <option key={cust.id} value={cust.id}>
+                  {cust.name} — {cust.country} ({cust.foreignId})
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </Dialog>
+
+      {/* Delete Confirmation Modal */}
       <Dialog
         showDialog={deleteDialog.open}
         setDialogControl={(open) => setDeleteDialog({ open, invoice: null })}

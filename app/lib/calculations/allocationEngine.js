@@ -143,7 +143,9 @@ export function normalizeUnit(unitStr) {
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/[²]/g, '2')
     .replace(/[³]/g, '3')
-    .replace(/[^A-Z0-9]/g, '');
+    .replace(/\s+/g, ' ')
+    .replace(/[^A-Z0-9 ]/g, '')
+    .trim();
 }
 
 /**
@@ -153,8 +155,9 @@ export function normalizeUnit(unitStr) {
  */
 function getUnitFamily(normalizedUnit) {
   if (!normalizedUnit) return null;
+  const target = normalizeUnit(normalizedUnit);
   for (const [family, members] of Object.entries(UNIT_FAMILIES)) {
-    if (members.includes(normalizedUnit)) {
+    if (members.some((m) => normalizeUnit(m) === target)) {
       return family;
     }
   }

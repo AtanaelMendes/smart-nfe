@@ -9,6 +9,7 @@ import {
   faFileImport,
   faClipboardCheck,
   faGear,
+  faBoxesStacked,
   faChevronLeft,
   faChevronRight,
   faXmark,
@@ -32,6 +33,11 @@ const menuItems = [
     icon: faFileImport,
   },
   {
+    label: 'Preparações',
+    href: '/preparacoes',
+    icon: faBoxesStacked,
+  },
+  {
     label: 'Notas Preparadas',
     href: '/notas-preparadas',
     icon: faClipboardCheck,
@@ -46,9 +52,11 @@ const menuItems = [
 function NavItem({ item, collapsed, pathname, onClick }) {
   const isCurrent = pathname === item.href;
   const isNestedDocument =
-    item.href === '/documentos' &&
-    pathname.startsWith('/documentos/') &&
-    pathname !== '/documentos/importar';
+    (item.href === '/documentos' &&
+      pathname.startsWith('/documentos/') &&
+      pathname !== '/documentos/importar') ||
+    (item.href === '/preparacoes' &&
+      pathname.startsWith('/preparacoes/'));
   const isActive = isCurrent || isNestedDocument;
 
   return (

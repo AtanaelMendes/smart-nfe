@@ -21,6 +21,7 @@ import {
   faTableColumns,
   faClipboardCheck,
   faGear,
+  faBoxesStacked,
 } from '@fortawesome/free-solid-svg-icons';
 
 export const SCREEN_TOURS = {
@@ -279,6 +280,70 @@ export const SCREEN_TOURS = {
     icon: faGear,
     iconName: 'faGear',
   },
+
+  preparacoes: {
+    routeKey: 'preparacoes',
+    route: '/preparacoes',
+    title: 'Preparações de Exportação',
+    titulo: 'Preparações de Exportação',
+    objective:
+      'Gerenciamento de preparações unificadas (Agrupamento N->1, Divisão 1->M e Mistas N->M).',
+    objetivo:
+      'Gerenciamento de preparações unificadas (Agrupamento N->1, Divisão 1->M e Mistas N->M).',
+    steps: [
+      'Visualize todas as preparações em rascunho, ativas ou concluídas.',
+      'Acompanhe o número de origens de fornecedores e destinos de saída vinculados.',
+      'Inicie novas preparações livres ou continue editando rascunhos em andamento.',
+    ],
+    passos: [
+      'Visualize todas as preparações em rascunho, ativas ou concluídas.',
+      'Acompanhe o número de origens de fornecedores e destinos de saída vinculados.',
+      'Inicie novas preparações livres ou continue editando rascunhos em andamento.',
+    ],
+    tips: [
+      'Excluir uma preparação libera imediatamente as quantidades das notas de origem para novas alocações.',
+      'Preparações envolvendo dados fiscais reais são mantidas em memória temporária para conformidade.',
+    ],
+    dicas: [
+      'Excluir uma preparação libera imediatamente as quantidades das notas de origem para novas alocações.',
+      'Preparações envolvendo dados fiscais reais são mantidas em memória temporária para conformidade.',
+    ],
+    icon: faBoxesStacked,
+    iconName: 'faBoxesStacked',
+  },
+
+  preparacoes_nova: {
+    routeKey: 'preparacoes_nova',
+    route: '/preparacoes/nova',
+    title: 'Editor de Preparação (N → M)',
+    titulo: 'Editor de Preparação (N → M)',
+    objective:
+      'Alocação flexível de mercadorias de N fornecedores para M notas de exportação com controle de saldo em tempo real.',
+    objetivo:
+      'Alocação flexível de mercadorias de N fornecedores para M notas de exportação com controle de saldo em tempo real.',
+    steps: [
+      'Selecione as notas de origem desejadas e defina o cliente final de exportação.',
+      'Configure quantas notas preparadas de saída forem necessárias, sem limites fixos.',
+      'Edite as quantidades alocadas na matriz, visualizando o saldo disponível calculado com precisão decimal.',
+      'Revise os totais consolidados e salve como rascunho ou conclua a operação.',
+    ],
+    passos: [
+      'Selecione as notas de origem desejadas e defina o cliente final de exportação.',
+      'Configure quantas notas preparadas de saída forem necessárias, sem limites fixos.',
+      'Edite as quantidades alocadas na matriz, visualizando o saldo disponível calculado com precisão decimal.',
+      'Revise os totais consolidados e salve como rascunho ou conclua a operação.',
+    ],
+    tips: [
+      'A regra de conservação impede que a soma das alocações ativas ultrapasse a quantidade original dos itens.',
+      'A origem de cada produto (sourceInvoiceId + sourceItemId) é preservada perpetuamente.',
+    ],
+    dicas: [
+      'A regra de conservação impede que a soma das alocações ativas ultrapasse a quantidade original dos itens.',
+      'A origem de cada produto (sourceInvoiceId + sourceItemId) é preservada perpetuamente.',
+    ],
+    icon: faBoxesStacked,
+    iconName: 'faBoxesStacked',
+  },
 };
 
 // Aliases por caminho canônico de rota
@@ -290,6 +355,8 @@ SCREEN_TOURS['/documentos/[id]/conferencia'] = SCREEN_TOURS.documentos_conferenc
 SCREEN_TOURS['/documentos/[id]/validacao'] = SCREEN_TOURS.documentos_validacao;
 SCREEN_TOURS['/documentos/[id]/divisao'] = SCREEN_TOURS.documentos_divisao;
 SCREEN_TOURS['/notas-preparadas'] = SCREEN_TOURS.notas_preparadas;
+SCREEN_TOURS['/preparacoes'] = SCREEN_TOURS.preparacoes;
+SCREEN_TOURS['/preparacoes/nova'] = SCREEN_TOURS.preparacoes_nova;
 SCREEN_TOURS['/configuracoes'] = SCREEN_TOURS.configuracoes;
 
 /**
@@ -308,6 +375,8 @@ export function getRouteKeyByPath(pathname) {
   if (/^\/documentos\/[^/]+\/divisao$/.test(cleanPath)) return 'documentos_divisao';
   if (cleanPath === '/documentos') return 'documentos';
   if (cleanPath === '/notas-preparadas') return 'notas_preparadas';
+  if (cleanPath === '/preparacoes') return 'preparacoes';
+  if (cleanPath === '/preparacoes/nova') return 'preparacoes_nova';
   if (cleanPath === '/configuracoes') return 'configuracoes';
 
   return null;

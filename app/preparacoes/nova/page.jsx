@@ -1,18 +1,49 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { Suspense, useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {
+  faBoxesStacked,
+  faArrowLeft,
+  faArrowRight,
+  faPlus,
+  faTrashCan,
+  faCheck,
+  faCircleCheck,
+  faTriangleExclamation,
+  faShieldHalved,
+  faFloppyDisk,
+  faGlobe,
+  faFileInvoice,
+  faBuilding,
+  faCalculator,
+  faListCheck,
+  faLayerGroup,
+  faMagnifyingGlass,
+  faRotateLeft,
+  faBolt,
+} from '@fortawesome/free-solid-svg-icons';
+
 import AppLayout from '@/components/Layouts/AppLayout';
 import Button from '@/components/buttons/Button';
 import Dialog from '@/components/Layouts/Dialog';
-import preparationRepository, { isRealPreparation } from '@/features/preparationRepository';
-import invoiceRepository from '@/features/invoiceRepository';
-import { formatBRL } from '@/lib/formatters/currency';
-import { formatDateBR } from '@/lib/formatters/dates';
 import { useAppContext } from '@/context/AppContext';
+import { invoiceRepository } from '@/features/invoiceRepository';
+import { preparationRepository } from '@/features/preparationRepository';
+import {
+  cleanDecimalString,
+  decimalAdd,
+  decimalSubtract,
+  decimalMultiply,
+  roundDecimal,
+  decimalCompare,
+} from '@/lib/calculations/decimal';
+import { buildCompositeKey } from '@/lib/calculations/allocationEngine';
+import { formatBRL } from '@/lib/formatters/currency';
 
-// ─── Clientes de exportação mockados ────────────────────────────────────────
-const EXPORT_CUSTOMERS = [
+export const EXPORT_CUSTOMERS = [
   { id: 'cust-001', name: 'Global Trading Corporation', country: 'Estados Unidos', foreignId: 'US-12345' },
   { id: 'cust-002', name: 'Asian Grain Corporation', country: 'China', foreignId: 'CN-98765' },
   { id: 'cust-003', name: 'Industrial Supply Corp.', country: 'Estados Unidos', foreignId: 'US-TX-9874125' },
@@ -20,1093 +51,451 @@ const EXPORT_CUSTOMERS = [
   { id: 'cust-005', name: 'Auto Assembly Europe GmbH', country: 'Alemanha', foreignId: 'DE-HH-20200' },
 ];
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-let _idCounter = 0;
-function genId() {
-  return `local-${Date.now()}-${++_idCounter}`;
-}
-
-function determineTipo(origens) {
-  if (!origens || origens.length === 0) return 'mista';
-  if (origens.length === 1) return 'divisao';
-  return 'agrupamento';
-}
-
-function getSaldoDisponivel(invoiceId, itemId, destId, preparation, activeAllocations) {
-  let original = 0;
-  for (const inv of preparation.origens) {
-    if (inv.id === invoiceId) {
-      for (const it of (inv.itens || [])) {
-        if (String(it.id) === String(itemId)) {
-          original = parseFloat(it.quantidade || 0);
-          break;
-        }
-      }
-      break;
-    }
-  }
-  const jaAlocado = parseFloat(activeAllocations.get(`${invoiceId}__${itemId}`) || 0);
-  let alocadoNestaPrep = 0;
-  for (const [key, qty] of Object.entries(preparation.alocacoes)) {
-    const parts = key.split('__');
-    if (parts[0] === invoiceId && parts[1] === String(itemId) && parts[2] !== destId) {
-      alocadoNestaPrep += parseFloat(qty || 0);
-    }
-  }
-  return Math.max(0, original - jaAlocado - alocadoNestaPrep).toFixed(4);
-}
-
-function getAlocadoNestaPrep(invoiceId, itemId, alocacoes) {
-  let total = 0;
-  for (const [key, qty] of Object.entries(alocacoes)) {
-    const parts = key.split('__');
-    if (parts[0] === invoiceId && parts[1] === String(itemId)) {
-      total += parseFloat(qty || 0);
-    }
-  }
-  return total;
-}
-
-function calcDestTotal(destId, preparation) {
-  let total = 0;
-  for (const [key, qty] of Object.entries(preparation.alocacoes)) {
-    const parts = key.split('__');
-    if (parts[2] === destId) {
-      const invoiceId = parts[0];
-      const itemId = parts[1];
-      for (const inv of preparation.origens) {
-        if (inv.id === invoiceId) {
-          for (const it of (inv.itens || [])) {
-            if (String(it.id) === itemId) {
-              const precoSaida = parseFloat(preparation._precosSaida?.[`${invoiceId}__${itemId}__${destId}`] || it.valorUnitario || 0);
-              total += parseFloat(qty || 0) * precoSaida;
-            }
-          }
-        }
-      }
-    }
-  }
-  return total;
-}
-
-// ─── Steps ───────────────────────────────────────────────────────────────────
-const STEPS = [
-  { id: 'origens', label: 'Origens' },
-  { id: 'cliente', label: 'Cliente' },
-  { id: 'destinos', label: 'Destinos' },
-  { id: 'alocacao', label: 'Alocação' },
-  { id: 'revisao', label: 'Revisão' },
-];
-
-const STEP_IDS = STEPS.map(s => s.id);
-
-// ─── Badge ────────────────────────────────────────────────────────────────────
-function Badge({ children, cls }) {
-  return (
-    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${cls}`}>
-      {children}
-    </span>
-  );
-}
-
-// ─── Step: Origens ────────────────────────────────────────────────────────────
-function StepOrigens({ preparation, setPreparation, availableInvoices }) {
-  const [search, setSearch] = useState('');
-  const [selected, setSelected] = useState(new Set());
-
-  const sourceIds = new Set(preparation.origens.map(o => o.id));
-
-  const filtered = availableInvoices.filter(inv => {
-    if (sourceIds.has(inv.id)) return false;
-    if (!search.trim()) return true;
-    const q = search.toLowerCase();
-    return (
-      (inv.numero || '').toLowerCase().includes(q) ||
-      (inv.emitente?.razaoSocial || '').toLowerCase().includes(q) ||
-      (inv.chaveAcesso || '').toLowerCase().includes(q)
-    );
-  });
-
-  const toggleSelect = (id) => {
-    setSelected(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
-  const addSelected = () => {
-    const toAdd = availableInvoices.filter(inv => selected.has(inv.id));
-    setPreparation(prev => {
-      const newOrigens = [...prev.origens, ...toAdd];
-      return {
-        ...prev,
-        origens: newOrigens,
-        tipo: determineTipo(newOrigens),
-      };
-    });
-    setSelected(new Set());
-  };
-
-  const removeOrigem = (invId) => {
-    setPreparation(prev => {
-      const newOrigens = prev.origens.filter(o => o.id !== invId);
-      // Remove alocações desta origem
-      const newAlocacoes = {};
-      for (const [key, val] of Object.entries(prev.alocacoes)) {
-        if (!key.startsWith(invId + '__')) newAlocacoes[key] = val;
-      }
-      return {
-        ...prev,
-        origens: newOrigens,
-        alocacoes: newAlocacoes,
-        tipo: determineTipo(newOrigens),
-      };
-    });
-  };
-
-  const calcInvoiceTotal = (inv) => {
-    return parseFloat(inv.totais?.valorTotalNota || inv.totais?.valorProdutos || 0);
-  };
-
-  return (
-    <div className="space-y-4">
-      <h2 className="text-base font-semibold text-slate-700 dark:text-slate-200">Notas de Origem</h2>
-
-      {/* Origens selecionadas */}
-      {preparation.origens.length > 0 && (
-        <div className="space-y-2">
-          <p className="text-xs text-slate-500 uppercase tracking-wide font-medium">Selecionadas ({preparation.origens.length})</p>
-          {preparation.origens.map(inv => (
-            <div key={inv.id} className="flex items-center justify-between bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg px-4 py-2.5 gap-4">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-mono text-sm font-semibold text-slate-700 dark:text-slate-200">{inv.numero}</span>
-                  {inv.status !== 'em_conferencia' && inv.status !== 'conferido' && (
-                    <Badge cls="bg-amber-100 text-amber-800">Não conferida</Badge>
-                  )}
-                </div>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  {inv.emitente?.razaoSocial} · {formatDateBR(inv.emissao || inv.dataEmissao)} · {(inv.itens || []).length} iten(s)
-                </p>
-              </div>
-              <div className="text-right flex-shrink-0">
-                <p className="text-sm font-medium text-slate-700 dark:text-slate-200">{formatBRL(calcInvoiceTotal(inv))}</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => removeOrigem(inv.id)}
-                className="ml-2 text-slate-400 hover:text-red-600 transition-colors cursor-pointer"
-                title="Remover"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Busca */}
-      <div className="space-y-2">
-        <p className="text-xs text-slate-500 uppercase tracking-wide font-medium">Adicionar notas</p>
-        <input
-          type="text"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          placeholder="Buscar por número, emitente ou chave..."
-          className="w-full border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-
-        {/* Resultados */}
-        <div className="border border-gray-200 dark:border-slate-600 rounded-lg overflow-hidden max-h-64 overflow-y-auto">
-          {filtered.length === 0 ? (
-            <p className="text-sm text-slate-400 text-center py-6">Nenhuma nota disponível</p>
-          ) : (
-            filtered.map(inv => (
-              <label key={inv.id} className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-slate-700/50 cursor-pointer border-b border-gray-100 dark:border-slate-700 last:border-b-0">
-                <input
-                  type="checkbox"
-                  checked={selected.has(inv.id)}
-                  onChange={() => toggleSelect(inv.id)}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-sm font-medium text-slate-700 dark:text-slate-200">{inv.numero}</span>
-                    {inv.status !== 'em_conferencia' && inv.status !== 'conferido' && (
-                      <Badge cls="bg-amber-100 text-amber-800">Não conferida</Badge>
-                    )}
-                  </div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    {inv.emitente?.razaoSocial} · {formatDateBR(inv.emissao || inv.dataEmissao)} · {(inv.itens || []).length} iten(s)
-                  </p>
-                </div>
-                <span className="text-sm text-slate-600 dark:text-slate-300 font-mono flex-shrink-0">
-                  {formatBRL(parseFloat(inv.totais?.valorTotalNota || inv.totais?.valorProdutos || 0))}
-                </span>
-              </label>
-            ))
-          )}
-        </div>
-
-        {selected.size > 0 && (
-          <Button buttonType="primary" size="small" onClick={addSelected}>
-            Adicionar {selected.size} nota(s) selecionada(s)
-          </Button>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ─── Step: Cliente ────────────────────────────────────────────────────────────
-function StepCliente({ preparation, setPreparation }) {
-  const [editing, setEditing] = useState(!preparation.clienteExportacao);
-
-  const handleSelectCustomer = (cust) => {
-    setPreparation(prev => ({ ...prev, clienteExportacao: cust }));
-    setEditing(false);
-  };
-
-  const handleClear = () => {
-    setPreparation(prev => ({ ...prev, clienteExportacao: null }));
-    setEditing(true);
-  };
-
-  return (
-    <div className="space-y-4">
-      <h2 className="text-base font-semibold text-slate-700 dark:text-slate-200">Cliente de Exportação</h2>
-
-      {!editing && preparation.clienteExportacao ? (
-        <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-xl p-5 shadow-sm space-y-3">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="font-semibold text-slate-800 dark:text-slate-100 text-base">{preparation.clienteExportacao.name}</p>
-              <p className="text-sm text-slate-500 dark:text-slate-400">{preparation.clienteExportacao.country}</p>
-              <p className="text-xs text-slate-400 mt-1">ID Estrangeiro: <span className="font-mono">{preparation.clienteExportacao.foreignId}</span></p>
-            </div>
-            <Button buttonType="secondary" size="small" outline onClick={() => setEditing(true)}>
-              Alterar cliente
-            </Button>
-          </div>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <button
-              type="button"
-              onClick={handleClear}
-              className="flex items-center gap-3 p-4 border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-xl text-left hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors cursor-pointer"
-            >
-              <div className="w-9 h-9 rounded-full bg-gray-100 dark:bg-slate-700 flex items-center justify-center flex-shrink-0">
-                <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-slate-600 dark:text-slate-300">Sem cliente</p>
-                <p className="text-xs text-slate-400">Definir depois</p>
-              </div>
-            </button>
-
-            {EXPORT_CUSTOMERS.map(cust => (
-              <button
-                key={cust.id}
-                type="button"
-                onClick={() => handleSelectCustomer(cust)}
-                className={`flex items-center gap-3 p-4 border-2 rounded-xl text-left transition-colors cursor-pointer ${
-                  preparation.clienteExportacao?.id === cust.id
-                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
-                    : 'border-gray-200 dark:border-slate-600 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20'
-                }`}
-              >
-                <div className="w-9 h-9 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center flex-shrink-0 text-blue-700 dark:text-blue-300 font-bold text-sm">
-                  {cust.name[0]}
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-slate-700 dark:text-slate-200 truncate">{cust.name}</p>
-                  <p className="text-xs text-slate-400">{cust.country} · {cust.foreignId}</p>
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── Step: Destinos ───────────────────────────────────────────────────────────
-function StepDestinos({ preparation, setPreparation }) {
-  const addDestino = () => {
-    const n = preparation.destinos.length + 1;
-    setPreparation(prev => ({
-      ...prev,
-      destinos: [...prev.destinos, { id: genId(), nome: `Exportação ${n}`, allocations: {} }],
-    }));
-  };
-
-  const removeDestino = (destId) => {
-    // Check se tem alocações
-    const hasAlloc = Object.keys(preparation.alocacoes).some(k => k.endsWith(`__${destId}`));
-    if (hasAlloc) {
-      if (!confirm('Este destino possui alocações. Deseja removê-lo e apagar as alocações?')) return;
-    }
-    setPreparation(prev => {
-      const newAlocacoes = {};
-      for (const [k, v] of Object.entries(prev.alocacoes)) {
-        if (!k.endsWith(`__${destId}`)) newAlocacoes[k] = v;
-      }
-      return {
-        ...prev,
-        destinos: prev.destinos.filter(d => d.id !== destId),
-        alocacoes: newAlocacoes,
-      };
-    });
-  };
-
-  const updateDestNome = (destId, nome) => {
-    setPreparation(prev => ({
-      ...prev,
-      destinos: prev.destinos.map(d => d.id === destId ? { ...d, nome } : d),
-    }));
-  };
-
-  const countAlocados = (destId) => {
-    return Object.entries(preparation.alocacoes)
-      .filter(([k]) => k.endsWith(`__${destId}`))
-      .length;
-  };
-
-  return (
-    <div className="space-y-4">
-      <h2 className="text-base font-semibold text-slate-700 dark:text-slate-200">Notas de Destino</h2>
-
-      <div className="space-y-3">
-        {preparation.destinos.map((dest, idx) => {
-          const count = countAlocados(dest.id);
-          const total = calcDestTotal(dest.id, preparation);
-          return (
-            <div key={dest.id} className="flex items-center gap-3 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-xl p-4 shadow-sm">
-              <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center text-indigo-700 dark:text-indigo-300 font-bold text-sm flex-shrink-0">
-                {idx + 1}
-              </div>
-              <div className="flex-1 min-w-0 space-y-1">
-                <input
-                  type="text"
-                  value={dest.nome}
-                  onChange={e => updateDestNome(dest.id, e.target.value)}
-                  className="w-full border border-gray-200 dark:border-slate-600 rounded-lg px-3 py-1.5 text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder={`Destino ${idx + 1}`}
-                />
-                <p className="text-xs text-slate-400">
-                  {count} iten(s) alocado(s){total > 0 ? ` · ${formatBRL(total)}` : ''}
-                </p>
-              </div>
-              {preparation.destinos.length > 1 && (
-                <button
-                  type="button"
-                  onClick={() => removeDestino(dest.id)}
-                  className="text-slate-300 hover:text-red-500 transition-colors cursor-pointer"
-                  title="Remover destino"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      <Button buttonType="secondary" size="small" outline onClick={addDestino}>
-        + Adicionar destino
-      </Button>
-
-      {/* Observações */}
-      <div className="space-y-1 pt-2">
-        <label className="text-sm font-medium text-slate-600 dark:text-slate-300">Observações gerais</label>
-        <textarea
-          value={preparation.observacoes || ''}
-          onChange={e => setPreparation(prev => ({ ...prev, observacoes: e.target.value }))}
-          rows={3}
-          className="w-full border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
-          placeholder="Observações opcionais sobre esta preparação..."
-        />
-      </div>
-    </div>
-  );
-}
-
-// ─── Step: Alocação ───────────────────────────────────────────────────────────
-function StepAlocacao({ preparation, setPreparation, activeAllocations }) {
-  const [filterOrigem, setFilterOrigem] = useState('');
-
-  const origens = preparation.origens;
-  const destinos = preparation.destinos;
-
-  // Flatten items das origens filtradas
-  const rows = [];
-  for (const inv of origens) {
-    if (filterOrigem && inv.id !== filterOrigem) continue;
-    for (const it of (inv.itens || [])) {
-      rows.push({ inv, it });
-    }
-  }
-
-  const getAlocKey = (invoiceId, itemId, destId) => `${invoiceId}__${itemId}__${destId}`;
-
-  const getQty = (invoiceId, itemId, destId) => {
-    return preparation.alocacoes[getAlocKey(invoiceId, itemId, destId)] || '';
-  };
-
-  const setQty = (invoiceId, itemId, destId, value) => {
-    const key = getAlocKey(invoiceId, itemId, destId);
-    setPreparation(prev => {
-      const newAlocacoes = { ...prev.alocacoes };
-      if (value === '' || value === '0' || parseFloat(value) === 0) {
-        delete newAlocacoes[key];
-      } else {
-        newAlocacoes[key] = value;
-      }
-      return { ...prev, alocacoes: newAlocacoes };
-    });
-  };
-
-  const alocaTudoPrimeiroDestino = (invoiceId, itemId) => {
-    if (destinos.length === 0) return;
-    const destId = destinos[0].id;
-    const saldo = getSaldoDisponivel(invoiceId, itemId, destId, preparation, activeAllocations);
-    if (parseFloat(saldo) > 0) setQty(invoiceId, itemId, destId, saldo);
-  };
-
-  const alocaTudoParaDestino = (destId) => {
-    setPreparation(prev => {
-      const newAlocacoes = { ...prev.alocacoes };
-      for (const inv of prev.origens) {
-        for (const it of (inv.itens || [])) {
-          const saldo = getSaldoDisponivel(inv.id, it.id, destId, prev, activeAllocations);
-          if (parseFloat(saldo) > 0) {
-            newAlocacoes[getAlocKey(inv.id, it.id, destId)] = saldo;
-          }
-        }
-      }
-      return { ...prev, alocacoes: newAlocacoes };
-    });
-  };
-
-  const limparDestino = (destId) => {
-    setPreparation(prev => {
-      const newAlocacoes = {};
-      for (const [k, v] of Object.entries(prev.alocacoes)) {
-        if (!k.endsWith(`__${destId}`)) newAlocacoes[k] = v;
-      }
-      return { ...prev, alocacoes: newAlocacoes };
-    });
-  };
-
-  const getItemStatus = (invoiceId, itemId) => {
-    const original = (() => {
-      for (const inv of origens) {
-        if (inv.id === invoiceId) {
-          for (const it of (inv.itens || [])) {
-            if (String(it.id) === String(itemId)) return parseFloat(it.quantidade || 0);
-          }
-        }
-      }
-      return 0;
-    })();
-    const jaAlocado = parseFloat(activeAllocations.get(`${invoiceId}__${itemId}`) || 0);
-    const alocadoNesta = getAlocadoNestaPrep(invoiceId, itemId, preparation.alocacoes);
-    const total = jaAlocado + alocadoNesta;
-    if (total <= 0) return { label: 'Não alocado', cls: 'bg-gray-100 text-gray-500' };
-    if (total > original + 0.0001) return { label: 'Excesso', cls: 'bg-red-100 text-red-700' };
-    if (Math.abs(total - original) < 0.0001) return { label: 'OK', cls: 'bg-green-100 text-green-700' };
-    return { label: 'Parcial', cls: 'bg-amber-100 text-amber-700' };
-  };
-
-  if (origens.length === 0) {
-    return (
-      <div className="text-center py-16 text-slate-400">
-        <p>Nenhuma nota de origem selecionada.</p>
-        <p className="text-sm mt-1">Volte ao passo "Origens" para adicionar notas.</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <h2 className="text-base font-semibold text-slate-700 dark:text-slate-200">Alocar Produtos</h2>
-        {origens.length > 1 && (
-          <select
-            value={filterOrigem}
-            onChange={e => setFilterOrigem(e.target.value)}
-            className="border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-1.5 text-sm bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">Todas as origens</option>
-            {origens.map(inv => (
-              <option key={inv.id} value={inv.id}>{inv.numero} — {inv.emitente?.razaoSocial}</option>
-            ))}
-          </select>
-        )}
-      </div>
-
-      <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-slate-700">
-        <table className="w-full text-xs">
-          <thead className="bg-gray-50 dark:bg-slate-700/60 sticky top-0 z-10">
-            <tr>
-              <th className="px-2 py-2 text-left text-slate-500 font-medium whitespace-nowrap">Origem</th>
-              <th className="px-2 py-2 text-center text-slate-500 font-medium">Nº</th>
-              <th className="px-2 py-2 text-left text-slate-500 font-medium">Código</th>
-              <th className="px-2 py-2 text-left text-slate-500 font-medium max-w-[160px]">Descrição</th>
-              <th className="px-2 py-2 text-left text-slate-500 font-medium">NCM</th>
-              <th className="px-2 py-2 text-center text-slate-500 font-medium">Un</th>
-              <th className="px-2 py-2 text-right text-slate-500 font-medium">Qtd. Orig.</th>
-              <th className="px-2 py-2 text-right text-slate-500 font-medium whitespace-nowrap">Já Aloc.</th>
-              <th className="px-2 py-2 text-right text-slate-500 font-medium">Saldo</th>
-              {destinos.map(dest => (
-                <th key={dest.id} className="px-2 py-2 text-center text-slate-500 font-medium min-w-[110px]">
-                  <div className="flex flex-col items-center gap-1">
-                    <span className="truncate max-w-[100px]" title={dest.nome}>{dest.nome}</span>
-                    <div className="flex gap-1">
-                      <button
-                        type="button"
-                        onClick={() => alocaTudoParaDestino(dest.id)}
-                        className="text-blue-500 hover:text-blue-700 text-xs underline cursor-pointer"
-                        title="Alocar tudo neste destino"
-                      >
-                        Tudo
-                      </button>
-                      <span className="text-slate-300">|</span>
-                      <button
-                        type="button"
-                        onClick={() => limparDestino(dest.id)}
-                        className="text-red-400 hover:text-red-600 text-xs underline cursor-pointer"
-                        title="Limpar alocações deste destino"
-                      >
-                        Limpar
-                      </button>
-                    </div>
-                  </div>
-                </th>
-              ))}
-              <th className="px-2 py-2 text-right text-slate-500 font-medium">Preço Unit.</th>
-              <th className="px-2 py-2 text-center text-slate-500 font-medium">Status</th>
-              <th className="px-2 py-2 text-center text-slate-500 font-medium">Ação</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
-            {rows.map(({ inv, it }) => {
-              const jaAlocado = parseFloat(activeAllocations.get(`${inv.id}__${it.id}`) || 0);
-              const alocadoNesta = getAlocadoNestaPrep(inv.id, it.id, preparation.alocacoes);
-              const original = parseFloat(it.quantidade || 0);
-              const saldoGeral = Math.max(0, original - jaAlocado - alocadoNesta).toFixed(4);
-              const status = getItemStatus(inv.id, it.id);
-              const isExcesso = status.label === 'Excesso';
-
-              return (
-                <tr key={`${inv.id}__${it.id}`} className={`bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700/40 ${isExcesso ? 'bg-red-50 dark:bg-red-900/10' : ''}`}>
-                  <td className="px-2 py-1.5 whitespace-nowrap">
-                    <span className="font-mono text-slate-600 dark:text-slate-300">{inv.numero}</span>
-                  </td>
-                  <td className="px-2 py-1.5 text-center text-slate-500">{it.item}</td>
-                  <td className="px-2 py-1.5 font-mono text-slate-600 dark:text-slate-300 whitespace-nowrap">{it.codigo}</td>
-                  <td className="px-2 py-1.5 max-w-[160px]">
-                    <span className="block truncate text-slate-700 dark:text-slate-200" title={it.descricao}>{it.descricao}</span>
-                  </td>
-                  <td className="px-2 py-1.5 font-mono text-slate-500">{it.ncm}</td>
-                  <td className="px-2 py-1.5 text-center text-slate-500">{it.unidade}</td>
-                  <td className="px-2 py-1.5 text-right font-mono text-slate-700 dark:text-slate-200">{parseFloat(it.quantidade || 0).toFixed(4)}</td>
-                  <td className="px-2 py-1.5 text-right font-mono text-amber-600">{jaAlocado > 0 ? jaAlocado.toFixed(4) : '-'}</td>
-                  <td className="px-2 py-1.5 text-right font-mono font-semibold text-slate-700 dark:text-slate-200">{saldoGeral}</td>
-                  {destinos.map(dest => {
-                    const saldo = getSaldoDisponivel(inv.id, it.id, dest.id, preparation, activeAllocations);
-                    const qty = getQty(inv.id, it.id, dest.id);
-                    const exceedsBalance = parseFloat(qty || 0) > parseFloat(saldo) + parseFloat(qty || 0) + 0.0001;
-                    return (
-                      <td key={dest.id} className="px-2 py-1.5 text-center">
-                        <input
-                          type="number"
-                          min="0"
-                          step="0.0001"
-                          value={qty}
-                          onChange={e => setQty(inv.id, String(it.id), dest.id, e.target.value)}
-                          className={`w-24 border rounded px-1.5 py-1 text-xs text-right font-mono focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-slate-700 dark:text-slate-100 ${
-                            exceedsBalance
-                              ? 'border-red-400 bg-red-50 dark:bg-red-900/20'
-                              : 'border-gray-200 dark:border-slate-600 bg-white'
-                          }`}
-                          placeholder="0.0000"
-                        />
-                      </td>
-                    );
-                  })}
-                  <td className="px-2 py-1.5 text-right font-mono text-slate-500 whitespace-nowrap">
-                    {formatBRL(parseFloat(it.valorUnitario || 0))}
-                  </td>
-                  <td className="px-2 py-1.5 text-center">
-                    <Badge cls={status.cls}>{status.label}</Badge>
-                  </td>
-                  <td className="px-2 py-1.5 text-center">
-                    <button
-                      type="button"
-                      onClick={() => alocaTudoPrimeiroDestino(inv.id, it.id)}
-                      className="text-blue-500 hover:text-blue-700 text-xs underline whitespace-nowrap cursor-pointer"
-                      title="Alocar todo o saldo disponível no primeiro destino"
-                    >
-                      Alocar tudo
-                    </button>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-          {/* Totais por destino */}
-          <tfoot className="bg-gray-50 dark:bg-slate-700/60 border-t-2 border-gray-200 dark:border-slate-600">
-            <tr>
-              <td colSpan={9} className="px-2 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 text-right">Totais por destino:</td>
-              {destinos.map(dest => {
-                const total = calcDestTotal(dest.id, preparation);
-                const qtyTotal = Object.entries(preparation.alocacoes)
-                  .filter(([k]) => k.endsWith(`__${dest.id}`))
-                  .reduce((acc, [, v]) => acc + parseFloat(v || 0), 0);
-                return (
-                  <td key={dest.id} className="px-2 py-2 text-center text-xs font-semibold text-slate-700 dark:text-slate-200">
-                    <div>{qtyTotal.toFixed(4)}</div>
-                    <div className="text-slate-400 font-normal">{formatBRL(total)}</div>
-                  </td>
-                );
-              })}
-              <td colSpan={3} />
-            </tr>
-          </tfoot>
-        </table>
-      </div>
-
-      {rows.length === 0 && (
-        <p className="text-center text-slate-400 py-8">Nenhum item encontrado com o filtro selecionado.</p>
-      )}
-    </div>
-  );
-}
-
-// ─── Step: Revisão ────────────────────────────────────────────────────────────
-function StepRevisao({ preparation, activeAllocations }) {
-  const problems = [];
-  if (!preparation.clienteExportacao) problems.push('Cliente de exportação não definido');
-  for (const dest of preparation.destinos) {
-    const count = Object.keys(preparation.alocacoes).filter(k => k.endsWith(`__${dest.id}`)).length;
-    if (count === 0) problems.push(`Destino "${dest.nome}" sem itens alocados`);
-  }
-  for (const inv of preparation.origens) {
-    for (const it of (inv.itens || [])) {
-      const jaAlocado = parseFloat(activeAllocations.get(`${inv.id}__${it.id}`) || 0);
-      const alocadoNesta = getAlocadoNestaPrep(inv.id, it.id, preparation.alocacoes);
-      const original = parseFloat(it.quantidade || 0);
-      if (jaAlocado + alocadoNesta > original + 0.0001) {
-        problems.push(`Item ${it.codigo} (${inv.numero}): saldo negativo`);
-      }
-    }
-  }
-
-  return (
-    <div className="space-y-5">
-      <h2 className="text-base font-semibold text-slate-700 dark:text-slate-200">Revisão Final</h2>
-
-      {/* Problemas */}
-      {problems.length > 0 && (
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-xl p-4 space-y-1">
-          <p className="text-sm font-semibold text-red-700 dark:text-red-400">⚠️ Problemas encontrados</p>
-          <ul className="list-disc list-inside space-y-0.5">
-            {problems.map((p, i) => (
-              <li key={i} className="text-sm text-red-600 dark:text-red-300">{p}</li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {problems.length === 0 && (
-        <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-xl p-3">
-          <p className="text-sm text-green-700 dark:text-green-400 font-medium">✅ Preparação pronta para finalizar</p>
-        </div>
-      )}
-
-      {/* Cards por nota de origem */}
-      <div>
-        <h3 className="text-sm font-semibold text-slate-600 dark:text-slate-300 mb-2">Notas de Origem</h3>
-        <div className="space-y-3">
-          {preparation.origens.map(inv => (
-            <div key={inv.id} className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-xl p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="font-mono font-semibold text-slate-700 dark:text-slate-200">{inv.numero}</span>
-                <span className="text-xs text-slate-400">{inv.emitente?.razaoSocial}</span>
-              </div>
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="text-slate-400">
-                    <th className="text-left pb-1">Código</th>
-                    <th className="text-left pb-1">Descrição</th>
-                    <th className="text-right pb-1">Qtd. Orig.</th>
-                    <th className="text-right pb-1">Alocado</th>
-                    <th className="text-right pb-1">Saldo</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50 dark:divide-slate-700">
-                  {(inv.itens || []).map(it => {
-                    const alocado = getAlocadoNestaPrep(inv.id, it.id, preparation.alocacoes);
-                    const original = parseFloat(it.quantidade || 0);
-                    const saldo = (original - alocado).toFixed(4);
-                    return (
-                      <tr key={it.id}>
-                        <td className="py-1 font-mono text-slate-600 dark:text-slate-300">{it.codigo}</td>
-                        <td className="py-1 text-slate-500 max-w-[180px] truncate" title={it.descricao}>{it.descricao}</td>
-                        <td className="py-1 text-right font-mono text-slate-600 dark:text-slate-300">{original.toFixed(4)}</td>
-                        <td className="py-1 text-right font-mono text-blue-600">{alocado.toFixed(4)}</td>
-                        <td className={`py-1 text-right font-mono ${parseFloat(saldo) < 0 ? 'text-red-600' : 'text-slate-500'}`}>{saldo}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Cards por destino */}
-      <div>
-        <h3 className="text-sm font-semibold text-slate-600 dark:text-slate-300 mb-2">Notas de Destino</h3>
-        <div className="space-y-3">
-          {preparation.destinos.map(dest => {
-            const total = calcDestTotal(dest.id, preparation);
-            const items = [];
-            for (const [key, qty] of Object.entries(preparation.alocacoes)) {
-              const parts = key.split('__');
-              if (parts[2] !== dest.id) continue;
-              const inv = preparation.origens.find(o => o.id === parts[0]);
-              if (!inv) continue;
-              const it = (inv.itens || []).find(i => String(i.id) === parts[1]);
-              if (!it) continue;
-              items.push({ inv, it, qty });
-            }
-            return (
-              <div key={dest.id} className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-xl p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-semibold text-slate-700 dark:text-slate-200">{dest.nome}</span>
-                  <span className="text-sm font-mono font-medium text-slate-600 dark:text-slate-300">{formatBRL(total)}</span>
-                </div>
-                {items.length === 0 ? (
-                  <p className="text-xs text-slate-400 italic">Nenhum item alocado</p>
-                ) : (
-                  <table className="w-full text-xs">
-                    <thead>
-                      <tr className="text-slate-400">
-                        <th className="text-left pb-1">Código</th>
-                        <th className="text-left pb-1">Descrição</th>
-                        <th className="text-right pb-1">Qtd.</th>
-                        <th className="text-right pb-1">Valor Unit.</th>
-                        <th className="text-right pb-1">Total</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-50 dark:divide-slate-700">
-                      {items.map(({ inv, it, qty }) => {
-                        const vu = parseFloat(it.valorUnitario || 0);
-                        const q = parseFloat(qty || 0);
-                        return (
-                          <tr key={`${inv.id}__${it.id}`}>
-                            <td className="py-1 font-mono text-slate-600 dark:text-slate-300">{it.codigo}</td>
-                            <td className="py-1 text-slate-500 max-w-[180px] truncate" title={it.descricao}>{it.descricao}</td>
-                            <td className="py-1 text-right font-mono text-slate-600 dark:text-slate-300">{q.toFixed(4)}</td>
-                            <td className="py-1 text-right font-mono text-slate-500">{formatBRL(vu)}</td>
-                            <td className="py-1 text-right font-mono font-medium text-slate-700 dark:text-slate-200">{formatBRL(q * vu)}</td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Total geral */}
-      <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl p-4 flex items-center justify-between">
-        <span className="font-semibold text-slate-700 dark:text-slate-200">Total Geral</span>
-        <span className="font-mono font-bold text-lg text-slate-800 dark:text-slate-100">
-          {formatBRL(preparation.destinos.reduce((acc, dest) => acc + calcDestTotal(dest.id, preparation), 0))}
-        </span>
-      </div>
-    </div>
-  );
-}
-
-// ─── Main Page ────────────────────────────────────────────────────────────────
-export default function NovaPreparacaoPage() {
+function NovaPreparacaoInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useAppContext();
 
+  const prepIdParam = searchParams.get('id');
+  const sourceIdsParam = searchParams.get('sourceIds');
+
+  // Active step
+  const [activeStep, setActiveStep] = useState('origens'); // 'origens' | 'cliente' | 'destinos' | 'alocacao' | 'revisao'
+
+  // Master Data
+  const [allInvoices, setAllInvoices] = useState([]);
+  const [activeAllocationsMap, setActiveAllocationsMap] = useState(new Map());
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Preparation Entity State
   const [preparation, setPreparation] = useState({
-    titulo: '',
-    tipo: 'mista',
+    id: null,
+    numero: '',
+    titulo: 'Preparação de Exportação',
     status: 'draft',
     clienteExportacao: null,
-    origens: [],
-    destinos: [{ id: genId(), nome: 'Exportação 1', allocations: {} }],
-    alocacoes: {},
-    _precosSaida: {},
+    sourceInvoiceIds: [],
+    destinos: [
+      { id: 'dest-01', nome: 'Exportação 1 - Principal', observacoes: '', clienteId: null },
+    ],
+    // Alocações: { [allocationKey]: { quantity: string, destinationUnitPrice: string } }
+    // Onde allocationKey = `${sourceInvoiceId}__${sourceItemId}__${destId}`
+    allocations: {},
     observacoes: '',
   });
 
-  const [step, setStep] = useState('origens');
-  const [availableInvoices, setAvailableInvoices] = useState([]);
-  const [activeAllocations, setActiveAllocations] = useState(new Map());
-  const [isSaving, setIsSaving] = useState(false);
-  const [isRealMode, setIsRealMode] = useState(false);
-  const [loaded, setLoaded] = useState(false);
+  // Filter in origins step
+  const [originSearch, setOriginSearch] = useState('');
+  const [filterDestinationInTable, setFilterDestinationInTable] = useState('ALL');
+  const [filterOriginInTable, setFilterOriginInTable] = useState('ALL');
 
-  const idParam = searchParams.get('id');
-  const sourceIdsParam = searchParams.get('sourceIds');
-
-  // Carregar dados
+  // Load baseline invoices & existing prep if any
   useEffect(() => {
     async function init() {
       try {
-        const [invoices, allocations] = await Promise.all([
+        setIsLoading(true);
+        const [invoicesList, activeAllocations] = await Promise.all([
           invoiceRepository.list(),
-          preparationRepository.getActiveAllocations(idParam || null),
+          preparationRepository.getActiveAllocations(prepIdParam || null),
         ]);
-        setAvailableInvoices(invoices || []);
-        setActiveAllocations(allocations || new Map());
+        setAllInvoices(invoicesList);
+        setActiveAllocationsMap(activeAllocations);
 
-        if (idParam) {
-          const existing = await preparationRepository.findById(idParam);
+        if (prepIdParam) {
+          // Editing existing preparation
+          const existing = await preparationRepository.findById(prepIdParam);
           if (existing) {
-            // Hidratar origens com itens completos
-            const origensFull = await Promise.all(
-              (existing.origens || []).map(async (orig) => {
-                const inv = (invoices || []).find(i => i.id === (orig.invoiceId || orig.id));
-                return inv || orig;
-              })
-            );
-            setPreparation(prev => ({
-              ...prev,
-              ...existing,
-              origens: origensFull,
-              alocacoes: existing.alocacoes || {},
-              _precosSaida: existing._precosSaida || {},
-            }));
-            setIsRealMode(isRealPreparation(existing));
+            setPreparation({
+              id: existing.id,
+              numero: existing.numero || '',
+              titulo: existing.titulo || 'Preparação de Exportação',
+              status: existing.status || 'draft',
+              clienteExportacao: existing.clienteExportacao || null,
+              sourceInvoiceIds: existing.sourceInvoiceIds || (existing.origens ? existing.origens.map((o) => o.invoiceId || o.id) : []),
+              destinos: Array.isArray(existing.destinos) && existing.destinos.length > 0
+                ? existing.destinos
+                : [{ id: 'dest-01', nome: 'Exportação 1 - Principal' }],
+              allocations: existing.alocacoes || existing.allocations || {},
+              observacoes: existing.observacoes || '',
+            });
           }
         } else if (sourceIdsParam) {
-          const ids = sourceIdsParam.split(',').filter(Boolean);
-          const sourceInvoices = (invoices || []).filter(inv => ids.includes(inv.id));
-          setPreparation(prev => ({
+          // Starting from pre-selected IDs
+          const ids = sourceIdsParam.split(',').map((s) => s.trim()).filter(Boolean);
+          setPreparation((prev) => ({
             ...prev,
-            origens: sourceInvoices,
-            tipo: determineTipo(sourceInvoices),
+            sourceInvoiceIds: ids,
           }));
         }
       } catch (err) {
         console.error('Erro ao inicializar preparação:', err);
+        toast.error('Erro ao carregar dados para a preparação.');
       } finally {
-        setLoaded(true);
+        setIsLoading(false);
       }
     }
     init();
-  }, [idParam, sourceIdsParam]);
+  }, [prepIdParam, sourceIdsParam, toast]);
 
-  const handleSave = useCallback(async (finalStatus = 'draft') => {
-    const hasRealInvoice = preparation.origens.some(inv => inv.isRealImport === true);
-    setIsRealMode(hasRealInvoice);
-    setIsSaving(true);
+  // Derived selected source invoices
+  const selectedInvoices = useMemo(() => {
+    return allInvoices.filter((inv) => preparation.sourceInvoiceIds.includes(inv.id));
+  }, [allInvoices, preparation.sourceInvoiceIds]);
+
+  // Operation Mode: N -> 1 (agrupamento), 1 -> M (divisao), N -> M (mista)
+  const operationMode = useMemo(() => {
+    const origCount = preparation.sourceInvoiceIds.length;
+    const destCount = preparation.destinos.length;
+    if (origCount > 1 && destCount === 1) return 'agrupamento';
+    if (origCount === 1 && destCount > 1) return 'divisao';
+    return 'mista';
+  }, [preparation.sourceInvoiceIds.length, preparation.destinos.length]);
+
+  // Is any source invoice a real volatile import?
+  const isVolatileSession = useMemo(() => {
+    return selectedInvoices.some((inv) => inv.isRealImport);
+  }, [selectedInvoices]);
+
+  // Flattened origin items with balance information
+  const flattenedOriginItems = useMemo(() => {
+    const list = [];
+    selectedInvoices.forEach((inv) => {
+      if (!Array.isArray(inv.itens)) return;
+      inv.itens.forEach((item) => {
+        const compositeKey = buildCompositeKey(inv.id, item.id);
+        const originalQty = cleanDecimalString(item.quantidade || '0');
+        // Already allocated in OTHER preparations
+        const externalAllocatedQty = cleanDecimalString(activeAllocationsMap.get(compositeKey) || '0');
+
+        // Total allocated in THIS current preparation across all destinations
+        let currentPrepAllocatedQty = '0';
+        preparation.destinos.forEach((dest) => {
+          const key = `${inv.id}__${item.id}__${dest.id}`;
+          const alloc = preparation.allocations[key];
+          if (alloc && alloc.quantity) {
+            currentPrepAllocatedQty = decimalAdd(currentPrepAllocatedQty, cleanDecimalString(alloc.quantity), 4);
+          }
+        });
+
+        // Available balance = originalQty - externalAllocatedQty - currentPrepAllocatedQty
+        const netBase = decimalSubtract(originalQty, externalAllocatedQty, 4);
+        const finalAvailable = decimalSubtract(netBase, currentPrepAllocatedQty, 4);
+
+        list.push({
+          sourceInvoiceId: inv.id,
+          sourceInvoiceNumero: inv.numero,
+          sourceSupplier: inv.emitente?.razaoSocial || 'Fornecedor',
+          item,
+          compositeKey,
+          originalQty,
+          externalAllocatedQty,
+          currentPrepAllocatedQty,
+          finalAvailable: decimalCompare(finalAvailable, '0') < 0 ? '0.0000' : finalAvailable,
+          unitPriceOrigin: cleanDecimalString(item.valorUnitario || '0'),
+        });
+      });
+    });
+    return list;
+  }, [selectedInvoices, activeAllocationsMap, preparation.allocations, preparation.destinos]);
+
+  // Handlers for Origins
+  const toggleSourceInvoice = (invoiceId) => {
+    setPreparation((prev) => {
+      const exists = prev.sourceInvoiceIds.includes(invoiceId);
+      const nextIds = exists
+        ? prev.sourceInvoiceIds.filter((id) => id !== invoiceId)
+        : [...prev.sourceInvoiceIds, invoiceId];
+
+      // If removed, clean allocations for that invoice
+      let nextAllocs = { ...prev.allocations };
+      if (exists) {
+        Object.keys(nextAllocs).forEach((k) => {
+          if (k.startsWith(`${invoiceId}__`)) {
+            delete nextAllocs[k];
+          }
+        });
+      }
+
+      return {
+        ...prev,
+        sourceInvoiceIds: nextIds,
+        allocations: nextAllocs,
+      };
+    });
+  };
+
+  // Handlers for Destinations
+  const addDestination = () => {
+    const nextIdx = preparation.destinos.length + 1;
+    const newDest = {
+      id: `dest-${Date.now().toString(36)}-${nextIdx}`,
+      nome: `Exportação ${nextIdx}`,
+      observacoes: '',
+      clienteId: preparation.clienteExportacao?.id || null,
+    };
+    setPreparation((prev) => ({
+      ...prev,
+      destinos: [...prev.destinos, newDest],
+    }));
+  };
+
+  const removeDestination = (destId) => {
+    if (preparation.destinos.length <= 1) {
+      toast.error('A preparação deve conter pelo menos uma nota de destino.');
+      return;
+    }
+    setPreparation((prev) => {
+      const nextDestinos = prev.destinos.filter((d) => d.id !== destId);
+      const nextAllocs = { ...prev.allocations };
+      Object.keys(nextAllocs).forEach((k) => {
+        if (k.endsWith(`__${destId}`)) {
+          delete nextAllocs[k];
+        }
+      });
+      return {
+        ...prev,
+        destinos: nextDestinos,
+        allocations: nextAllocs,
+      };
+    });
+  };
+
+  const updateDestinationName = (destId, newName) => {
+    setPreparation((prev) => ({
+      ...prev,
+      destinos: prev.destinos.map((d) => (d.id === destId ? { ...d, nome: newName } : d)),
+    }));
+  };
+
+  // Handlers for Allocation
+  const setAllocationQuantity = (sourceInvoiceId, itemId, destId, qty, defaultUnitPrice) => {
+    const key = `${sourceInvoiceId}__${itemId}__${destId}`;
+    setPreparation((prev) => {
+      const nextAllocs = { ...prev.allocations };
+      const cleanQty = cleanDecimalString(qty);
+
+      if (cleanQty === '0' || cleanQty === '0.0000' || !cleanQty) {
+        delete nextAllocs[key];
+      } else {
+        const existing = nextAllocs[key] || {};
+        nextAllocs[key] = {
+          quantity: cleanQty,
+          destinationUnitPrice: existing.destinationUnitPrice || defaultUnitPrice || '0.00',
+        };
+      }
+
+      return { ...prev, allocations: nextAllocs };
+    });
+  };
+
+  const setAllocationPrice = (sourceInvoiceId, itemId, destId, price) => {
+    const key = `${sourceInvoiceId}__${itemId}__${destId}`;
+    setPreparation((prev) => {
+      const nextAllocs = { ...prev.allocations };
+      if (!nextAllocs[key]) return prev;
+
+      nextAllocs[key] = {
+        ...nextAllocs[key],
+        destinationUnitPrice: cleanDecimalString(price),
+      };
+      return { ...prev, allocations: nextAllocs };
+    });
+  };
+
+  // Allocate all available balance of one item to a specific destination
+  const allocateAllAvailableToDest = (sourceInvoiceId, itemId, destId, defaultUnitPrice) => {
+    const compositeKey = buildCompositeKey(sourceInvoiceId, itemId);
+    const originEntry = flattenedOriginItems.find((o) => o.compositeKey === compositeKey);
+    if (!originEntry) return;
+
+    // Current qty allocated to THIS dest
+    const key = `${sourceInvoiceId}__${itemId}__${destId}`;
+    const curDestQty = cleanDecimalString(preparation.allocations[key]?.quantity || '0');
+
+    // Total available including what was already given to this dest
+    const totalPossibleForThisDest = decimalAdd(originEntry.finalAvailable, curDestQty, 4);
+    if (decimalCompare(totalPossibleForThisDest, '0') <= 0) return;
+
+    setAllocationQuantity(sourceInvoiceId, itemId, destId, totalPossibleForThisDest, defaultUnitPrice);
+  };
+
+  // Batch action: Allocate all available goods to a destination
+  const allocateEverythingToDestination = (destId) => {
+    setPreparation((prev) => {
+      const nextAllocs = { ...prev.allocations };
+      flattenedOriginItems.forEach((origin) => {
+        const invId = origin.sourceInvoiceId;
+        const itmId = origin.item.id;
+        const key = `${invId}__${itmId}__${destId}`;
+
+        // Available balance considering what's currently in other destinations
+        let otherDestAlloc = '0';
+        prev.destinos.forEach((d) => {
+          if (d.id !== destId) {
+            const otherKey = `${invId}__${itmId}__${d.id}`;
+            const a = prev.allocations[otherKey];
+            if (a?.quantity) {
+              otherDestAlloc = decimalAdd(otherDestAlloc, cleanDecimalString(a.quantity), 4);
+            }
+          }
+        });
+
+        const netForDest = decimalSubtract(
+          decimalSubtract(origin.originalQty, origin.externalAllocatedQty, 4),
+          otherDestAlloc,
+          4
+        );
+
+        if (decimalCompare(netForDest, '0') > 0) {
+          nextAllocs[key] = {
+            quantity: netForDest,
+            destinationUnitPrice: nextAllocs[key]?.destinationUnitPrice || origin.unitPriceOrigin,
+          };
+        }
+      });
+
+      return { ...prev, allocations: nextAllocs };
+    });
+    toast.success('Todas as quantidades disponíveis foram alocadas ao destino selecionado!');
+  };
+
+  // Clear allocations for a destination
+  const clearDestinationAllocations = (destId) => {
+    setPreparation((prev) => {
+      const nextAllocs = { ...prev.allocations };
+      Object.keys(nextAllocs).forEach((k) => {
+        if (k.endsWith(`__${destId}`)) {
+          delete nextAllocs[k];
+        }
+      });
+      return { ...prev, allocations: nextAllocs };
+    });
+  };
+
+  // Calculations per destination
+  const destinationTotals = useMemo(() => {
+    const map = {};
+    preparation.destinos.forEach((dest) => {
+      let totalValue = '0.00';
+      let totalItemsCount = 0;
+
+      Object.entries(preparation.allocations).forEach(([key, alloc]) => {
+        if (!key.endsWith(`__${dest.id}`)) return;
+        if (!alloc || !alloc.quantity || alloc.quantity === '0') return;
+
+        const [invId, itmId] = key.split('__');
+        const origin = flattenedOriginItems.find((o) => o.sourceInvoiceId === invId && o.item.id === itmId);
+        if (!origin) return;
+
+        totalItemsCount++;
+        const itemVal = decimalMultiply(alloc.quantity, alloc.destinationUnitPrice || origin.unitPriceOrigin, 2);
+        totalValue = decimalAdd(totalValue, itemVal, 2);
+      });
+
+      map[dest.id] = { totalValue, totalItemsCount };
+    });
+    return map;
+  }, [preparation.destinos, preparation.allocations, flattenedOriginItems]);
+
+  // Overall grand total
+  const grandTotal = useMemo(() => {
+    let sum = '0.00';
+    Object.values(destinationTotals).forEach((t) => {
+      sum = decimalAdd(sum, t.totalValue, 2);
+    });
+    return sum;
+  }, [destinationTotals]);
+
+  // Save preparation handler
+  const handleSave = async (finalStatus = 'draft') => {
+    if (preparation.sourceInvoiceIds.length === 0) {
+      toast.error('Selecione pelo menos uma NF-e de origem.');
+      setActiveStep('origens');
+      return;
+    }
+
     try {
-      const data = {
+      setIsSaving(true);
+      const dataToSave = {
         ...preparation,
+        tipo: operationMode,
         status: finalStatus,
-        origens: preparation.origens.map(inv => ({
+        valorTotal: grandTotal,
+        origens: selectedInvoices.map((inv) => ({
           invoiceId: inv.id,
           numero: inv.numero,
           emitente: inv.emitente?.razaoSocial,
+          destinatario: inv.destinatario?.nome,
+          chaveAcesso: inv.chaveAcesso,
+          isRealImport: inv.isRealImport,
         })),
       };
+
       if (preparation.id) {
-        await preparationRepository.update(preparation.id, data);
+        await preparationRepository.update(preparation.id, dataToSave);
+        toast.success(`Preparação ${preparation.numero || preparation.id} salva com sucesso!`);
       } else {
-        const saved = await preparationRepository.create(data);
-        setPreparation(prev => ({ ...prev, id: saved.id }));
+        const created = await preparationRepository.create(dataToSave);
+        setPreparation((prev) => ({
+          ...prev,
+          id: created.id,
+          numero: created.numero,
+        }));
+        toast.success(`Preparação ${created.numero} criada com sucesso!`);
       }
-      toast?.success?.('Preparação salva com sucesso!');
+
       if (finalStatus === 'active') {
         router.push('/preparacoes');
       }
     } catch (err) {
       console.error('Erro ao salvar preparação:', err);
-      toast?.error?.('Erro ao salvar preparação.');
+      toast.error('Erro ao salvar preparação.');
     } finally {
       setIsSaving(false);
     }
-  }, [preparation, router, toast]);
-
-  const currentStepIdx = STEP_IDS.indexOf(step);
-  const isFirst = currentStepIdx === 0;
-  const isLast = currentStepIdx === STEP_IDS.length - 1;
-
-  const goNext = () => {
-    if (!isLast) setStep(STEP_IDS[currentStepIdx + 1]);
   };
-  const goPrev = () => {
-    if (!isFirst) setStep(STEP_IDS[currentStepIdx - 1]);
-  };
-
-  const totalGeral = preparation.destinos.reduce((acc, dest) => acc + calcDestTotal(dest.id, preparation), 0);
-  const totalItens = Object.keys(preparation.alocacoes).length;
-
-  const breadcrumbs = [
-    { label: 'Dashboard', href: '/dashboard' },
-    { label: 'Preparações', href: '/preparacoes' },
-    { label: idParam ? 'Continuar Preparação' : 'Nova Preparação', href: '/preparacoes/nova' },
-  ];
-
-  if (!loaded) {
-    return (
-      <AppLayout breadcrumbs={breadcrumbs}>
-        <div className="flex items-center justify-center py-24 text-slate-500">
-          <svg className="animate-spin w-6 h-6 mr-2" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-          </svg>
-          Carregando...
-        </div>
-      </AppLayout>
-    );
-  }
 
   return (
-    <AppLayout breadcrumbs={breadcrumbs}>
-      <div className="flex flex-col h-full space-y-4">
-
-        {/* Aviso sessão volátil */}
-        {isRealMode && (
-          <div className="bg-amber-50 border border-amber-300 rounded-lg px-4 py-2.5 flex items-center gap-2 text-amber-800 text-sm">
-            <svg className="w-4 h-4 flex-shrink-0 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-            </svg>
-            <span>Modo com documentos fiscais reais — dados serão perdidos ao recarregar a página.</span>
+    <AppLayout
+      breadcrumbs={[
+        { label: 'Dashboard', href: '/dashboard' },
+        { label: 'Preparações', href: '/preparacoes' },
+        { label: preparation.numero || 'Nova Preparação' },
+      ]}
+    >
+      <div className="space-y-4 max-w-7xl mx-auto">
+        {/* Volatile Session Alert */}
+        {isVolatileSession && (
+          <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/80 rounded-lg p-3.5 flex items-center gap-3">
+            <FontAwesomeIcon icon={faShieldHalved} className="text-amber-600 w-5 h-5 shrink-0" />
+            <div className="text-xs text-amber-900 dark:text-amber-200">
+              <span className="font-bold">Aviso de Sessão Temporária: </span>
+              Esta preparação envolve documentos fiscais reais mantidos exclusivamente na memória volátil do navegador. <strong>Não feche ou recarregue esta aba</strong> sob risco de perda dos dados em andamento.
+            </div>
           </div>
         )}
 
-        {/* Título editável + Tipo */}
-        <div className="flex items-center gap-4 flex-wrap">
-          <input
-            type="text"
-            value={preparation.titulo}
-            onChange={e => setPreparation(prev => ({ ...prev, titulo: e.target.value }))}
-            placeholder="Título da preparação (ex: Exportação Out/26 — Lote 03)"
-            className="flex-1 border border-gray-300 dark:border-slate-600 rounded-xl px-4 py-2 text-base font-medium bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <div className="flex items-center gap-1.5">
-            {[
-              { val: 'mista', label: 'Mista', cls: 'bg-orange-100 text-orange-800' },
-              { val: 'agrupamento', label: 'Agrupamento', cls: 'bg-blue-100 text-blue-800' },
-              { val: 'divisao', label: 'Divisão', cls: 'bg-purple-100 text-purple-800' },
-            ].map(t => (
-              <span key={t.val} className={`text-xs px-2 py-0.5 rounded font-medium ${preparation.tipo === t.val ? t.cls : 'bg-gray-100 text-gray-400'}`}>
-                {t.label}
+        {/* Top Header */}
+        <div className="bg-white dark:bg-slate-800 p-4 rounded-lg border border-slate-200 dark:border-slate-700 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <Link href="/preparacoes" className="text-slate-400 hover:text-slate-600">
+                <FontAwesomeIcon icon={faArrowLeft} />
+              </Link>
+              <h1 className="text-lg font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                <FontAwesomeIcon icon={faBoxesStacked} className="text-blue-600" />
+                {preparation.titulo}
+              </h1>
+              <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
+                {operationMode === 'agrupamento' ? 'Agrupamento (N → 1)' : operationMode === 'divisao' ? 'Divisão (1 → M)' : 'Mista (N → M)'}
               </span>
-            ))}
-          </div>
-        </div>
-
-        {/* Step bar */}
-        <div className="flex gap-1 bg-gray-100 dark:bg-slate-700/40 rounded-xl p-1 overflow-x-auto">
-          {STEPS.map((s, idx) => {
-            const isCurrent = s.id === step;
-            const isPast = idx < currentStepIdx;
-            return (
-              <button
-                key={s.id}
-                type="button"
-                onClick={() => setStep(s.id)}
-                className={`flex-1 min-w-[80px] px-3 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer whitespace-nowrap ${
-                  isCurrent
-                    ? 'bg-white dark:bg-slate-700 text-blue-700 dark:text-blue-300 shadow-sm'
-                    : isPast
-                    ? 'text-slate-500 dark:text-slate-400 hover:bg-white/60 dark:hover:bg-slate-700/60'
-                    : 'text-slate-400 dark:text-slate-500 hover:bg-white/60 dark:hover:bg-slate-700/60'
-                }`}
-              >
-                <span className={`mr-1.5 ${isPast ? 'text-green-500' : ''}`}>{isPast ? '✓' : `${idx + 1}.`}</span>
-                {s.label}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Conteúdo do step */}
-        <div className="flex-1 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm overflow-y-auto">
-          {step === 'origens' && (
-            <StepOrigens
-              preparation={preparation}
-              setPreparation={setPreparation}
-              availableInvoices={availableInvoices}
-            />
-          )}
-          {step === 'cliente' && (
-            <StepCliente
-              preparation={preparation}
-              setPreparation={setPreparation}
-            />
-          )}
-          {step === 'destinos' && (
-            <StepDestinos
-              preparation={preparation}
-              setPreparation={setPreparation}
-            />
-          )}
-          {step === 'alocacao' && (
-            <StepAlocacao
-              preparation={preparation}
-              setPreparation={setPreparation}
-              activeAllocations={activeAllocations}
-            />
-          )}
-          {step === 'revisao' && (
-            <StepRevisao
-              preparation={preparation}
-              activeAllocations={activeAllocations}
-            />
-          )}
-        </div>
-
-        {/* Rodapé */}
-        <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl px-5 py-3 shadow-sm flex items-center justify-between gap-4 flex-wrap">
-          {/* Totais */}
-          <div className="flex items-center gap-6 text-sm text-slate-500 dark:text-slate-400">
-            <span>
-              <strong className="text-slate-700 dark:text-slate-200">{preparation.origens.length}</strong> origem(ns)
-            </span>
-            <span>
-              <strong className="text-slate-700 dark:text-slate-200">{preparation.destinos.length}</strong> destino(s)
-            </span>
-            <span>
-              <strong className="text-slate-700 dark:text-slate-200">{totalItens}</strong> alocação(ões)
-            </span>
-            {totalGeral > 0 && (
-              <span>
-                Total: <strong className="text-slate-700 dark:text-slate-200">{formatBRL(totalGeral)}</strong>
-              </span>
-            )}
+            </div>
+            <p className="text-xs text-slate-500 mt-1">
+              Origens: {preparation.sourceInvoiceIds.length} NF-e • Destinos: {preparation.destinos.length} • Total Geral: {formatBRL(grandTotal)}
+            </p>
           </div>
 
-          {/* Ações */}
           <div className="flex items-center gap-2">
             <Button
               buttonType="secondary"
@@ -1115,30 +504,603 @@ export default function NovaPreparacaoPage() {
               onClick={() => handleSave('draft')}
               disabled={isSaving}
             >
-              {isSaving ? 'Salvando...' : 'Salvar Rascunho'}
+              <FontAwesomeIcon icon={faFloppyDisk} className="mr-1" />
+              Salvar Rascunho
             </Button>
-            {!isFirst && (
-              <Button buttonType="secondary" size="small" onClick={goPrev}>
-                ← Voltar
-              </Button>
-            )}
-            {!isLast ? (
-              <Button buttonType="primary" size="small" onClick={goNext}>
-                Avançar →
-              </Button>
-            ) : (
-              <Button
-                buttonType="success"
-                size="small"
-                onClick={() => handleSave('active')}
-                disabled={isSaving}
-              >
-                {isSaving ? 'Finalizando...' : '✓ Finalizar'}
-              </Button>
-            )}
+            <Button
+              buttonType="primary"
+              size="small"
+              onClick={() => handleSave('active')}
+              disabled={isSaving || preparation.sourceInvoiceIds.length === 0}
+            >
+              <FontAwesomeIcon icon={faCheck} className="mr-1" />
+              Concluir Preparação
+            </Button>
           </div>
         </div>
+
+        {/* Non-Linear Step Tabs Navigation */}
+        <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-1.5 flex items-center gap-1 overflow-x-auto text-xs">
+          <button
+            type="button"
+            onClick={() => setActiveStep('origens')}
+            className={`px-3 py-1.5 rounded font-medium flex items-center gap-1.5 cursor-pointer whitespace-nowrap transition-colors ${
+              activeStep === 'origens'
+                ? 'bg-blue-600 text-white'
+                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+            }`}
+          >
+            <span className="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center text-[10px]">1</span>
+            Origens ({preparation.sourceInvoiceIds.length})
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveStep('cliente')}
+            className={`px-3 py-1.5 rounded font-medium flex items-center gap-1.5 cursor-pointer whitespace-nowrap transition-colors ${
+              activeStep === 'cliente'
+                ? 'bg-blue-600 text-white'
+                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+            }`}
+          >
+            <span className="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center text-[10px]">2</span>
+            Cliente Exportação {preparation.clienteExportacao ? '✓' : ''}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveStep('destinos')}
+            className={`px-3 py-1.5 rounded font-medium flex items-center gap-1.5 cursor-pointer whitespace-nowrap transition-colors ${
+              activeStep === 'destinos'
+                ? 'bg-blue-600 text-white'
+                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+            }`}
+          >
+            <span className="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center text-[10px]">3</span>
+            Destinos ({preparation.destinos.length})
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveStep('alocacao')}
+            className={`px-3 py-1.5 rounded font-bold flex items-center gap-1.5 cursor-pointer whitespace-nowrap transition-colors ${
+              activeStep === 'alocacao'
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30'
+            }`}
+          >
+            <span className="w-4 h-4 rounded-full bg-blue-500 text-white flex items-center justify-center text-[10px]">4</span>
+            Alocação de Mercadorias (Matriz N:M)
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveStep('revisao')}
+            className={`px-3 py-1.5 rounded font-medium flex items-center gap-1.5 cursor-pointer whitespace-nowrap transition-colors ${
+              activeStep === 'revisao'
+                ? 'bg-blue-600 text-white'
+                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+            }`}
+          >
+            <span className="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center text-[10px]">5</span>
+            Revisão & Totais
+          </button>
+        </div>
+
+        {/* STEP 1: ORIGENS */}
+        {activeStep === 'origens' && (
+          <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-5 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-700 pb-3">
+              <div>
+                <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                  Passo 1: Selecionar NF-e de Fornecedores (Origens)
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Adicione quantas notas fiscais de fornecedores forem necessárias. Não há limite de quantidade.
+                </p>
+              </div>
+
+              <div className="relative w-full sm:w-72">
+                <FontAwesomeIcon icon={faMagnifyingGlass} className="absolute left-3 top-2.5 text-slate-400 w-3.5 h-3.5" />
+                <input
+                  type="text"
+                  placeholder="Buscar notas disponíveis..."
+                  value={originSearch}
+                  onChange={(e) => setOriginSearch(e.target.value)}
+                  className="w-full pl-9 pr-3 py-1.5 text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
+                />
+              </div>
+            </div>
+
+            {/* List of Available Invoices to Toggle */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {allInvoices
+                .filter((inv) => {
+                  if (!originSearch.trim()) return true;
+                  const q = originSearch.toLowerCase();
+                  return (
+                    inv.numero?.toLowerCase().includes(q) ||
+                    inv.emitente?.razaoSocial?.toLowerCase().includes(q) ||
+                    inv.chaveAcesso?.toLowerCase().includes(q)
+                  );
+                })
+                .map((inv) => {
+                  const isSelected = preparation.sourceInvoiceIds.includes(inv.id);
+                  return (
+                    <div
+                      key={inv.id}
+                      onClick={() => toggleSourceInvoice(inv.id)}
+                      className={`p-3.5 rounded-lg border cursor-pointer transition-all flex flex-col justify-between ${
+                        isSelected
+                          ? 'border-blue-500 bg-blue-50/40 dark:bg-blue-900/20 shadow-xs'
+                          : 'border-slate-200 dark:border-slate-700 hover:border-slate-400'
+                      }`}
+                    >
+                      <div>
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-bold text-xs text-slate-900 dark:text-slate-100">
+                            NF-e {inv.numero} (Série {inv.serie})
+                          </span>
+                          <span
+                            className={`px-1.5 py-0.5 text-[10px] font-bold rounded ${
+                              isSelected
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
+                            }`}
+                          >
+                            {isSelected ? 'Selecionada' : 'Adicionar'}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 truncate" title={inv.emitente?.razaoSocial}>
+                          {inv.emitente?.razaoSocial || 'Fornecedor'}
+                        </p>
+                        <p className="text-[11px] text-slate-400 font-mono mt-0.5 truncate">
+                          {inv.chaveAcesso}
+                        </p>
+                      </div>
+
+                      <div className="mt-3 pt-2 border-t border-slate-100 dark:border-slate-700/60 flex items-center justify-between text-xs">
+                        <span className="text-slate-500">{inv.itens?.length || 0} produtos</span>
+                        <span className="font-bold text-slate-800 dark:text-slate-200">
+                          {formatBRL(inv.totais?.valorTotalNota)}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+
+            <div className="flex justify-end pt-3">
+              <Button buttonType="primary" size="small" onClick={() => setActiveStep('cliente')}>
+                Prosseguir para Cliente de Exportação
+                <FontAwesomeIcon icon={faArrowRight} className="ml-1.5" />
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 2: CLIENTE EXPORTAÇÃO */}
+        {activeStep === 'cliente' && (
+          <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-5 space-y-4">
+            <div className="border-b border-slate-200 dark:border-slate-700 pb-3">
+              <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                Passo 2: Definir Cliente Final de Exportação
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                O cliente final de exportação é a entidade destinatária da operação comercial internacional.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {EXPORT_CUSTOMERS.map((cust) => {
+                const isSelected = preparation.clienteExportacao?.id === cust.id;
+                return (
+                  <div
+                    key={cust.id}
+                    onClick={() => setPreparation((prev) => ({ ...prev, clienteExportacao: cust }))}
+                    className={`p-4 rounded-lg border cursor-pointer transition-all ${
+                      isSelected
+                        ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-900/20 shadow-xs ring-1 ring-blue-500'
+                        : 'border-slate-200 dark:border-slate-700 hover:border-slate-400'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-sm text-slate-900 dark:text-slate-100">{cust.name}</span>
+                      {isSelected && <FontAwesomeIcon icon={faCircleCheck} className="text-blue-600 w-4 h-4" />}
+                    </div>
+                    <p className="text-xs text-slate-500 mt-1 flex items-center gap-1.5">
+                      <FontAwesomeIcon icon={faGlobe} className="text-slate-400" />
+                      País: <strong>{cust.country}</strong>
+                    </p>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Doc Estrangeiro: <span className="font-mono">{cust.foreignId}</span>
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="flex justify-between pt-3">
+              <Button buttonType="secondary" size="small" outline onClick={() => setActiveStep('origens')}>
+                <FontAwesomeIcon icon={faArrowLeft} className="mr-1.5" />
+                Voltar para Origens
+              </Button>
+              <Button buttonType="primary" size="small" onClick={() => setActiveStep('destinos')}>
+                Prosseguir para Destinos
+                <FontAwesomeIcon icon={faArrowRight} className="ml-1.5" />
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 3: DESTINOS */}
+        {activeStep === 'destinos' && (
+          <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-5 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-700 pb-3">
+              <div>
+                <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                  Passo 3: Configurar Notas de Destino (Exportação)
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Adicione e renomeie as notas preparadas de exportação que receberão as mercadorias.
+                </p>
+              </div>
+
+              <Button buttonType="secondary" size="small" onClick={addDestination}>
+                <FontAwesomeIcon icon={faPlus} className="mr-1.5" />
+                Adicionar Nova Nota de Destino
+              </Button>
+            </div>
+
+            <div className="space-y-3">
+              {preparation.destinos.map((dest, index) => {
+                const tot = destinationTotals[dest.id] || { totalValue: '0.00', totalItemsCount: 0 };
+                return (
+                  <div
+                    key={dest.id}
+                    className="p-4 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                  >
+                    <div className="flex-1 space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold">
+                          {index + 1}
+                        </span>
+                        <input
+                          type="text"
+                          value={dest.nome}
+                          onChange={(e) => updateDestinationName(dest.id, e.target.value)}
+                          className="font-bold text-sm text-slate-900 dark:text-slate-100 px-2 py-1 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800"
+                        />
+                      </div>
+                      <p className="text-xs text-slate-500 pl-7">
+                        Itens alocados: <strong>{tot.totalItemsCount}</strong> • Subtotal: <strong>{formatBRL(tot.totalValue)}</strong>
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => allocateEverythingToDestination(dest.id)}
+                        className="px-2.5 py-1 text-xs font-medium rounded border border-blue-300 text-blue-700 hover:bg-blue-50 dark:border-blue-800 dark:text-blue-300 cursor-pointer"
+                        title="Alocar todo o saldo disponível nesta nota"
+                      >
+                        <FontAwesomeIcon icon={faBolt} className="mr-1" />
+                        Alocar Tudo Aqui
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => clearDestinationAllocations(dest.id)}
+                        className="px-2.5 py-1 text-xs font-medium rounded border border-slate-300 text-slate-600 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-400 cursor-pointer"
+                        title="Limpar alocações desta nota"
+                      >
+                        <FontAwesomeIcon icon={faRotateLeft} className="mr-1" />
+                        Limpar
+                      </button>
+                      {preparation.destinos.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeDestination(dest.id)}
+                          className="p-1.5 text-slate-400 hover:text-rose-600 cursor-pointer"
+                          title="Remover nota de destino"
+                        >
+                          <FontAwesomeIcon icon={faTrashCan} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="flex justify-between pt-3">
+              <Button buttonType="secondary" size="small" outline onClick={() => setActiveStep('cliente')}>
+                <FontAwesomeIcon icon={faArrowLeft} className="mr-1.5" />
+                Voltar para Cliente
+              </Button>
+              <Button buttonType="primary" size="small" onClick={() => setActiveStep('alocacao')}>
+                Ir para Matriz de Alocação
+                <FontAwesomeIcon icon={faArrowRight} className="ml-1.5" />
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 4: ALOCAÇÃO DE MERCADORIAS (MATRIZ N:M) */}
+        {activeStep === 'alocacao' && (
+          <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-4 space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-700 pb-3">
+              <div>
+                <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                  <FontAwesomeIcon icon={faCalculator} className="text-blue-600" />
+                  Matriz de Alocação de Mercadorias (N origens → M destinos)
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Edite as quantidades alocadas para cada destino. O saldo disponível é conferido em tempo real com precisão decimal estrita.
+                </p>
+              </div>
+
+              {/* Table Filters */}
+              <div className="flex items-center gap-2 text-xs">
+                <select
+                  value={filterOriginInTable}
+                  onChange={(e) => setFilterOriginInTable(e.target.value)}
+                  className="py-1 px-2 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-xs"
+                >
+                  <option value="ALL">Todas as origens</option>
+                  {selectedInvoices.map((inv) => (
+                    <option key={inv.id} value={inv.id}>
+                      NF-e {inv.numero} ({inv.emitente?.razaoSocial?.substring(0, 15)}...)
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* High-Density Compact Allocation Table */}
+            <div className="overflow-x-auto border border-slate-200 dark:border-slate-700 rounded-lg">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead className="bg-slate-100 dark:bg-slate-900/80 text-slate-700 dark:text-slate-300 font-semibold border-b border-slate-200 dark:border-slate-700 sticky top-0 z-10">
+                  <tr>
+                    <th className="py-2 px-2.5">NF-e Origem</th>
+                    <th className="py-2 px-2">Item</th>
+                    <th className="py-2 px-2.5">Produto / Descrição</th>
+                    <th className="py-2 px-2 text-center">NCM / UN</th>
+                    <th className="py-2 px-2 text-right">Qtd Orig.</th>
+                    <th className="py-2 px-2 text-right">Saldo Disp.</th>
+                    {preparation.destinos.map((dest) => (
+                      <th key={dest.id} className="py-2 px-2.5 text-center bg-blue-50/60 dark:bg-blue-950/40 border-l border-slate-200 dark:border-slate-700 min-w-[140px]">
+                        <span className="font-bold text-blue-900 dark:text-blue-200 truncate block max-w-[130px]" title={dest.nome}>
+                          {dest.nome}
+                        </span>
+                      </th>
+                    ))}
+                    <th className="py-2 px-2 text-right">Preço Orig.</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-800 dark:text-slate-200">
+                  {flattenedOriginItems
+                    .filter((origin) => filterOriginInTable === 'ALL' || origin.sourceInvoiceId === filterOriginInTable)
+                    .map((origin) => {
+                      return (
+                        <tr key={origin.compositeKey} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/60">
+                          {/* Origem */}
+                          <td className="py-2 px-2.5 whitespace-nowrap">
+                            <span className="font-bold text-slate-900 dark:text-slate-100">
+                              {origin.sourceInvoiceNumero}
+                            </span>
+                            <span className="block text-[10px] text-slate-400 truncate max-w-[120px]" title={origin.sourceSupplier}>
+                              {origin.sourceSupplier}
+                            </span>
+                          </td>
+
+                          {/* Item num */}
+                          <td className="py-2 px-2 text-center text-slate-500 font-mono">
+                            {origin.item.item || 1}
+                          </td>
+
+                          {/* Descrição */}
+                          <td className="py-2 px-2.5 max-w-[200px]">
+                            <span className="font-medium truncate block" title={origin.item.descricao}>
+                              {origin.item.descricao}
+                            </span>
+                            <span className="text-[10px] text-slate-400 font-mono">
+                              Cód: {origin.item.codigo || '—'}
+                            </span>
+                          </td>
+
+                          {/* NCM & Unidade */}
+                          <td className="py-2 px-2 text-center whitespace-nowrap">
+                            <span className="font-mono text-[11px] block">{origin.item.ncm}</span>
+                            <span className="text-[10px] px-1 py-0.2 rounded bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold">
+                              {origin.item.unidade}
+                            </span>
+                          </td>
+
+                          {/* Qtd Original */}
+                          <td className="py-2 px-2 text-right font-mono font-medium">
+                            {origin.originalQty}
+                          </td>
+
+                          {/* Saldo Disponível */}
+                          <td className="py-2 px-2 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                            {origin.finalAvailable}
+                          </td>
+
+                          {/* Destinos Columns */}
+                          {preparation.destinos.map((dest) => {
+                            const key = `${origin.sourceInvoiceId}__${origin.item.id}__${dest.id}`;
+                            const alloc = preparation.allocations[key];
+                            const currentQty = alloc?.quantity || '';
+                            const unitPrice = alloc?.destinationUnitPrice || origin.unitPriceOrigin;
+
+                            return (
+                              <td
+                                key={dest.id}
+                                className="py-1.5 px-2 bg-blue-50/20 dark:bg-blue-950/20 border-l border-slate-200 dark:border-slate-700"
+                              >
+                                <div className="space-y-1">
+                                  <div className="flex items-center gap-1">
+                                    <input
+                                      type="number"
+                                      step="0.0001"
+                                      min="0"
+                                      value={currentQty}
+                                      placeholder="0.0000"
+                                      onChange={(e) =>
+                                        setAllocationQuantity(
+                                          origin.sourceInvoiceId,
+                                          origin.item.id,
+                                          dest.id,
+                                          e.target.value,
+                                          origin.unitPriceOrigin
+                                        )
+                                      }
+                                      className="w-full px-2 py-1 text-right font-mono text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 focus:outline-blue-500"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        allocateAllAvailableToDest(
+                                          origin.sourceInvoiceId,
+                                          origin.item.id,
+                                          dest.id,
+                                          origin.unitPriceOrigin
+                                        )
+                                      }
+                                      className="px-1 py-1 text-[10px] bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 rounded hover:bg-blue-200 cursor-pointer shrink-0"
+                                      title="Alocar todo o saldo disponível neste destino"
+                                    >
+                                      Max
+                                    </button>
+                                  </div>
+                                </div>
+                              </td>
+                            );
+                          })}
+
+                          {/* Preço de Origem */}
+                          <td className="py-2 px-2 text-right font-mono text-slate-500 whitespace-nowrap">
+                            {formatBRL(origin.unitPriceOrigin)}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="flex justify-between pt-3">
+              <Button buttonType="secondary" size="small" outline onClick={() => setActiveStep('destinos')}>
+                <FontAwesomeIcon icon={faArrowLeft} className="mr-1.5" />
+                Voltar para Destinos
+              </Button>
+              <Button buttonType="primary" size="small" onClick={() => setActiveStep('revisao')}>
+                Prosseguir para Revisão
+                <FontAwesomeIcon icon={faArrowRight} className="ml-1.5" />
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 5: REVISÃO & TOTAIS */}
+        {activeStep === 'revisao' && (
+          <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-5 space-y-4">
+            <div className="border-b border-slate-200 dark:border-slate-700 pb-3">
+              <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                Passo 5: Revisão Geral da Preparação
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Valide as notas de saída que serão geradas, os totais consolidados e as notas de origem envolvidas.
+              </p>
+            </div>
+
+            {/* General Highlights Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+              <div className="p-3.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40">
+                <span className="text-slate-500 block">Total de NF-e Origens</span>
+                <span className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                  {preparation.sourceInvoiceIds.length} notas
+                </span>
+                <span className="text-[11px] text-slate-400 block mt-0.5">
+                  {selectedInvoices.reduce((acc, i) => acc + (i.itens?.length || 0), 0)} itens originais disponíveis
+                </span>
+              </div>
+
+              <div className="p-3.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40">
+                <span className="text-slate-500 block">Notas de Destino</span>
+                <span className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                  {preparation.destinos.length} notas preparadas
+                </span>
+                <span className="text-[11px] text-slate-400 block mt-0.5">
+                  Operação do tipo <strong>{operationMode.toUpperCase()}</strong>
+                </span>
+              </div>
+
+              <div className="p-3.5 rounded-lg border border-blue-200 dark:border-blue-900 bg-blue-50/40 dark:bg-blue-950/40">
+                <span className="text-blue-700 dark:text-blue-300 block font-semibold">Valor Total Preparado</span>
+                <span className="text-lg font-bold text-blue-900 dark:text-blue-100">
+                  {formatBRL(grandTotal)}
+                </span>
+                <span className="text-[11px] text-blue-700 dark:text-blue-300 block mt-0.5">
+                  Cliente: {preparation.clienteExportacao?.name || 'Não atribuído'}
+                </span>
+              </div>
+            </div>
+
+            {/* Destinations Breakdown */}
+            <div className="space-y-3 pt-2">
+              <h3 className="font-bold text-xs text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                Detalhamento por Nota de Destino:
+              </h3>
+
+              {preparation.destinos.map((dest) => {
+                const tot = destinationTotals[dest.id] || { totalValue: '0.00', totalItemsCount: 0 };
+                return (
+                  <div key={dest.id} className="p-4 rounded-lg border border-slate-200 dark:border-slate-700 space-y-2">
+                    <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-700/60 pb-2">
+                      <span className="font-bold text-sm text-slate-900 dark:text-slate-100">
+                        {dest.nome}
+                      </span>
+                      <span className="font-bold text-emerald-600 dark:text-emerald-400 text-sm">
+                        {formatBRL(tot.totalValue)} ({tot.totalItemsCount} mercadorias)
+                      </span>
+                    </div>
+
+                    <div className="text-xs text-slate-500">
+                      Cliente: <strong>{preparation.clienteExportacao?.name || 'Padrão da Preparação'}</strong> ({preparation.clienteExportacao?.country || 'Exterior'})
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="flex justify-between pt-4 border-t border-slate-200 dark:border-slate-700">
+              <Button buttonType="secondary" size="small" outline onClick={() => setActiveStep('alocacao')}>
+                <FontAwesomeIcon icon={faArrowLeft} className="mr-1.5" />
+                Voltar para Alocação
+              </Button>
+              <div className="flex items-center gap-2">
+                <Button buttonType="secondary" size="small" outline onClick={() => handleSave('draft')} disabled={isSaving}>
+                  <FontAwesomeIcon icon={faFloppyDisk} className="mr-1.5" />
+                  Salvar Rascunho
+                </Button>
+                <Button buttonType="primary" size="small" onClick={() => handleSave('active')} disabled={isSaving}>
+                  <FontAwesomeIcon icon={faCheck} className="mr-1.5" />
+                  Concluir Preparação
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </AppLayout>
+  );
+}
+
+export default function NovaPreparacaoPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-xs text-slate-500">Carregando editor de preparação...</div>}>
+      <NovaPreparacaoInner />
+    </Suspense>
   );
 }

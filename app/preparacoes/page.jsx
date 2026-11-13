@@ -1,288 +1,339 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {
+  faBoxesStacked,
+  faPlus,
+  faMagnifyingGlass,
+  faTrashCan,
+  faPenToSquare,
+  faRotateRight,
+  faShieldHalved,
+  faFolderOpen,
+  faArrowRight,
+  faGlobe,
+} from '@fortawesome/free-solid-svg-icons';
+
 import AppLayout from '@/components/Layouts/AppLayout';
 import DataTable from '@/components/table/DataTable';
 import Button from '@/components/buttons/Button';
 import Dialog from '@/components/Layouts/Dialog';
-import preparationRepository, { isRealPreparation } from '@/features/preparationRepository';
+import { useAppContext } from '@/context/AppContext';
+import { preparationRepository } from '@/features/preparationRepository';
 import { formatBRL } from '@/lib/formatters/currency';
 import { formatDateBR } from '@/lib/formatters/dates';
 
-const BREADCRUMBS = [
-  { label: 'Dashboard', href: '/dashboard' },
-  { label: 'Preparações', href: '/preparacoes' },
-];
-
-const TYPE_LABELS = {
-  agrupamento: { label: 'Agrupamento', cls: 'bg-blue-100 text-blue-800' },
-  divisao: { label: 'Divisão', cls: 'bg-purple-100 text-purple-800' },
-  mista: { label: 'Mista', cls: 'bg-orange-100 text-orange-800' },
-};
-
-const STATUS_LABELS = {
-  draft: { label: 'Rascunho', cls: 'bg-gray-100 text-gray-700' },
-  active: { label: 'Ativa', cls: 'bg-green-100 text-green-800' },
-  completed: { label: 'Concluída', cls: 'bg-emerald-100 text-emerald-800' },
-  cancelled: { label: 'Cancelada', cls: 'bg-red-100 text-red-800' },
-};
-
-function Badge({ label, cls }) {
-  return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${cls}`}>
-      {label}
-    </span>
-  );
-}
-
-function calcTotalDestinos(prep) {
-  if (!prep.destinos || !Array.isArray(prep.destinos)) return 0;
-  let total = 0;
-  for (const dest of prep.destinos) {
-    const allocs = dest.allocations || dest.alocacoes || {};
-    for (const qty of Object.values(allocs)) {
-      total += parseFloat(qty || 0);
-    }
-    if (Array.isArray(dest.itens)) {
-      for (const it of dest.itens) {
-        total += parseFloat(it.valorTotal || 0);
-      }
-    }
-  }
-  return total;
-}
-
 export default function PreparacoesPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
+  const { toast } = useAppContext();
+
   const [preparations, setPreparations] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [deleteTarget, setDeleteTarget] = useState(null);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [realCount, setRealCount] = useState(0);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [typeFilter, setTypeFilter] = useState('ALL');
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, preparation: null });
 
-  const sourceIds = searchParams.get('sourceIds');
-
-  useEffect(() => {
-    if (sourceIds) {
-      router.replace(`/preparacoes/nova?sourceIds=${sourceIds}`);
-    }
-  }, [sourceIds, router]);
-
-  const loadPreparations = useCallback(async () => {
-    setLoading(true);
+  const loadData = useCallback(async () => {
     try {
-      const list = await preparationRepository.list();
-      setPreparations(list || []);
-      setRealCount((list || []).filter(p => isRealPreparation(p)).length);
-    } catch (err) {
-      console.error('Erro ao carregar preparações:', err);
+      setLoading(true);
+      const data = await preparationRepository.list();
+      setPreparations(data);
+    } catch (e) {
+      toast.error('Erro ao carregar preparações.');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
-    loadPreparations();
-  }, [loadPreparations]);
+    loadData();
+  }, [loadData]);
 
-  const handleDelete = useCallback((prep) => {
-    setDeleteTarget(prep);
-    setShowDeleteDialog(true);
-  }, []);
-
-  const confirmDelete = useCallback(async () => {
-    if (!deleteTarget) return;
+  const handleDelete = async () => {
+    if (!deleteDialog.preparation) return;
     try {
-      await preparationRepository.delete(deleteTarget.id);
-      setShowDeleteDialog(false);
-      setDeleteTarget(null);
-      await loadPreparations();
-    } catch (err) {
-      console.error('Erro ao excluir preparação:', err);
+      await preparationRepository.delete(deleteDialog.preparation.id);
+      toast.success(`Preparação ${deleteDialog.preparation.numero} excluída com liberação de saldos.`);
+      await loadData();
+    } catch (e) {
+      toast.error('Não foi possível remover a preparação.');
+    } finally {
+      setDeleteDialog({ open: false, preparation: null });
     }
-  }, [deleteTarget, loadPreparations]);
+  };
 
-  const columns = [
+  const handleReset = async () => {
+    await preparationRepository.resetDemoData();
+    await loadData();
+    toast.success('Preparações demonstrativas restauradas!');
+  };
+
+  const filteredPreparations = useMemo(() => {
+    return preparations.filter((prep) => {
+      if (statusFilter !== 'ALL' && prep.status !== statusFilter) return false;
+      if (typeFilter !== 'ALL' && prep.tipo !== typeFilter) return false;
+
+      if (searchTerm.trim()) {
+        const q = searchTerm.toLowerCase();
+        const matchNum = prep.numero?.toLowerCase().includes(q);
+        const matchTit = prep.titulo?.toLowerCase().includes(q);
+        const matchCli = prep.clienteExportacao?.name?.toLowerCase().includes(q);
+        if (!matchNum && !matchTit && !matchCli) return false;
+      }
+
+      return true;
+    });
+  }, [preparations, statusFilter, typeFilter, searchTerm]);
+
+  // Has volatile session preparations
+  const volatileCount = useMemo(() => {
+    return preparations.filter((p) => p.isRealImport).length;
+  }, [preparations]);
+
+  const columns = useMemo(() => [
     {
       key: 'numero',
-      label: 'Número',
-      render: (val, row) => (
-        <span className="font-mono text-sm text-slate-700 dark:text-slate-200">
-          {row.numero || row.id?.slice(-6) || '-'}
-        </span>
-      ),
-    },
-    {
-      key: 'titulo',
-      label: 'Título',
-      render: (val) => (
-        <span className="text-sm font-medium text-slate-800 dark:text-slate-100 max-w-[200px] block truncate" title={val}>
-          {val || '-'}
-        </span>
+      label: 'Número / Título',
+      align: 'left',
+      render: (item) => (
+        <div className="flex flex-col">
+          <span className="font-bold text-slate-900 dark:text-slate-100 text-sm">
+            {item.numero}
+          </span>
+          <span className="text-xs text-slate-500 truncate max-w-[200px]" title={item.titulo}>
+            {item.titulo}
+          </span>
+        </div>
       ),
     },
     {
       key: 'tipo',
-      label: 'Tipo',
-      render: (val) => {
-        const t = TYPE_LABELS[val] || { label: val || '-', cls: 'bg-gray-100 text-gray-700' };
-        return <Badge label={t.label} cls={t.cls} />;
-      },
-    },
-    {
-      key: 'status',
-      label: 'Status',
-      render: (val) => {
-        const s = STATUS_LABELS[val] || { label: val || '-', cls: 'bg-gray-100 text-gray-700' };
-        return <Badge label={s.label} cls={s.cls} />;
-      },
-    },
-    {
-      key: 'clienteExportacao',
-      label: 'Cliente',
-      render: (val) => (
-        <span className="text-sm text-slate-600 dark:text-slate-300">
-          {val?.name || val?.nome || '-'}
-        </span>
-      ),
-    },
-    {
-      key: 'origens',
-      label: 'Origens',
+      label: 'Tipo Operação',
       align: 'center',
-      render: (val) => (
-        <span className="text-sm text-slate-600 dark:text-slate-300">
-          {Array.isArray(val) ? val.length : 0}
-        </span>
-      ),
-    },
-    {
-      key: 'destinos',
-      label: 'Destinos',
-      align: 'center',
-      render: (val) => (
-        <span className="text-sm text-slate-600 dark:text-slate-300">
-          {Array.isArray(val) ? val.length : 0}
-        </span>
-      ),
-    },
-    {
-      key: '_valorTotal',
-      label: 'Valor Total',
-      align: 'right',
-      render: (_, row) => {
-        const total = calcTotalDestinos(row);
+      render: (item) => {
+        let badgeClass = 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300';
+        let label = 'Mista (N → M)';
+        if (item.tipo === 'agrupamento') {
+          badgeClass = 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/50 dark:text-cyan-300';
+          label = 'Agrupamento (N → 1)';
+        } else if (item.tipo === 'divisao') {
+          badgeClass = 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300';
+          label = 'Divisão (1 → M)';
+        }
         return (
-          <span className="text-sm font-mono text-slate-700 dark:text-slate-200">
-            {total > 0 ? formatBRL(total) : '-'}
+          <span className={`inline-flex px-2 py-0.5 text-[11px] font-bold rounded-full ${badgeClass}`}>
+            {label}
           </span>
         );
       },
     },
     {
-      key: 'criadoEm',
-      label: 'Criado em',
-      render: (val) => (
-        <span className="text-sm text-slate-500 dark:text-slate-400">
-          {formatDateBR(val)}
+      key: 'cliente',
+      label: 'Cliente Exportação',
+      align: 'left',
+      render: (item) => (
+        item.clienteExportacao ? (
+          <div className="flex items-center gap-1.5 text-xs text-slate-900 dark:text-slate-100 max-w-[180px] truncate">
+            <FontAwesomeIcon icon={faGlobe} className="text-blue-500 w-3 h-3 shrink-0" />
+            <span className="truncate" title={`${item.clienteExportacao.name} (${item.clienteExportacao.country})`}>
+              {item.clienteExportacao.name}
+            </span>
+          </div>
+        ) : (
+          <span className="text-xs text-slate-400 italic">Sem cliente definido</span>
+        )
+      ),
+    },
+    {
+      key: 'origens',
+      label: 'Origens / Destinos',
+      align: 'center',
+      render: (item) => (
+        <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+          {item.origens?.length || 0} origens → {item.destinos?.length || 0} destinos
         </span>
       ),
     },
     {
-      key: '_acoes',
+      key: 'valor',
+      label: 'Valor Preparado',
+      align: 'right',
+      render: (item) => {
+        const val = item.valorTotal || item.totais?.valorTotal || 0;
+        return (
+          <span className="font-bold text-slate-900 dark:text-slate-100 text-sm">
+            {formatBRL(val)}
+          </span>
+        );
+      },
+    },
+    {
+      key: 'status',
+      label: 'Situação',
+      align: 'center',
+      render: (item) => {
+        let badge = 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300';
+        let label = 'Rascunho';
+        if (item.status === 'active' || item.status === 'ativa') {
+          badge = 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300';
+          label = 'Ativa';
+        } else if (item.status === 'completed' || item.status === 'concluida') {
+          badge = 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300';
+          label = 'Concluída';
+        } else if (item.status === 'cancelled') {
+          badge = 'bg-rose-100 text-rose-800 dark:bg-rose-900/50 dark:text-rose-300';
+          label = 'Cancelada';
+        }
+        return (
+          <span className={`inline-flex px-2 py-0.5 text-[11px] font-semibold rounded-full ${badge}`}>
+            {label}
+          </span>
+        );
+      },
+    },
+    {
+      key: 'acoes',
       label: 'Ações',
       align: 'center',
-      render: (_, row) => (
-        <div className="flex items-center gap-2 justify-center">
+      render: (item) => (
+        <div className="flex items-center justify-center gap-1.5">
           <Button
             buttonType="primary"
             size="small"
-            onClick={() => router.push(`/preparacoes/nova?id=${row.id}`)}
-          >
-            Continuar
-          </Button>
-          <Button
-            buttonType="danger"
-            size="small"
             outline
-            onClick={() => handleDelete(row)}
+            onClick={() => router.push(`/preparacoes/nova?id=${item.id}`)}
           >
-            Excluir
+            <FontAwesomeIcon icon={faPenToSquare} className="mr-1" />
+            Editar
           </Button>
+          <button
+            onClick={() => setDeleteDialog({ open: true, preparation: item })}
+            className="p-1.5 text-slate-400 hover:text-red-600 rounded transition-colors cursor-pointer"
+            title="Excluir preparação"
+          >
+            <FontAwesomeIcon icon={faTrashCan} className="w-3.5 h-3.5" />
+          </button>
         </div>
       ),
     },
-  ];
-
-  if (sourceIds) {
-    return null;
-  }
+  ], [router]);
 
   return (
-    <AppLayout breadcrumbs={BREADCRUMBS}>
+    <AppLayout breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Preparações' }]}>
       <div className="space-y-4">
-        {/* Aviso de sessão volátil */}
-        {realCount > 0 && (
-          <div className="bg-amber-50 border border-amber-300 rounded-lg px-4 py-3 flex items-center gap-2 text-amber-800 text-sm">
-            <svg className="w-5 h-5 flex-shrink-0 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-            </svg>
-            <span>
-              <strong>{realCount}</strong> {realCount === 1 ? 'preparação com documentos reais será perdida' : 'preparações com documentos reais serão perdidas'} ao recarregar a página.
-            </span>
+        {/* Banner de Sessão Volátil caso existam documentos reais */}
+        {volatileCount > 0 && (
+          <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/80 rounded-lg p-3.5 flex items-center gap-3">
+            <FontAwesomeIcon icon={faShieldHalved} className="text-amber-600 w-5 h-5 shrink-0" />
+            <div className="text-xs text-amber-900 dark:text-amber-200">
+              <span className="font-bold">Aviso de Sessão Temporária: </span>
+              Existem {volatileCount} {volatileCount === 1 ? 'preparação com origens reais' : 'preparações com origens reais'} mantidas exclusivamente em memória volátil. Fechar ou atualizar o navegador descartará essas preparações.
+            </div>
           </div>
         )}
 
-        {/* Cabeçalho */}
-        <div className="flex items-center justify-between">
+        {/* Top Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-800 p-4 rounded-lg border border-slate-200 dark:border-slate-700 shadow-xs">
           <div>
-            <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100">Preparações de Exportação</h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-              Gerencie agrupamentos N→M de notas fiscais para exportação
+            <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+              <FontAwesomeIcon icon={faBoxesStacked} className="text-blue-600" />
+              Preparações de Exportação (N → M)
+            </h1>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Agrupamento, divisão e alocação unificada de mercadorias de múltiplos fornecedores para notas de saída.
             </p>
           </div>
-          <Button
-            buttonType="primary"
-            size="medium"
-            onClick={() => router.push('/preparacoes/nova')}
-          >
-            + Nova Preparação
-          </Button>
+
+          <div className="flex items-center gap-2">
+            <Button
+              buttonType="secondary"
+              size="small"
+              outline
+              onClick={handleReset}
+              title="Restaurar dados demonstrativos"
+            >
+              <FontAwesomeIcon icon={faRotateRight} className="w-3.5 h-3.5 mr-1 text-slate-500" />
+              Restaurar
+            </Button>
+            <Button
+              buttonType="primary"
+              size="small"
+              onClick={() => router.push('/preparacoes/nova')}
+            >
+              <FontAwesomeIcon icon={faPlus} className="w-3.5 h-3.5 mr-1" />
+              Nova Preparação
+            </Button>
+          </div>
         </div>
 
-        {/* Tabela */}
-        {loading ? (
-          <div className="flex items-center justify-center py-16 text-slate-500">
-            <svg className="animate-spin w-6 h-6 mr-2" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-            </svg>
-            Carregando preparações...
+        {/* Filters */}
+        <div className="flex flex-col sm:flex-row items-center gap-3 bg-white dark:bg-slate-800 p-3 rounded-lg border border-slate-200 dark:border-slate-700">
+          <div className="relative flex-1 w-full">
+            <FontAwesomeIcon icon={faMagnifyingGlass} className="absolute left-3 top-2.5 text-slate-400 w-3.5 h-3.5" />
+            <input
+              type="text"
+              placeholder="Buscar por número, título ou cliente..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-3 py-1.5 text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-blue-500"
+            />
           </div>
-        ) : (
+
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <select
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value)}
+              className="py-1.5 px-2 text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
+            >
+              <option value="ALL">Todos os tipos</option>
+              <option value="agrupamento">Agrupamento (N → 1)</option>
+              <option value="divisao">Divisão (1 → M)</option>
+              <option value="mista">Mista (N → M)</option>
+            </select>
+
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="py-1.5 px-2 text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
+            >
+              <option value="ALL">Todos os status</option>
+              <option value="draft">Rascunho</option>
+              <option value="active">Ativa</option>
+              <option value="completed">Concluída</option>
+              <option value="cancelled">Cancelada</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Data Table */}
+        <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-xs overflow-hidden">
           <DataTable
-            data={preparations}
+            data={filteredPreparations}
             columns={columns}
-            mainText={`${preparations.length} preparação(ões)`}
-            dense
-            emptyText="Nenhuma preparação encontrada. Clique em '+ Nova Preparação' para começar."
+            dense={false}
+            mainText={`Preparações Cadastradas (${filteredPreparations.length})`}
           />
-        )}
+        </div>
       </div>
 
-      {/* Dialog de exclusão */}
+      {/* Delete Confirmation Dialog */}
       <Dialog
-        showDialog={showDeleteDialog}
-        setDialogControl={setShowDeleteDialog}
-        title={`Excluir preparação "${deleteTarget?.titulo || deleteTarget?.id}"?`}
-        hideTextArea
+        showDialog={deleteDialog.open}
+        setDialogControl={(open) => setDeleteDialog({ open, preparation: null })}
+        title="Excluir Preparação"
+        hideTextArea={true}
+        btnAccept="Excluir e Liberar Saldos"
         btnCancel="Cancelar"
-        btnAccept="Excluir"
-        confirmActionCallback={confirmDelete}
-        closeDialogCallback={() => setDeleteTarget(null)}
-      />
+        confirmActionCallback={handleDelete}
+      >
+        <p className="text-sm text-slate-600 dark:text-slate-300 p-4">
+          Tem certeza de que deseja excluir a preparação <strong>{deleteDialog.preparation?.numero}</strong>? As mercadorias alocadas retornarão imediatamente ao saldo disponível das notas de origem.
+        </p>
+      </Dialog>
     </AppLayout>
   );
 }
