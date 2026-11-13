@@ -1,19 +1,26 @@
 # Progress — Milestone 1 Sub-Orchestrator
 
 ## Current Status
-Last visited: 2026-11-13T13:45:00Z
+Last visited: 2026-11-13T14:25:00Z
 - [x] Initialized Sub-Orchestrator briefing and scope review
-- [x] Dispatched 3 Explorers in parallel (Iteration 1)
-  - Explorer 1 (91ce1157-7c05-4fbc-94ad-51281ab524cd): Decimal math & Allocation engine
-  - Explorer 2 (20aa84d9-4d23-4009-bb95-446b6eb20fcf): Storage leakage & Preparation repository
-  - Explorer 3 (32ea5c72-6721-4b31-9061-d325f17bcba6): Legacy division & Test baseline
-- [ ] Wait and synthesize Explorer reports
-- [ ] Dispatch Worker (Iteration 1)
-- [ ] Dispatch Reviewers (2)
-- [ ] Dispatch Challengers (2)
-- [ ] Dispatch Forensic Auditor
-- [ ] Evaluate Gate
+- [x] Iteration 1 completed:
+  - Worker 1: 538/538 tests pass, build OK
+  - Reviewer 1: APPROVE
+  - Reviewer 2: APPROVE
+  - Challenger 1: FAIL (found `getUnitFamily` space mismatch on compound unit names)
+  - Challenger 2: APPROVE
+  - Auditor 1: CLEAN
+  - Gate 1: FAIL
+- [x] Iteration 2 dispatched:
+  - [ ] Explorer 1 (r2) (68523f54-1d80-47b3-a9fe-c3cf80d20038): Investigating fix strategy for `getUnitFamily`
+  - [ ] Explorer 2 (r2) (b8ee01ae-0b91-4da3-b8b4-f510913634eb): Auditing full `UNIT_FAMILIES` dictionary
+  - [ ] Explorer 3 (r2) (515b3c55-90b9-4fa4-8e33-84e4ad281984): Verifying test integration with Challenger 1 suite
+- [ ] Dispatch Worker (r2) to patch `allocationEngine.js` and update tests
+- [ ] Dispatch Reviewers (r2)
+- [ ] Dispatch Challengers (r2)
+- [ ] Dispatch Forensic Auditor (r2)
+- [ ] Evaluate Gate 2
 - [ ] Deliver handoff to parent
 
 ## Iteration Status
-Current iteration: 1 / 32
+Current iteration: 2 / 32

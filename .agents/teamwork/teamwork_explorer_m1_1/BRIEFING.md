@@ -1,7 +1,7 @@
-# BRIEFING — 2026-11-09T19:42:00Z
+# BRIEFING — 2026-11-13T13:49:00Z
 
 ## Mission
-Elaborar a estratégia de implementação e arquitetura exata para o módulo `app/features/xml/nfeXmlParser.js` cobrindo layouts nfeProc/NFe, v4.00/v3.10, busca imune a namespaces, resiliência a parsererror, suporte a browser + node --test, e mapeamento completo dos nós SEFAZ.
+Investigar `app/lib/calculations/decimal.js` e desenhar a arquitetura e código de produção de `app/lib/calculations/allocationEngine.js` para o Milestone 1 do SmartNFe (preparação de exportação N:M, precisão BigInt, conservação estrita e rateio de despesas acessórias zero-drift).
 
 ## 🔒 My Identity
 - Archetype: explorer
@@ -9,40 +9,49 @@ Elaborar a estratégia de implementação e arquitetura exata para o módulo `ap
 - Working directory: c:\www\smart-nfe\.agents\teamwork\teamwork_explorer_m1_1\
 - Original parent: 71db8a14-4c80-4575-92ba-b52ae572b170
 - Milestone: Milestone 1 (M1 - XML Parser & Core Ingestion)
+- Roles (Atual): Milestone 1 Explorer 1 (Decimal Math & Core Allocation Engine Architecture)
+- Parent (Atual): f64908f7-618d-4f21-bf78-58657f1ff50c
+- Milestone (Atual): Milestone 1 (M1 - Core Allocation Engine & Repositories)
 
 ## 🔒 Key Constraints
 - Read-only investigation — do NOT implement
 - Strictly read-only on project source code (only write to our own folder)
 - Files for content delivery, Messages for coordination
 - Self-contained 5-component handoff.md report
+- ZERO third-party libraries for core arithmetic (pure native BigInt)
+- Conservation rule: disponível = original - soma(alocações ativas)
+- Preservação da chave composta: `${sourceInvoiceId}__${sourceItemId}`
 
 ## Current Parent
-- Conversation ID: 71db8a14-4c80-4575-92ba-b52ae572b170
-- Updated: 2026-11-09T19:33:58Z
+- Conversation ID: f64908f7-618d-4f21-bf78-58657f1ff50c
+- Updated: 2026-11-13T13:44:18Z
 
 ## Investigation State
 - **Explored paths**:
-  - `ORIGINAL_REQUEST.md`, `PROJECT.md`, `SCOPE.md`, `teamwork_spec_miner_survey_2/handoff.md`
-  - `app/features/invoiceRepository.js`, `app/lib/calculations/invoiceTotals.js`, `app/lib/data/mockInvoices.js`
-  - `tests/tier1/m1_foundation.test.mjs`, `tests/tier1/m2_domain.test.mjs`
-  - Node.js runtime DOMParser capabilities (undefined in Node 24 by default, zero external npm parser packages)
+  - `ORIGINAL_REQUEST.md`, `PROJECT.md`, `sub_orch_m1/SCOPE.md`, `explorer_survey_1/report.md`
+  - `app/lib/calculations/decimal.js`, `app/lib/calculations/divisionMath.js`, `app/lib/calculations/invoiceTotals.js`
+  - `tests/integration/flow_c_division_balances.test.mjs`, `tests/tier1/m2_domain.test.mjs`, `tests/tier5/m4_challenger_division_traps_adversarial.test.mjs`, `tests/tier5/m2_decimal_adversarial_stress.test.mjs`
+  - Baseline de testes verificado: 383 testes passando via `node --test` em 12.7s.
 - **Key findings**:
-  - Dual environment challenge: browser has `window.DOMParser`, Node test runner (`node --test`) does not. Solution: built-in lightweight `NodeXmlDomParser` fallback in `nfeXmlParser.js` plus parser injection via options (`{ DOMParser }`), achieving 100% testability with zero npm dependencies.
-  - Namespace immunity: SEFAZ default `xmlns` and prefixes (like `<nfe:NFe>`) break naive selectors. Solution: helper suite combining `localName` stripping (`getElementLocalName`), `getElementsByTagNameNS('*', ...)`, and direct child navigation (`findDirectChildren`, `findDirectChild`) to prevent cross-level collision (e.g. `det/prod/vProd` vs `total/ICMSTot/vProd`).
-  - Layouts: `nfeProc` contains `protNFe` (`infProt`); standalone `NFe` does not contain `protNFe`. Parser extracts protocol if present and sets `protocolo: null` if absent without failing.
-  - Schema versions: v4.00 uses `dhEmi` (ISO 8601 with tz); v3.10 may use `dEmi` + `hEmi`. Parser supports fallback chain.
-  - Malformed XML: `DOMParser` inserts `<parsererror>`. Parser detects this at root or anywhere in tree and formats user-friendly Portuguese error message with line/column info.
-  - Validated via automated scratch script (`test_full_parser.mjs`) passing 5 test scenarios.
-- **Unexplored areas**: None for M1 XML parser architecture.
+  - `decimal.js` já possui a mecânica de BigInt limpa com decomposição `{ sign, intVal, scale }` e Half-Up ABNT NBR 5891. Precisa de extensões: `decimalSum`, `decimalAverage`, comparações estritas (`isDecimalPositive`, `decimalEquals`, `decimalGreaterThan`, `decimalLessThan`, `decimalMin`, `decimalMax`, `decimalClamp`) e rateio proporcional zero-drift (`decimalDistributeEqually`, `decimalApportionProportional`).
+  - `allocationEngine.js` desenhado em código de produção com:
+    - Matriz $N \to M$ (`calculateAllocationMatrix`).
+    - Regra de conservação $\text{disponível} = \text{original} - \text{priorActive} - \text{currentAllocated}$.
+    - Chave composta única `${sourceInvoiceId}__${sourceItemId}`.
+    - `checkUnitCompatibility` cobrindo 15 famílias canônicas de unidades fiscais SEFAZ.
+    - Rateio de frete, seguro, outras despesas e desconto multi-origem com conservação exata de centavos ao absorver resíduos no último destino ativo por origem.
+    - Validação de excessos e alocações negativas com bloqueio estrito de `canSave`.
+  - Retrocompatibilidade total garantida para `divisionMath.js` e rota legada `/documentos/[id]/divisao`.
+- **Unexplored areas**: Nenhuma no escopo matemático de M1.
 
 ## Key Decisions Made
-- Architecture of `nfeXmlParser.js` combines DOM traversal helpers, built-in Node fallback parser, explicit error detection, and complete field normalization.
-- No third-party npm packages needed; fully portable to browser ESM and Node.js.
+- `allocationEngine.js` será o motor matemático central; `divisionMath.js` delegará para ele, preservando 100% de retrocompatibilidade com os 383 testes existentes.
+- A conservação de centavos em rateio multi-origem calcula a proporção do valor de produtos de cada nota de origem entregue a cada destino, absorvendo o resíduo no último destino ativo para aquela origem.
+- O código completo foi entregue em `report.md` e o sumário no `handoff.md`.
 
 ## Artifact Index
-- DISPATCH.md — Recorded dispatch instructions
-- progress.md — Liveness heartbeat and milestone tracking
-- BRIEFING.md — Situational awareness and working memory
-- test_mini_parser.mjs — Verification of mini DOM parser
-- test_full_parser.mjs — Comprehensive test suite for all 5 parser scenarios
-- handoff.md — 5-component handoff report with production-ready code for Worker
+- `DISPATCH.md` — Registro das instruções de dispatch
+- `progress.md` — Heartbeat de vivacidade e progresso
+- `BRIEFING.md` — Memória persistente de contexto e identidade
+- `report.md` — Relatório técnico exaustivo com código proposto para `decimal.js` e `allocationEngine.js`
+- `handoff.md` — Relatório formal de handoff em 5 seções para o Worker

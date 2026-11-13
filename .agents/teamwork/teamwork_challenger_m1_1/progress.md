@@ -1,16 +1,20 @@
-# Progress — teamwork_challenger_m1_1
+# Progress — Challenger 1 (Milestone 1 Allocation Engine)
 
-Last visited: 2026-11-09T20:05:00Z
+Last visited: 2026-11-13T14:32:00Z
 
-- [x] Received dispatch message and updated DISPATCH.md
-- [x] Inspected mandatory documentation (ORIGINAL_REQUEST.md, PROJECT.md, SCOPE.md, worker handoff.md)
-- [x] Inspected implementation files (`app/features/xml/nfeXmlParser.js`, `accessKeyValidator.js`, `xmlToInvoiceMapper.js`)
-- [x] Develop empirical adversarial stress test suite (`tests/tier5/m1_xml_adversarial_stress.test.mjs`)
-- [x] Challenge 1: Access key limits (27 UFs, remainders 0/1/10, 43/45 digits, alphanumeric, non-55 models)
-- [x] Challenge 2: XML namespace stress (default, nested arbitrary prefixes, un-namespaced, empty/omitted tags)
-- [x] Challenge 3: Malformed XML resilience (unclosed tags, control chars, 5MB payload, parsererror interception)
-- [x] Execute test suites and collect empirical metrics (22/22 stress tests pass; 79/79 total tests pass)
-- [x] Update BRIEFING.md with state and attack surface
-- [x] Write challenge_report.md
-- [x] Write handoff.md with formal verdict (APPROVE)
-- [x] Send coordination message to orchestrator
+- [x] Received dispatch message from parent orchestrator `f64908f7-618d-4f21-bf78-58657f1ff50c`
+- [x] Recorded dispatch in `DISPATCH.md`
+- [x] Read `ORIGINAL_REQUEST.md`, `PROJECT.md`, `SCOPE.md`, and Worker `handoff.md`
+- [x] Updated `BRIEFING.md` preserving append-only identity and constraints
+- [x] Inspected implementation files (`decimal.js`, `allocationEngine.js`) in depth
+- [x] Implemented empirical adversarial test suite `tests/tier5/m1_challenger1_allocation_adversarial.test.mjs`
+  - [x] Stress Scenario 1: Cent conservation remainder stress (8/8 passed)
+  - [x] Stress Scenario 2: BigInt extreme precision & massive values (5/5 passed)
+  - [x] Stress Scenario 3: Conservation invariant oracle randomized N->M (2/2 passed)
+  - [x] Stress Scenario 4: Negative quantity injection attack (5/5 passed)
+  - [x] Stress Scenario 5: Unit compatibility oracle & edge cases (5/6 passed, 1 failed - defect found)
+- [x] Executed test suite and analyzed results
+- [x] Executed full regression suite `npm test`
+- [x] Written `challenge_report.md` documenting defect and blast radius
+- [x] Written `handoff.md` with formal verdict: FAIL
+- [ ] Send coordination message to orchestrator

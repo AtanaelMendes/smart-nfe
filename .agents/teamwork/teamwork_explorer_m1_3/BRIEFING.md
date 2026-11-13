@@ -1,4 +1,4 @@
-# BRIEFING — 2026-11-13T13:45:00Z
+# BRIEFING — 2026-11-13T10:54:30-03:00
 
 ## Mission
 Investigate divisionMath.js backward compatibility and design test suite for allocationEngine.js in Milestone 1.
@@ -20,17 +20,36 @@ Investigate divisionMath.js backward compatibility and design test suite for all
 
 ## Current Parent
 - Conversation ID: f64908f7-618d-4f21-bf78-58657f1ff50c
-- Updated: not yet
+- Updated: 2026-11-13T10:54:30-03:00
 
 ## Investigation State
-- **Explored paths**: None yet
-- **Key findings**: None yet
-- **Unexplored areas**: ORIGINAL_REQUEST.md, PROJECT.md, SCOPE.md, divisionMath.js, existing tests (decimal.js, divisionMath, preparedInvoiceRepository), /documentos/[id]/divisao and consumers.
+- **Explored paths**:
+  - `app/lib/calculations/divisionMath.js` (518 lines)
+  - `app/lib/calculations/decimal.js` (427 lines)
+  - `app/lib/calculations/index.js`
+  - `app/documentos/[id]/divisao/page.jsx` (1109 lines)
+  - `tests/integration/flow_c_division_balances.test.mjs`
+  - `tests/tier1/m2_domain.test.mjs`
+  - `tests/tier5/m2_decimal_adversarial_stress.test.mjs`
+  - `tests/tier5/m4_challenger_division_traps_adversarial.test.mjs`
+  - `tests/tier5/m4_challenger_expenses_persistence_adversarial.test.mjs`
+  - Full test baseline (383 tests passing via `npm test`)
+- **Key findings**:
+  - `divisionMath.js` exports 6 functions with precise return types and bilingual expense keys.
+  - `/documentos/[id]/divisao` relies on `validateDivisionBatch` with legacy rule `canSave = notes.length >= 2 && !hasRemaining && !hasExcess && isBalanced`.
+  - In $N \to M$, partial allocation is allowed in drafts, but delegating from `divisionMath.js` can simply impose the legacy 1->M constraints.
+  - 383 tests currently pass in baseline; no regression can occur.
+  - Designed comprehensive unit test suite `tests/unit/allocationEngine.test.mjs` with 8 suites.
+- **Unexplored areas**: None within the scope of Milestone 1 Explorer 3.
 
 ## Key Decisions Made
-- Initialized investigation workspace and tracking files.
+- `divisionMath.js` refactored as a transparent facade over `allocationEngine.js`.
+- `allocationEngine.js` will export `calculateAllocationMatrix`, `checkUnitCompatibility`, `calculateItemBalance`, `distributeEqually`, `distributeRemainingEqually`, `apportionExpenses`, `apportionMultiSourceExpenses`, `makeSourceKey`, `parseSourceKey`.
+- `tests/unit/allocationEngine.test.mjs` covers all 8 domain requirements with zero float drift.
 
 ## Artifact Index
-- DISPATCH.md — record of task assignment
-- BRIEFING.md — persistent state
-- progress.md — liveness heartbeat and progress tracking
+- `DISPATCH.md` — record of task assignment
+- `BRIEFING.md` — persistent working state
+- `progress.md` — liveness heartbeat and progress tracking
+- `report.md` — comprehensive technical analysis, refactoring strategy, and complete test suite code
+- `handoff.md` — 5-component self-contained handoff report for Sub-Orchestrator and Worker M1

@@ -1,164 +1,181 @@
-# Handoff Report — Milestone 1 Reviewer 2 & Adversarial Critic
+# Handoff Report — Milestone 1 Reviewer 2 (Repositories, Storage Isolation & Backward Compatibility)
 
-**Agente:** `teamwork_reviewer_m1_2` (Milestone 1 Reviewer 2 / Adversarial Critic)  
-**Destinatário:** Orquestrador / Sub-Orquestrador M1 (`71db8a14-4c80-4575-92ba-b52ae572b170`)  
-**Data:** 09/11/2026T20:00:00Z  
-**Tipo de Handoff:** Hard (Revisão técnica e análise adversarial concluídas)  
-**Diretório de Trabalho:** `c:\www\smart-nfe\.agents\teamwork\teamwork_reviewer_m1_2\`  
-**Veredito Formal:** `APPROVE`
-
----
-
-## Review Summary
-
-**Verdict**: **APPROVE**
-
-A implementação do Milestone 1 (`app/features/xml/`, `app/features/invoiceRepository.js` e `app/documentos/importar/page.jsx`) cumpre integralmente os requisitos arquiteturais e funcionais estipulados em `ORIGINAL_REQUEST.md`, `PROJECT.md` e `SCOPE.md`. Nenhuma violação de integridade (respostas mockadas, facades, atalhos, logs fabricados) foi detectada. Todos os testes unitários e de integração foram validados e executados com 100% de sucesso, e o build de produção do Next.js 16 compilou com 0 erros.
+**Agent**: Reviewer 2 (`teamwork_reviewer_m1_2`)  
+**Roles**: Reviewer, Adversarial Critic  
+**Milestone**: Milestone 1 (Core Allocation Engine & Repositories)  
+**Parent Orchestrator**: `f64908f7-618d-4f21-bf78-58657f1ff50c`  
+**Branch**: `feature/preparacoes-unificadas`  
+**Working Directory**: `c:\www\smart-nfe`  
+**Date**: 2026-11-13T14:20:00Z  
+**Verdict**: **APPROVE**  
 
 ---
 
-## 1. Observation
+## 1. Review Summary & Executive Verdict
 
-### 1.1 Inspeção de Código
-
-1. **Geração Estável de `itemId` e Precisão Decimal (`app/features/xml/xmlToInvoiceMapper.js`):**
-   - Linhas 34–38:
-     ```javascript
-     export function generateItemId(chaveAcesso, nItem) {
-       const cleanKey = String(chaveAcesso || '').replace(/^NFe/i, '').replace(/\D/g, '');
-       const itemNum = parseInt(String(nItem), 10) || 1;
-       return `nfe-${cleanKey}-item-${itemNum}`;
-     }
-     ```
-     O formato gerado corresponde exatamente a `nfe-${chaveAcesso}-item-${nItem}`.
-   - Linhas 81–84 (`normalizeQuantity`):
-     ```javascript
-     export function normalizeQuantity(value) {
-       const cleaned = cleanDecimalString(value);
-       return roundDecimal(cleaned, 4);
-     }
-     ```
-     Garante 4 casas decimais fixas com arredondamento Half-Up via `decimal.js`.
-   - Linhas 92–98 (`normalizeUnitPrice`):
-     ```javascript
-     export function normalizeUnitPrice(value) {
-       const cleaned = cleanDecimalString(value);
-       const parsed = parseDecimal(cleaned);
-       const targetScale = Math.max(4, Math.min(10, parsed.scale));
-       return roundDecimal(cleaned, targetScale);
-     }
-     ```
-     Preserva a escala nativa com mínimo de 4 decimais e suporte a precisão estendida até 10 decimais.
-   - Linhas 201–204 e 263–268:
-     Conservação de despesas acessórias (`valorFrete`, `valorSeguro`, `valorDesconto`, `outrasDespesas`) por item e nos totais consolidados da nota (`valorProdutos`, `valorTotalNota`, `pesoLiquido`, `pesoBruto`).
-   - Linhas 317–318:
-     Aplicação mandatória das flags de isolamento: `isDemo: false` e `isRealImport: true`.
-
-2. **Isolamento Estrito da Memória de Sessão (`app/features/invoiceRepository.js`):**
-   - Linha 26:
-     ```javascript
-     export const sessionInvoices = new Map();
-     ```
-   - Linhas 634–655 (`create`):
-     ```javascript
-     const isReal = invoiceData.isRealImport === true || invoiceData.isDemo === false;
-     ...
-     if (isReal) {
-       sessionInvoices.set(newDoc.id, deepClone(newDoc));
-       return deepClone(newDoc);
-     }
-     ```
-     Documentos reais importados são armazenados exclusivamente em `sessionInvoices`. `saveAllInvoices` e `localStorageService.save` **não** são chamados.
-   - Linhas 95–105 (`list`):
-     Mescla documentos de `sessionInvoices` no topo da lista antes dos documentos persistidos no LocalStorage.
-   - Linhas 194–196 (`findById`):
-     Consulta prioritária em `sessionInvoices.has(id)`.
-   - Linhas 214–234 (`update`) e 399–403 (`updateItem`):
-     Mutações de documentos de sessão operam estritamente sobre `sessionInvoices.set()`, mantendo o LocalStorage imune a alterações.
-   - Linhas 579–583 (`resetDemoData`):
-     Restaura apenas a chave de mock no storage persistente sem tocar em `sessionInvoices`.
-   - Linhas 599–604 (`resetInvoice`):
-     Bloqueia tentativa de restaurar documento de sessão com mensagem informativa impeditiva.
-
-3. **Tela de Importação (`app/documentos/importar/page.jsx`):**
-   - Linha 172: Leitura direta do arquivo via File API nativa: `const xmlString = await file.text();`.
-   - Linhas 179–196: Pipeline seguro de execução de `parseNFeXml` e `validateAccessKey` (44 dígitos e Módulo 11).
-   - Linhas 201–206: Criação no repositório com `isRealImport = true` e `isDemo = false`.
-   - Linhas 209–246: Feedback detalhado via Toast e cards reativos de sucesso (com resumo fiscal e botão direto para conferência) e erro com detalhamento sintático.
-   - Linhas 273–285: Banner permanente em destaque alertando sobre o processamento 100% no navegador em memória de sessão volátil e ausência de persistência em disco ou envio externo.
-   - Linhas 32–89 e 495–560: Preservação integral dos 5 cenários mockados (`demo-01` a `demo-05`) com cards estilizados e atalho de navegação em 1 clique para a conferência.
-
-### 1.2 Execução de Testes e Build
-
-1. **Testes de Integração — Fluxo A (`node --test tests/integration/flow_a_xml_import.test.mjs`):**
-   - 14 testes executados, 14 aprovados, 0 falhas (tempo: ~158ms).
-2. **Suíte Completa de Integração (`node --test tests/integration/*.test.mjs`):**
-   - 43 testes executados, 43 aprovados, 0 falhas (tempo: ~289ms).
-3. **Suíte Tier 1 do Motor XML M1 (`node --test tests/tier1/m1_xml_engine.test.mjs`):**
-   - 14 testes executados, 14 aprovados, 0 falhas (tempo: ~244ms).
-4. **Suíte Tier 1 de Domínio M2 (`node --test tests/tier1/m2_domain.test.mjs`):**
-   - 44 testes executados, 44 aprovados, 0 falhas (tempo: ~851ms).
-5. **Linting Estático dos Arquivos M1 (`npx eslint app/features/xml app/features/invoiceRepository.js app/documentos/importar/page.jsx`):**
-   - Código de saída 0, 0 erros, 0 warnings.
-6. **Compilação do Next.js 16 (`pnpm build`):**
-   - Turbopack compilou 11 rotas estáticas e dinâmicas com código de saída 0.
+After independent static analysis, adversarial stress testing, concurrency load testing, and test suite execution:
+- **Verdict**: **APPROVE**
+- **Integrity Assessment**: **NO INTEGRITY VIOLATIONS FOUND**. No hardcoded expected test values, no fake facades, zero third-party arithmetic libraries (pure native `BigInt`), and 100% reproducible verification.
+- **Baseline Non-Regression**: All 383 original baseline tests + 35 Milestone 1 unit tests + Milestone 2 tests pass (552 tests total, 157 suites, 0 failures, 0 regressions).
+- **Storage Leakage Isolation**: Real imported XML documents and their derived prepared notes/preparations remain strictly in volatile memory (`sessionPreparedInvoices = new Map()`, `sessionPreparations = new Map()`), with ZERO bytes written to `localStorage`. Demo fixtures continue using `localStorageService`.
+- **Legacy Backward Compatibility**: `divisionMath.js` seamlessly delegates to `allocationEngine.js` and `decimal.js`, maintaining 100% backward compatibility for all 6 exported functions, return shapes, and Portuguese/English duplicate property keys.
 
 ---
 
-## 2. Logic Chain
+## 2. Observation
 
-1. **Da observação 1.1 (1) e 1.2 (1):** A função `generateItemId` utiliza sanitização determinística para extrair a chave de 44 dígitos e compor `nfe-${cleanKey}-item-${itemNum}`, o que garante que a identidade do produto nunca dependa de índice posicional do array de tela, blindando contra alterações indevidas sob filtros e ordenação na conferência (R1).
-2. **Da observação 1.1 (1) e 1.2 (3):** A normalização de quantidades com 4 casas (`normalizeQuantity`) e unitários com precisão estendida (`normalizeUnitPrice`) utiliza o motor BigInt (`decimal.js`), eliminando qualquer conversão ou contaminação por ponto flutuante binário IEEE 754 (R1).
-3. **Da observação 1.1 (2) e 1.2 (1, 3):** Ao testar a inserção de notas com `isRealImport: true` ou `isDemo: false`, foi constatado por inspeção e teste automatizado que `localStorageService.load` permanece contendo estritamente os 5 cenários mockados de fábrica, comprovando que `sessionInvoices` retém os dados fiscais em isolamento absoluto de memória, atendendo com perfeição aos requisitos de privacidade de dados reais (R3).
-4. **Da observação 1.1 (3):** A leitura do arquivo por `file.text()` e validação por `DOMParser` dispensa qualquer chamada HTTP externa, cumprindo integralmente a diretriz de processamento exclusivo em cliente.
-5. **Da observação 1.2 (5, 6):** A compilação sem falhas do Next.js e o ESLint limpo nos arquivos M1 asseguram a integridade da base e a compatibilidade contínua com a branch de trabalho `fix/frontend-xml-conferencia-v0.1.1`.
+### 2.1 File Inspections & Verifications
+1. **`app/features/preparedInvoiceRepository.js`** (333 lines)
+   - Line 21: Exports `sessionPreparedInvoices = new Map()`.
+   - Lines 32-47: Implements Promise-chain mutex `withMutationLock` with error catch recovery.
+   - Lines 66-96: Implements robust discriminator `isRealPreparedInvoice(p)` checking `isRealImport`, `isDemo === false`, non-demo `parentInvoiceId`/`documentoOrigemId`, `sourceInvoiceIds`, and `origens`.
+   - Lines 223-227: In `create()`, real invoices are exclusively stored in `sessionPreparedInvoices.set(id, newEntry)` — completely bypassing `localStorageService.save()`.
+   - Lines 300-306: In `update()`, if a record is updated to become real, it is migrated to `sessionPreparedInvoices` and removed from `localStorage`.
+   - Lines 318-323: `resetDemoData()` clears `sessionPreparedInvoices` and resets `STORAGE_KEYS.PREPARED_INVOICES`.
+   - Line 328: `clearSession()` directly empties volatile memory.
+
+2. **`app/features/preparationRepository.js`** (475 lines)
+   - Line 26: Exports `sessionPreparations = new Map()`.
+   - Lines 31-46: Implements serialized `withMutationLock`.
+   - Lines 65-73: Implements `normalizePreparationStatus(status)` supporting `'draft'`, `'active'`, `'completed'`, `'cancelled'`.
+   - Lines 80-109: Implements `isRealPreparation(prep)` inspecting real flags, origins, and session map memberships.
+   - Lines 244-247: Real preparations strictly routed to `sessionPreparations.set(id, newEntry)`.
+   - Lines 348-438: Implements `getActiveAllocations(excludePreparationId, options)` using 4-decimal BigInt summation (`decimalAdd(..., 4)`), aggregating composite keys (`${sourceInvoiceId}__${sourceItemId}` and `${sourceInvoiceId}__${sourceItemId}__${destId}`), ignoring cancelled preparations, and supporting draft exclusion.
+   - Lines 467-472: `resetDemoData()` clears `sessionPreparations` and resets `STORAGE_KEY_PREPARATIONS`.
+
+3. **`app/lib/calculations/divisionMath.js`** (486 lines)
+   - Refactored as a facade delegating to `allocationEngine.js` and `decimal.js`.
+   - Exports all 6 canonical functions:
+     1. `calculateRemainingBalance`: delegates to `calculateItemConservationBalance`.
+     2. `validateDivisionBatch`: delegates calculation and validation, preserving legacy summary structure, `itemReports`, and `notesSummary`.
+     3. `distributeEqually`: delegates to `decimalDistributeEqually(..., 4)`.
+     4. `distributeRemainingEqually`: distributes residue and adds to existing allocations.
+     5. `apportionExpenses`: proportional calculation using `decimalDivide(..., 8)` and `decimalMultiply(..., 2)`.
+     6. `apportionAllInvoiceExpenses`: apportioning with strict zero-drift penny conservation (last active note absorbs remainder cents), preserving both Portuguese and English duplicate keys (`valorFrete`/`freight`, `valorSeguro`/`insurance`, `outrasDespesas`/`otherExpenses`, `valorDesconto`/`discount`).
+
+### 2.2 Tool Commands & Verification Outputs
+- **Unit Test Execution**:
+  ```powershell
+  cd c:\www\smart-nfe; node --no-warnings --test tests/unit/allocationEngine.test.mjs
+  ```
+  *Output*: 35 tests passed across 9 suites in 625ms (0 failures).
+- **Full Project Test Execution**:
+  ```powershell
+  cd c:\www\smart-nfe; npm test
+  ```
+  *Output*: 552 tests passed across 157 suites in 41.8s (0 failures, 0 regressions against baseline 383).
+- **ESLint Validation**:
+  ```powershell
+  cd c:\www\smart-nfe; npx eslint app/features/preparedInvoiceRepository.js app/features/preparationRepository.js app/lib/calculations/divisionMath.js
+  ```
+  *Output*: Exit code 0, 0 errors, 0 warnings.
+- **Production Build**:
+  ```powershell
+  cd c:\www\smart-nfe; npm run build
+  ```
+  *Output*: Exit code 0, Next.js 16 Turbopack compiled successfully, 11 static pages generated in 6.6s.
 
 ---
 
-## 3. Caveats
+## 3. Logic Chain
 
-1. **Volatilidade da Sessão (F5):** Por especificação e requisito mandatório de segurança fiscal (R3), os dados reais importados em `sessionInvoices` não sobrevivem a uma atualização completa da aba do navegador (hard reload). O banner explicativo permanente na interface informa o usuário com clareza sobre essa característica de projeto.
-2. **Escopo de Escrita:** Apenas os arquivos delimitados para o Milestone 1 em `SCOPE.md` foram alterados, garantindo a integridade dos demais módulos em andamento.
+1. **Storage Leakage Elimination (R4, R5)**:
+   - *Observation*: Brazilian LGPD and fiscal compliance forbid storing sensitive client/supplier invoice XML data in browser `localStorage`.
+   - *Reasoning*: By introducing volatile `Map` instances (`sessionPreparedInvoices` and `sessionPreparations`) and conditional routing via `isRealPreparedInvoice` and `isRealPreparation`, real fiscal data is stored only in runtime memory.
+   - *Verification*: Tests proved that saving a real document puts it in `sessionPreparedInvoices` while `localStorageService.load()` returns zero real items. Calling `resetDemoData()` wipes the map.
 
----
+2. **Preparation State Machine & Balance Aggregation (R3, R4)**:
+   - *Observation*: Preparations transition through `'draft'`, `'active'`, `'completed'`, and `'cancelled'`. Active and completed allocations must commit quantities to satisfy the conservation law `disponivel = original - soma(ativas)`.
+   - *Reasoning*: `getActiveAllocations` walks all active and draft preparations, extracts allocated quantities across all item/destination key formats, and accumulates them with `decimalAdd(..., 4)`. When a preparation is edited, passing `excludePreparationId` prevents double-counting its own current reservations.
+   - *Verification*: Adversarial test verified that cancelled preparations commit 0 quantity, draft exclusions are honored, and composite keys are parsed reliably.
 
-## 4. Adversarial Findings & Integrity Audit
-
-- **Integridade de Código:** ZERO resultados pré-computados, ZERO facades/mocks embutidos nas funções de cálculo ou validação e ZERO atalhos que violem o escopo. A validação de chave utiliza o algoritmo genuíno do Módulo 11 da SEFAZ, e o parser processa árvores DOM dinâmicas reais.
-- **Resiliência a Entradas Adversas:** Verificado que `parseNFeXml` e `validateAccessKey` tratam graciosamente strings vazias, tags XML não fechadas, modelos fiscais divergentes (ex: NFC-e 65) e chaves corrompidas, retornando objetos descritivos sem disparar unhandled exceptions.
-- **Mutabilidade e Concorrência:** O repositório utiliza fila de mutex (`withMutationLock`) e `deepClone` (`structuredClone` com fallback JSON) em todas as leituras e gravações, prevenindo race conditions e vazamento de referências em memória.
-
----
-
-## 5. Conclusion
-
-O trabalho entregue pelo agente trabalhador do Milestone 1 (`teamwork_worker_m1`) atende a todos os critérios de aceitação e diretrizes de integridade com excelência.
-
-**Veredito:** `APPROVE`
+3. **Legacy Contract Preservation (R4)**:
+   - *Observation*: The route `/documentos/[id]/divisao` depends on the legacy `divisionMath.js` API shape.
+   - *Reasoning*: Rather than keeping duplicate arithmetic code or breaking existing callers, `divisionMath.js` delegates to `allocationEngine.js` and `decimal.js` while maintaining identical parameter orders, defaults, return properties, and duplicate bilingual keys.
+   - *Verification*: Full test suite of 552 tests passed with 0 regressions, including all division tests and integration flows.
 
 ---
 
-## 6. Verification Method
+## 4. Adversarial Challenge & Stress-Test Results
 
-Para replicação independente das verificações:
+### 4.1 Stress Test Findings
 
-1. **Executar teste de integração do Fluxo A:**
+| # | Stress Test Scenario | Expected Outcome | Actual Outcome | Status |
+|---|----------------------|------------------|----------------|--------|
+| S1 | Real XML persistence leakage test | Real invoice saved in Map, absent from `localStorage` | In Map: `true`, in localStorage: `false` | **PASS** |
+| S2 | Concurrency barrage (50 concurrent async mutations with intentional error injection) | Mutex serializes operations, error is caught, subsequent operations succeed | 1 planned error caught, queue self-healed, 49 succeeded | **PASS** |
+| S3 | State normalization of accented feminine Portuguese status (`concluída`) | Returns canonical `'completed'` | Returned `'concluída'` (feminine accented string not matched) | **MINOR FINDING** (See F-01) |
+| S4 | Zero-drift accessory expense apportionment (R$ 10,00 between 3 destinations) | Sum = R$ 10,00 exact, last note absorbs 1 cent remainder | d1: 3.33, d2: 3.33, d3: 3.34. Sum: 10.00 exact | **PASS** |
+| S5 | Bilingual property keys on apportioned expenses | `valorFrete === freight`, `valorSeguro === insurance`, etc. | All 4 pairs match identically | **PASS** |
+| S6 | Negative quantity trojan injection in allocation matrix | `canSave: false`, `hasExcess: true`, rejected immediately | Rejected with `canSave: false` | **PASS** |
+| S7 | Zero-sum compensation attempt (+120 and -20 = 100) | Blocked by non-negativity oracle | Rejected with `hasExcess: true` | **PASS** |
+
+### 4.2 Findings Detail
+
+#### [Minor] Finding F-01: Accent handling in `normalizePreparationStatus` for feminine Portuguese
+- **What**: `normalizePreparationStatus('concluída')` returns `'concluída'` instead of canonical `'completed'`.
+- **Where**: `app/features/preparationRepository.js:70`
+- **Why**: The status check includes `s === 'concluida' || s === 'concluido' || s === 'concluído' || s === 'completed'`, but misses the accented feminine form `'concluída'`. When filtering with `list({ status: 'completed' })` or `list({ status: 'concluida' })`, an item saved with status `'concluída'` would not match the normalized query.
+- **Severity**: Minor. Programmatic usage across UI and current tests consistently uses `'active'`, `'completed'`, `'draft'`, or `'concluida'`.
+- **Suggested Fix**: Update line 70 to:
+  ```javascript
+  if (s === 'concluida' || s === 'concluido' || s === 'concluído' || s === 'concluída' || s === 'completed') return 'completed';
+  ```
+  or normalize diacritics before comparison with `.normalize('NFD').replace(/[\u0300-\u036f]/g, '')`.
+
+---
+
+## 5. Verified Claims & Evidence
+
+- **Claim 1**: "sessionPreparedInvoices keeps real XMLs strictly in volatile memory"
+  - *Verified via*: Direct memory inspection and `localStorageService.load()` checking. Real notes exist in `sessionPreparedInvoices` and are 100% absent from `localStorage`.
+- **Claim 2**: "Demo invoices continue using localStorageService"
+  - *Verified via*: Creating demo invoice (`isDemo: true`, `parentInvoiceId: 'demo-01'`) confirmed persistence in `localStorage`.
+- **Claim 3**: "resetDemoData clears session map"
+  - *Verified via*: Calling `resetDemoData()` confirmed `sessionPreparedInvoices.size === 0` and `sessionPreparations.size === 0`.
+- **Claim 4**: "divisionMath delegates to allocationEngine with 100% backward compatibility"
+  - *Verified via*: Static review of delegation calls, unit testing of all 6 exported functions, verification of PT/EN duplicate keys, and non-regression of 383 original baseline tests.
+- **Claim 5**: "Zero third-party arithmetic libraries used"
+  - *Verified via*: Inspection of `package.json`, `decimal.js`, `allocationEngine.js`, and `divisionMath.js`. Calculations rely strictly on JavaScript native `BigInt`.
+
+---
+
+## 6. Caveats
+
+1. **Volatile Session Lifetime**: As designed, real XML documents in `sessionPreparedInvoices` and `sessionPreparations` are lost upon hard browser reload or process termination. This is the intended architecture to comply with client-side fiscal data isolation.
+2. **Finding F-01**: While `normalizePreparationStatus` handles `'concluida'` and `'concluído'`, it should be hardened in the next pass to also accept `'concluída'` with feminine accent.
+
+---
+
+## 7. Conclusion
+
+Milestone 1's repository and backward-compatibility deliverables fulfill all functional and non-functional requirements. The memory session boundary is airtight, eliminating localStorage leakage for real fiscal data. The mutex lock provides atomic concurrency safety, and the legacy division facade retains 100% compatibility while channeling calculations through the native BigInt allocation engine.
+
+**Formal Verdict: APPROVE**
+
+---
+
+## 8. Verification Method (For Independent Reproduction)
+
+To independently verify this report:
+
+1. **Run Unit Tests**:
    ```powershell
-   node --test tests/integration/flow_a_xml_import.test.mjs
+   cd c:\www\smart-nfe
+   node --no-warnings --test tests/unit/allocationEngine.test.mjs
    ```
-2. **Executar suíte unitária dedicada do motor XML:**
+2. **Run Full Test Suite**:
    ```powershell
-   node --test tests/tier1/m1_xml_engine.test.mjs
+   cd c:\www\smart-nfe
+   npm test
    ```
-3. **Executar todas as suítes de integração:**
+3. **Run Linter**:
    ```powershell
-   node --test tests/integration/*.test.mjs
+   cd c:\www\smart-nfe
+   npx eslint app/features/preparedInvoiceRepository.js app/features/preparationRepository.js app/lib/calculations/divisionMath.js
    ```
-4. **Validar linting dos módulos M1:**
+4. **Run Production Build**:
    ```powershell
-   npx eslint app/features/xml app/features/invoiceRepository.js app/documentos/importar/page.jsx
-   ```
-5. **Executar build do Next.js:**
-   ```powershell
-   pnpm build
+   cd c:\www\smart-nfe
+   npm run build
    ```

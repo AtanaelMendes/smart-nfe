@@ -1,4 +1,4 @@
-# BRIEFING — 2026-11-13T13:45:00Z
+# BRIEFING — 2026-11-13T13:54:00Z
 
 ## Mission
 Investigate coexistence of Milestone 2 (Left Drawer & Responsive Layout) with other features (ScreenTourTip, table inline editing) and test harness in SmartNFe.
@@ -22,12 +22,32 @@ Investigate coexistence of Milestone 2 (Left Drawer & Responsive Layout) with ot
 - Updated: not yet
 
 ## Investigation State
-- **Explored paths**: [TBD]
-- **Key findings**: [TBD]
-- **Unexplored areas**: ScreenTourTip implementation and anchors, table inline editing z-indices/scroll locks, test runner configuration in package.json and existing test scripts
+- **Explored paths**:
+  - `app/components/feedback/ScreenTourTip.jsx`
+  - `app/config/screenTours.js`
+  - `app/components/Layouts/AppLayout.jsx`
+  - `app/components/Layouts/SmartNFeSidebar.jsx`
+  - `app/components/Layouts/SmartNFeHeader.jsx`
+  - `app/components/Layouts/ToastContainer.jsx`
+  - `app/components/Layouts/Dialog.jsx`
+  - `app/documentos/[id]/conferencia/page.jsx`
+  - `package.json`
+  - `tests/tier1/m1_foundation.test.mjs`
+  - `tests/tier1/m2_domain.test.mjs`
+  - `tests/integration/flow_b_conferencia_stable_edit.test.mjs`
+- **Key findings**:
+  - `ScreenTourTip` uses `fixed bottom-5 right-5 z-40`, with no physical anchor bindings to sidebar items.
+  - To prevent `ScreenTourTip` from rendering above the mobile drawer backdrop, the drawer overlay must use `z-50`.
+  - Escape key handling uses a 3-tier hierarchy guarded by `event.defaultPrevented` and `document.querySelector('[role="dialog"], [aria-modal="true"]')`.
+  - Table inline editing in `conferencia` handles Escape with `e.preventDefault()`, which prevents closing the sidebar or tourtip.
+  - Test runner is native `node:test` (`npm test` runs 383 baseline tests in 16.6s).
+  - Next.js SWC `transformSync` allows compiling JSX and rendering via `renderToStaticMarkup` without Jest or Vitest.
+- **Unexplored areas**: None; all required topics fully investigated.
 
 ## Key Decisions Made
-- [TBD]
+- Recommending `z-50` for mobile drawer overlay and backdrop to cleanly cover `ScreenTourTip` (`z-40`).
+- Recommending `role="dialog"` and `aria-modal="true"` on mobile drawer aside to trigger ScreenTourTip's modal suppression.
+- Authored production-ready 5-suite unit test specification for `tests/unit/leftDrawer.test.mjs`.
 
 ## Artifact Index
 - c:\www\smart-nfe\.agents\teamwork\m2_explorer_3\report.md — Detailed analysis report
