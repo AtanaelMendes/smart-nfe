@@ -1,27 +1,28 @@
-## 2026-11-09T19:34:06Z
-Você é o Milestone 1 Explorer 2 da equipe de engenharia do SmartNFe.
-Seu diretório de trabalho exclusivo é: c:\www\smart-nfe\.agents\teamwork\teamwork_explorer_m1_2\
+# Dispatch for Explorer 2 (M1)
+Task: Investigate Storage Leakage Fix (preparedInvoiceRepository.js) & Preparation Repository (preparationRepository.js).
+Working directory: c:\www\smart-nfe
+State folder: c:\www\smart-nfe\.agents\teamwork\teamwork_explorer_m1_2\
 
-Você DEVE ler os seguintes arquivos antes de iniciar:
-- c:\www\smart-nfe\.agents\teamwork\ORIGINAL_REQUEST.md
-- c:\www\smart-nfe\PROJECT.md
-- c:\www\smart-nfe\.agents\teamwork\sub_orch_m1_xml\SCOPE.md
-- c:\www\smart-nfe\.agents\teamwork\teamwork_spec_miner_survey_2\handoff.md
 
-Missão:
-Elaborar a estratégia de implementação e arquitetura exata para os módulos `app/features/xml/accessKeyValidator.js` e `app/features/xml/xmlToInvoiceMapper.js`:
-1. `accessKeyValidator.js`:
-   - Validação da estrutura de 44 dígitos da chave de acesso (UF, AAMM, CNPJ, modelo 55, série, número, tpEmis, código aleatório).
-   - Cálculo rigoroso do dígito verificador pelo Módulo 11 com pesos de 2 a 9 da direita para a esquerda.
-   - Mensagens de erro claras quando o comprimento, caracteres, modelo ou DV forem inválidos.
-   - Vetores de teste oficiais para validação.
-2. `xmlToInvoiceMapper.js`:
-   - Normalização dos nós brutos do XML para o contrato estrito exigido pelo `invoiceRepository.js`.
-   - Geração determinística de `itemId`: `nfe-${chaveAcesso}-item-${nItem}` garantindo identificadores estáveis para cada produto.
-   - Tratamento de quantidades com até 4 casas decimais e valores unitários com precisão estendida.
-   - Garantir flags `isRealImport: true` e `isDemo: false`.
-   - Preservar estrutura de `totais` com `valorProdutos`, `valorFrete`, `valorSeguro`, `outrasDespesas`, `valorDesconto` e `valorTotalNota`.
-3. Propor a estratégia exata em `handoff.md` com trechos de código prontos para o Worker implementar.
+## 2026-11-13T13:44:25Z
+You are Explorer 2 for Milestone 1 of SmartNFe.
+Working directory: c:\www\smart-nfe
+State folder: c:\www\smart-nfe\.agents\teamwork\teamwork_explorer_m1_2\
+Path to ORIGINAL_REQUEST.md: c:\www\smart-nfe\.agents\teamwork\ORIGINAL_REQUEST.md
+Path to PROJECT.md: c:\www\smart-nfe\.agents\teamwork\PROJECT.md
+Path to SCOPE.md: c:\www\smart-nfe\.agents\teamwork\sub_orch_m1\SCOPE.md
 
-Mantenha `progress.md` atualizado com timestamp e envie mensagem ao orquestrador quando concluir.
-NÃO escreva nem modifique arquivos de código-fonte diretamente (explorers são read-only).
+Objective:
+Read ORIGINAL_REQUEST.md, PROJECT.md, and SCOPE.md. Investigate app/features/preparedInvoiceRepository.js, app/features/invoiceRepository.js, and design app/features/preparationRepository.js.
+Specifically:
+1. Investigate storage leakage in app/features/preparedInvoiceRepository.js:
+   - How is localStorage currently used?
+   - How does invoiceRepository.js implement volatile in-memory session isolation (sessionInvoices = new Map())?
+   - How to introduce sessionPreparedInvoices = new Map() in preparedInvoiceRepository.js so real imported XMLs and their preparations are kept strictly in memory, out of localStorage, while demo data remains in localStorage?
+2. Detail the exact design and implementation strategy for app/features/preparationRepository.js:
+   - Async methods: create(preparationData), update(id, partialData), findById(id), list({ status, type }), delete(id), getActiveAllocations(excludePreparationId)
+   - Dual-storage pattern: sessionPreparations = new Map() for preparations originating from real invoices, localStorage for demo preparations
+   - Draft management and lifecycle ('draft', 'active', 'completed', 'cancelled')
+   - Active allocations map extraction: for all active (non-cancelled, non-draft if applicable, or drafts depending on design) preparations, summing allocated quantities per `${sourceInvoiceId}__${sourceItemId}`
+3. Write your findings and proposed code design to c:\www\smart-nfe\.agents\teamwork\teamwork_explorer_m1_2\report.md and c:\www\smart-nfe\.agents\teamwork\teamwork_explorer_m1_2\handoff.md.
+Send a message when complete.

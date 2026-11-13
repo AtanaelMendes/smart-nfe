@@ -1,14 +1,16 @@
-# Progress Tracking - Milestone 1 Explorer 3
+# Progress Tracking - Explorer 3 (Milestone 1)
 
-- [x] Initialized DISPATCH.md and BRIEFING.md (2026-11-09T19:35:00Z)
-- [x] Read foundational docs (ORIGINAL_REQUEST.md, PROJECT.md, SCOPE.md, survey handoff.md) (2026-11-09T19:35:30Z)
-- [x] Inspected `app/features/invoiceRepository.js` and all repository call sites across app (2026-11-09T19:37:15Z)
-- [x] Inspected peer explorer scopes (m1_1, m1_2) to align with XML parser & mapper contracts (2026-11-09T19:36:20Z)
-- [x] Inspected `app/documentos/importar/page.jsx`, `app/documentos/page.jsx`, and `app/documentos/[id]/conferencia/page.jsx` (2026-11-09T19:38:50Z)
-- [x] Designed exact memory isolation architecture in `invoiceRepository.js` (2026-11-09T19:40:00Z)
-- [x] Designed real import flow & UI feedback in `app/documentos/importar/page.jsx` (2026-11-09T19:40:30Z)
-- [x] Compiled comprehensive 5-component `handoff.md` with complete code snippets ready for Worker (2026-11-09T19:42:00Z)
-- [x] Notify orchestrator via `send_message` (2026-11-09T19:42:30Z)
+Last visited: 2026-11-13T13:45:00Z
 
-Last visited: 2026-11-09T19:42:30Z
-Status: Completed
+## Status
+Starting investigation into divisionMath.js compatibility, existing test suites, and allocationEngine test suite design.
+
+## Task Checklist
+- [x] Create DISPATCH.md and BRIEFING.md
+- [ ] Read ORIGINAL_REQUEST.md, PROJECT.md, and SCOPE.md
+- [ ] Investigate app/lib/calculations/divisionMath.js: exports, consumers, usage in UI and repo
+- [ ] Investigate existing test suite: tests for decimal.js, divisionMath.js, preparedInvoiceRepository.js, etc.
+- [ ] Design backward-compatible refactoring strategy for divisionMath.js -> allocationEngine.js
+- [ ] Design comprehensive unit test suite tests/unit/allocationEngine.test.mjs
+- [ ] Write report.md and handoff.md
+- [ ] Notify parent via send_message

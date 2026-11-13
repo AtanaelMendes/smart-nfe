@@ -1,64 +1,70 @@
 # Original User Request
 
-## Initial Request — 2026-11-10T12:24:22Z
+## Initial Request — 2026-11-13T13:26:20Z
 
-This is a single self-contained fix; keep it small and focused. Implementar um sistema de tourtip / onboarding contextual que explica o objetivo de cada tela ao ser acessada no SmartNFe, permitindo guiar o usuário pelas regras e ações de cada etapa do fluxo fiscal, sem criar novos arquivos de teste e focando exclusivamente na feature e em zero erros de lint e build.
+Evoluir o SmartNFe para permitir preparar notas fiscais de exportação a partir de qualquer quantidade de NF-e recebidas de fornecedores (N origens → M destinos), com controle completo das mercadorias, preservação da origem dos itens e arquitetura unificada de alocação.
 
 Working directory: c:\www\smart-nfe
-Integrity mode: development
+Integrity mode: demo
+The team must NOT: use pre-built libraries or frameworks for core functionality
+
+Referência:
+- Frontend: https://github.com/AtanaelMendes/smart-nfe
+- Backend (reservado para outra etapa, não modificar): https://github.com/AtanaelMendes/smart-nfe-api
 
 ## Requirements
 
-### R1. Dicionário Centralizado de Conteúdo dos Tourtips
-Implementar em `app/config/screenTours.js` a base centralizada de dados explicativos para as 8 rotas mapeadas do SmartNFe:
-1. `/dashboard`: Painel Geral — Visão geral dos documentos fiscais em andamento, métricas consolidadas e atalhos rápidos.
-2. `/documentos/importar`: Importação de XML — Leitura e validação client-side de NF-e modelo 55 (DOMParser, Módulo 11) com privacidade em memória de sessão temporária.
-3. `/documentos`: Lista de Documentos — Gerenciamento e filtro das notas fiscais originais, status de processamento e ações de conferência.
-4. `/documentos/[id]/conferencia`: Conferência de Produtos — Conferência item a item de mercadorias, edição estável por `itemId`, recálculo em precisão decimal, comparação com `valorOriginal` e atalhos de teclado.
-5. `/documentos/[id]/validacao`: Validação Fiscal — Diagnóstico de inconsistências cadastrais e tributárias de exportação, confirmação explícita de alterações, pilha de desfazer (*undo*) e bloqueio de lote em campos tributários sensíveis.
-6. `/documentos/[id]/divisao`: Divisão de Notas — Desmembramento de quantidades entre múltiplas notas de exportação, distribuição de saldos e rateio proporcional de frete/seguro/despesas.
-7. `/notas-preparadas`: Notas Preparadas — Consulta e conferência das notas finais geradas para exportação.
-8. `/configuracoes`: Configurações do Sistema — Personalização da experiência (modo escuro, densidade de tabela) e opção para reiniciar os guias explicativos de todas as telas.
+### R1. Correção definitiva do Left Drawer e layout
+Corrigir o estado de recolhimento do Left Drawer (`app/components/Layouts/AppLayout.jsx`, `app/components/Layouts/SmartNFeSidebar.jsx`, `app/components/Layouts/SmartNFeHeader.jsx`, `app/context/AppContext.jsx`) para persistir a escolha do usuário em `smartnfe_sidebar_collapsed` durante navegação e recarga sem hydration mismatch. O drawer deve permanecer expandido por padrão acima de 1024px quando não houver preferência salva e recolhido por padrão em LG ou inferior (até 1024px), oferecendo drawer móvel com backdrop, tecla Escape e botão de fechar, botão de toggle sempre acessível, sem interferir no editor de produtos nem no ScreenTourTip.
 
-Cada entrada deve conter título, objetivo da tela, passos práticos recomendados, dicas fiscais/segurança e identificador de ícone.
+### R2. Upload múltiplo de XML e organização de documentos com filtros avançados
+Na rota `/documentos/importar`, evoluir o importador para aceitar múltiplos arquivos XML na mesma operação (seleção múltipla e drag-and-drop), processando no navegador em lotes com concorrência limitada, progresso individual e geral, repetição de arquivos com falha e detecção de duplicidades pela chave de acesso sem travar a interface nem persistir XMLs reais no localStorage. Na rota `/documentos`, implementar pesquisa com debounce, filtros combináveis (cliente de exportação atribuído, fornecedor, NCM, produto, datas, valores e saldos), agrupamento visual por cliente ou fornecedor, e seleção estável de itens entre páginas exibindo contadores de notas, itens e valores.
 
-### R2. Componente de Tourtip Contextual (ScreenTourTip)
-Implementar o componente reutilizável em `app/components/feedback/ScreenTourTip.jsx` (ou similar em `app/components/`):
-- Exibição automática no primeiro acesso à tela correspondente, verificando e respeitando a flag `smartnfe_tour_seen_<routeKey>` no `localStorage`.
-- Fornecer ações interativas para o usuário: botão "Entendi / Não mostrar novamente", botão "Minimizar / Expandir" e suporte ao atalho de teclado `Escape` para fechar.
-- Garantir compatibilidade visual completa com Dark Mode e Tailwind CSS 4.
+### R3. Fluxo e interface de Nova Preparação (N origens → M destinos)
+Criar rota `/preparacoes/nova` e tela de gerenciamento `/preparacoes` suportando os cenários de agrupamento (N → 1), divisão (1 → M) e preparação mista (N → M) a partir de upload múltiplo, seleção de documentos ou rascunhos, sem limites arbitrários de origens ou destinos. A interface deve ser compacta e de alta densidade (tabela ampla, cabeçalho fixo, filtros recolhíveis, totais sempre visíveis, painel de origens e destinos com abas, edição rápida de quantidades e saldos em tempo real), preservando a chave de origem (`sourceInvoiceId + sourceItemId`) e permitindo salvar rascunhos com aviso claro sobre retenção temporária em memória para documentos reais.
 
-### R3. Ponto de Reabertura no Cabeçalho e Reinício nas Configurações
-- No cabeçalho global (`app/components/Layouts/SmartNFeHeader.jsx`), adicionar botão com ícone de ajuda/lâmpada que permite ao usuário reabrir o guia explicativo da tela ativa a qualquer momento, independentemente de já ter sido marcado como visto.
-- Na tela de configurações (`app/configuracoes/page.jsx`), adicionar botão/ação para "Reiniciar guias explicativos", limpando do `localStorage` as flags de tours visualizados para que os guias voltem a ser exibidos automaticamente no próximo acesso a cada tela.
+### R4. Motor unificado de alocação e evolução dos repositórios
+Evoluir a camada de cálculos (`app/lib/calculations/decimal.js`, `divisionMath.js`, `invoiceTotals.js`) e repositórios (`preparationRepository`, `invoiceRepository`, `preparedInvoiceRepository`) para uma arquitetura única de alocação com precisão decimal (BigInt, sem ponto flutuante binário), assegurando a regra de conservação (`disponível = original - soma das alocações ativas`) e impedindo duplicidade ou rateios arbitrários. Manter compatibilidade com preparações legadas baseadas em `parentInvoiceId` e assegurar que `/documentos/[id]/divisao` continue funcionando utilizando internamente o motor unificado.
 
-### R4. Escopo de Trabalho, Branch e Qualidade do Código
-- Manter todo o trabalho na branch `fix/frontend-xml-conferencia-v0.1.1`.
-- Não recriar testes existentes e não criar novos arquivos de teste automatizado, mantendo foco estrito na entrega da funcionalidade de tourtip.
-- Garantir que `pnpm lint` e `pnpm build` executem com 0 erros.
+### R5. Restrições de infraestrutura, mocks e entrega
+Criar a branch `feature/preparacoes-unificadas` a partir do repositório existente sem alterar diretamente a branch master, sem realizar deploy, merge ou acionar GitHub Actions sem autorização, e sem modificar a API PHP. Criar os cenários mockados especificados (de 2→1 até 50→5, fornecedores e clientes múltiplos, produtos repetidos e unidades incompatíveis) e atualizar tourtips em `app/config/screenTours.js`; a aplicação deve rodar de forma autônoma na Vercel sem backend, mantendo dados fiscais reais estritamente em memória temporária.
 
 ## Verification Resources
-- Validação estática: `pnpm lint`
-- Compilação e build de produção: `pnpm build`
+A equipe deve gerar fixtures mockadas de XML (abrangendo os cenários de 2 a 50 notas, múltiplos fornecedores e clientes, produtos repetidos e unidades incompatíveis) e implementar a suíte de testes automatizados diretamente no repositório (`tests/`).
 
 ## Acceptance Criteria
 
-### Dicionário de Rotas e Conteúdo
-- [ ] O arquivo `app/config/screenTours.js` exporta o conteúdo estruturado das 8 telas mapeadas contendo título, objetivo, passos práticos, dicas fiscais/segurança e ícone.
+### Left Drawer e Layout
+- [ ] O left drawer permanece recolhido quando o usuário assim escolhe e persiste a preferência em `smartnfe_sidebar_collapsed` durante navegação e recarga sem hydration mismatch.
+- [ ] Em telas LG ou inferior (até 1024px), o drawer inicia recolhido por padrão, e o menu móvel opera em overlay com backdrop, tecla Escape e botão de fechar.
+- [ ] O botão de expansão/recolhimento permanece sempre visível e acessível sem interferir no editor de produtos nem no ScreenTourTip.
 
-### Comportamento e Interação do Tourtip
-- [ ] No primeiro acesso a qualquer uma das 8 rotas, o tourtip é renderizado automaticamente se a chave `smartnfe_tour_seen_<routeKey>` não existir no `localStorage`.
-- [ ] Acionar o botão "Entendi / Não mostrar novamente" salva a chave no `localStorage` e fecha o tourtip, impedindo que reabra automaticamente em acessos futuros.
-- [ ] O componente alterna corretamente entre o estado minimizado e expandido ao clicar no controle de minimização.
-- [ ] Pressionar a tecla `Escape` fecha o tourtip aberto.
-- [ ] O componente se adapta visualmente aos temas claro e escuro (Dark Mode).
+### Importação e Documentos
+- [ ] O upload múltiplo de XML funciona em `/documentos/importar` com drag-and-drop, concorrência controlada, barra de progresso individual/geral, repetição de erros e detecção de duplicidade por chave de acesso.
+- [ ] O usuário consegue selecionar quantas NF-e forem necessárias, dentro dos recursos disponíveis, sem limites arbitrários de quantidade de notas ou fornecedores.
+- [ ] A busca e filtros em `/documentos` operam com debounce e suportam filtros combinados por cliente atribuído, fornecedor, produto, NCM, data e saldos.
+- [ ] A seleção de documentos não se perde ao filtrar, ordenar, paginar ou alternar agrupamento visual, exibindo contadores de notas, itens, valores e fornecedores.
+- [ ] Documentos fiscais são organizáveis por cliente de exportação atribuído (incluindo categoria "Sem cliente atribuído") sem alterar o destinatário original da NF-e.
 
-### Integração Global (Header e Configurações)
-- [ ] O botão com ícone de ajuda/lâmpada em `SmartNFeHeader` reabre o tourtip da rota atual mesmo após ter sido marcado como visto.
-- [ ] A opção "Reiniciar guias explicativos" em `/configuracoes` remove as flags `smartnfe_tour_seen_*` do `localStorage`.
+### Motor de Preparação e Alocação
+- [ ] O sistema suporta agrupamento (N origens → 1 destino), divisão (1 origem → M destinos) e preparação mista (N origens → M destinos) sob a mesma arquitetura de alocação.
+- [ ] Cada produto alocado preserva sua identificação de origem através de `sourceInvoiceId` e `sourceItemId`, sem agrupar automaticamente produtos de fornecedores distintos.
+- [ ] O motor calcula saldos em tempo real e impede alocação de quantidade superior ao saldo disponível (`quantidade disponível = quantidade original - soma das alocações ativas`).
+- [ ] Todos os cálculos monetários e de quantidades utilizam precisão decimal baseada em BigInt, sem cálculos em ponto flutuante binário nem rateios fiscais arbitrários.
+- [ ] As preparações antigas com `parentInvoiceId` continuam legíveis e funcionais, e a rota `/documentos/[id]/divisao` continue operando utilizando o motor unificado.
 
-### Build e Qualidade
-- [ ] O trabalho é realizado na branch `fix/frontend-xml-conferencia-v0.1.1`.
-- [ ] Nenhum arquivo de teste desnecessário ou pré-existente foi recriado.
-- [ ] O comando `pnpm lint` executa sem nenhum erro ou warning impeditivo.
-- [ ] O comando `pnpm build` conclui a compilação de produção com 0 erros.
+### Persistência, Infraestrutura e Qualidade
+- [ ] Dados fiscais reais e preparações com origens reais permanecem em memória temporária, apresentando aviso explícito de perda de sessão após atualização/fechamento, sem persistir XMLs reais no localStorage.
+- [ ] A aplicação opera de forma autônoma na Vercel sem dependência de execução da API PHP.
+- [ ] As alterações são desenvolvidas na branch `feature/preparacoes-unificadas`, sem modificação direta da master e sem deploy, merge ou GitHub Actions não autorizados.
+- [ ] A suíte de testes automatizados cobre Left Drawer, Upload múltiplo, Busca/Filtros, Preparações (N→1, 1→M, N→M, saldos, rascunhos) e Regressão, passando com sucesso junto ao lint e `npm run build`.
+
+
+## Follow-up — 2026-11-13T13:44:37Z
+
+O usuário solicitou agilidade: "nada de codigo ainda? começa logo". Favor priorizar e acelerar o início imediato da escrita de código nas frentes de implementação (branch feature/preparacoes-unificadas, Left Drawer, motor de alocação, etc.).
+
+
+## Follow-up — 2026-11-13T13:44:51Z
+
+URGÊNCIA DO USUÁRIO: O usuário solicitou agilidade: "nada de codigo ainda? começa logo". Favor acelerar o início imediato e priorizar a escrita de código funcional nas frentes de implementação ativas (branch feature/preparacoes-unificadas, Left Drawer, motor unificado de alocação, etc.), minimizando cerimônias e focando na produção direta dos arquivos e testes.
