@@ -1,64 +1,65 @@
-# BRIEFING — 2026-11-09T20:01:30Z
+# BRIEFING — 2026-11-13T14:17:00Z
 
 ## Mission
-Review and adversarial stress-testing of Milestone 1 XML parsing and access key validation engines.
+Independently review and adversarial-stress-test Milestone 1's decimal arithmetic and allocationEngine in SmartNFe.
 
 ## 🔒 My Identity
-- Archetype: reviewer
+- Archetype: reviewer AND adversarial critic
 - Roles: reviewer, critic
-- Working directory: c:\www\smart-nfe\.agents\teamwork\teamwork_reviewer_m1_1
-- Original parent: 71db8a14-4c80-4575-92ba-b52ae572b170
-- Milestone: Milestone 1 - XML Engine
+- Working directory: c:\www\smart-nfe
+- State folder: c:\www\smart-nfe\.agents\teamwork\teamwork_reviewer_m1_1\
+- Original parent: f64908f7-618d-4f21-bf78-58657f1ff50c
+- Milestone: Milestone 1 (Core Allocation Engine & Repositories)
 - Instance: 1 of 1
 
 ## 🔒 Key Constraints
 - Review-only — do NOT modify implementation code
-- Evidence-based findings; adversarial stress-testing; integrity violation checks
-- Absolute adherence to project layouts and communication conventions
+- Mathematical rigor: pure BigInt arithmetic, zero third-party arithmetic packages
+- Conservation rule: disponível = original - soma(alocações ativas)
+- Non-negativity and excess blocking: canSave is false if any balance is negative or exceeded
+- Zero-drift cent conservation across accessory expenses
+- Unit compatibility across SEFAZ physical families
+- Check for integrity violations (hardcoded test results, facade implementations, bypasses)
 
 ## Current Parent
-- Conversation ID: 71db8a14-4c80-4575-92ba-b52ae572b170
-- Updated: 2026-11-09T19:56:07Z
+- Conversation ID: f64908f7-618d-4f21-bf78-58657f1ff50c
+- Updated: 2026-11-13T14:10:40Z
 
 ## Review Scope
-- **Files to review**: app/features/xml/nfeXmlParser.js, app/features/xml/accessKeyValidator.js, app/features/xml/xmlToInvoiceMapper.js, app/features/invoiceRepository.js, app/documentos/importar/page.jsx
-- **Interface contracts**: PROJECT.md, SCOPE.md
-- **Review criteria**: XML parsing correctness (nfeProc/NFe standalone, namespaces, parsererror), Modulo 11 check digit (weights 2-9, remainder 0/1 -> 0, 44 digits, UF IBGE, Model 55), test execution, integrity check, session repository isolation
+- **Files to review**: `app/lib/calculations/decimal.js`, `app/lib/calculations/allocationEngine.js`, and associated tests
+- **Interface contracts**: `c:\www\smart-nfe\.agents\teamwork\PROJECT.md`, `c:\www\smart-nfe\.agents\teamwork\sub_orch_m1\SCOPE.md`, `c:\www\smart-nfe\.agents\teamwork\ORIGINAL_REQUEST.md`
+- **Review criteria**: correctness, style, conformance, integrity, adversarial robustness
+
+## Key Decisions Made
+- [Initial] Commenced independent review of worker_m1_1 implementation.
+- [Verification] Verified 100% BigInt implementation, zero third-party packages, zero-drift cent conservation, and conservation rules.
+- [Adversarial] Stress-tested 7 boundary scenarios (overdrawn prior, garbage input, 10 decimals, trillion+, empty parts, accents/superscripts, requireBalanced). All passed cleanly.
+- [Verdict] APPROVE. No integrity violations or regression defects found.
+
+## Artifact Index
+- DISPATCH.md — Initial dispatch message
+- BRIEFING.md — Persistent working memory
+- progress.md — Liveness heartbeat
+- handoff.md — Review & challenge handoff report
 
 ## Review Checklist
 - **Items reviewed**:
-  - `app/features/xml/nfeXmlParser.js` (DOMParser, namespaces, parsererror handling, NodeXmlDomParser fallback)
-  - `app/features/xml/accessKeyValidator.js` (44 digits, UF IBGE, Model 55, emission type, cyclic weights 2..9 right-to-left, remainder 0/1 -> 0)
-  - `app/features/xml/xmlToInvoiceMapper.js` (deterministic `itemId`, 4-decimal quantities, extended unit price, ancillary expenses)
-  - `app/features/invoiceRepository.js` (in-memory `sessionInvoices = new Map()`, isolation from localStorage)
-  - `app/documentos/importar/page.jsx` (File API text reading, validation feedback, privacy banner)
+  - `app/lib/calculations/decimal.js` (pure BigInt arithmetic)
+  - `app/lib/calculations/allocationEngine.js` (conservation engine)
+  - `app/lib/calculations/divisionMath.js` (legacy delegation facade)
+  - `app/features/preparedInvoiceRepository.js` (memory isolation)
+  - `app/features/preparationRepository.js` (preparation lifecycle)
+  - `tests/unit/allocationEngine.test.mjs` (unit test suite)
 - **Verdict**: APPROVE
-- **Unverified claims**: none; all claims independently verified via automated tests, linter, Next.js build, and node runtime.
+- **Unverified claims**: None. All claims independently verified via automated test commands, builds, and node adversarial runs.
 
 ## Attack Surface
 - **Hypotheses tested**:
-  - Remainder 0 and 1 -> DV 0: PASS
-  - Weights 2..9 right to left with wrap-around: PASS
-  - 44-digit string with letters or non-digits: PASS (rejected)
-  - Invalid IBGE UF code: PASS (rejected)
-  - Invalid emission month (00, 13): PASS (rejected)
-  - Model other than 55 (e.g. NFC-e 65): PASS (rejected)
-  - XML with tag mismatch or unclosed tag: PASS (gracefully handled as PARSER_ERROR)
-  - XML with namespace prefixes (`nfe:NFe`, `nfe:ide`): PASS (parsed transparently)
-  - Decimal comma normalization: PASS
-  - LocalStorage isolation: PASS (no real imports written to localStorageService)
-- **Vulnerabilities found**: None. Code is clean and meets all specifications.
-- **Untested angles**: Extreme volume of 1,000+ items (covered by performance stress tests in tier suites).
-
-## Key Decisions Made
-- Confirmed zero integrity violations: no hardcoded fixture returns, genuine algorithms.
-- Confirmed 100% test pass on `flow_a_xml_import.test.mjs` (14/14), `m1_xml_engine.test.mjs` (14/14), `flow_*.test.mjs` (43/43).
-- Confirmed ESLint: 0 errors, 0 warnings.
-- Confirmed Next.js `pnpm build`: 0 errors.
-- Issued formal verdict: APPROVE.
-
-## Artifact Index
-- DISPATCH.md — incoming instructions
-- progress.md — liveness heartbeat
-- BRIEFING.md — persistent situational awareness
-- handoff.md — comprehensive 5-component review and adversarial report
+  - Floating point drift in sum/division: eliminated by native BigInt and exact integer remainder distribution.
+  - Trojan negative quantities: blocked by `isDecimalNegative` and `hasNegative` checks.
+  - Zero total products with non-zero freight: handled via graceful equal distribution fallback.
+  - Overdrawn prior active allocations: immediately triggers `hasExcess: true` and `canSave: false`.
+  - SEFAZ unit compatibility with accents/superscripts (M³ vs MT3, PEÇAS vs PC, TONELADA vs T): accurately mapped across 15 families.
+  - Concurrent mutations on repositories: guarded by promise queue `withMutationLock`.
+- **Vulnerabilities found**: None.
+- **Untested angles**: Hardware-level BigInt memory exhaustion (arbitrary precision BigInt is bounded by process V8 heap memory ~4GB, well beyond practical fiscal document limits).

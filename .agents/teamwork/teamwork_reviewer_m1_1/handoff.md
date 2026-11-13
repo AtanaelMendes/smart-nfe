@@ -1,172 +1,169 @@
-# Handoff Report — Milestone 1 Reviewer 1: Avaliação Técnica e Adversarial do Motor XML NF-e 55
+# Review & Adversarial Challenge Report — Milestone 1 (Core Allocation Engine & Repositories)
 
-**Agente:** `teamwork_reviewer_m1_1` (Reviewer & Adversarial Critic)  
-**Destinatário:** Orquestrador / Sub-Orquestrador M1 (`71db8a14-4c80-4575-92ba-b52ae572b170`)  
-**Data:** 2026-11-09T20:02:00Z  
-**Tipo de Handoff:** Hard (Revisão estática, dinâmica e adversarial concluída)  
-**Diretório de Trabalho:** `c:\www\smart-nfe\.agents\teamwork\teamwork_reviewer_m1_1\`
+**Reviewer**: Reviewer 1 & Adversarial Critic (`teamwork_reviewer_m1_1`)  
+**Target Agent / Milestone**: Worker M1 (`worker_m1_1`) / Milestone 1 (SmartNFe)  
+**Parent Orchestrator**: `f64908f7-618d-4f21-bf78-58657f1ff50c`  
+**Working Directory**: `c:\www\smart-nfe`  
+**Branch**: `feature/preparacoes-unificadas`  
+**Timestamp**: 2026-11-13T14:18:00Z  
 
 ---
 
 ## Review Summary
 
-**Verdict**: **APPROVE**
-
-A implementação do Milestone 1 (`app/features/xml/nfeXmlParser.js`, `app/features/xml/accessKeyValidator.js`, `app/features/xml/xmlToInvoiceMapper.js`, `app/features/invoiceRepository.js` e `app/documentos/importar/page.jsx`) atende integralmente a todos os requisitos de corretude, especificação oficial SEFAZ (MOC v7.0), segurança de isolamento em memória temporária (R3) e imunidade a anomalias de ponto flutuante binário (R1).
-
-Não foram detectadas violações de integridade (zero hardcoding de chaves ou fixtures, zero implementações fachada, zero desvios de escopo).
+**Verdict**: **APPROVE**  
+**Integrity Assessment**: **NO INTEGRITY VIOLATIONS DETECTED** (Clean pure BigInt implementation, zero hardcoded values, zero third-party math packages, zero dummy facades).  
+**Overall Risk Assessment**: **LOW**
 
 ---
 
 ## 1. Observation
 
-1. **Inspeção de Código — `app/features/xml/nfeXmlParser.js`:**
-   - **DOMParser e Fallback:** Linhas 105-197 implementam `NodeXmlDomParser`, um parser nativo para Node.js com desempilhamento de tags, tratamento de entidades (`decodeXmlEntities`, linhas 19-27) e detecção de tags truncadas ou descasadas gerando nó `<parsererror>`. No navegador, utiliza `window.DOMParser` com MIME `application/xml` (linhas 373-382).
-   - **Tolerância a Namespaces e Prefixos:** Linhas 207-210 (`getElementLocalName`) removem prefixos de namespace (`nodeName.replace(/^.*:/, '')`). As funções `findDirectChildren` (linhas 216-229) e `findDirectChild` (linhas 234-246) filtram nós pelo `localName`, evitando colisões hierárquicas (ex: `totais/ICMSTot/vProd` vs `det/prod/vProd`).
-   - **Compatibilidade de Layouts:** Linhas 427-440 identificam raízes `nfeProc`, `NFe` e avulsas sem envelope ou protocolo, extraindo nós `<NFe>` e `<protNFe>` dinamicamente.
-   - **Tratamento de Erros de Sintaxe:** Linhas 407-425 interceptam `<parsererror>` nativo do browser ou do fallback, formatando mensagem clara em português com linha e coluna via `formatParserErrorMessage` (linhas 328-348).
-   - **Validação de Modelo Fiscal:** Linhas 473-480 barram qualquer modelo fiscal diferente de 55 com código de erro `INVALID_MODEL` quando `strictMod55 !== false`.
-   - **Extração Detalhada:** Linhas 482-690 extraem integralmente `ide`, `emit`, `dest` (incluindo `idEstrangeiro`), `det` (produtos, valores unitários e tributos ICMS, IPI, PIS, COFINS), `totais`, volumes de transporte e protocolo de autorização.
+### 1.1 Direct Source Code Observations
+1. **Arbitrary Precision Math (`app/lib/calculations/decimal.js`, 619 lines)**:
+   - Zero external arithmetic dependencies: uses native `BigInt` for all calculations (`parseDecimal` lines 65-87, `formatBigInt` lines 96-115, `roundSignedBigInt` lines 125-156).
+   - Strict half-up rounding (ABNT NBR 5891) via remainder comparison (`rem >= half` / `rem * 2n >= divisor`, lines 147 and 260).
+   - Division by zero returns gracefully formatted zero strings (`'0.00'`, line 251), preventing `NaN` and `Infinity`.
+   - Vector functions (`decimalSum`, `decimalAverage`, `decimalMin`, `decimalMax`, `decimalClamp`, `decimalDistributeEqually`, `decimalApportionProportional`, lines 364-617) operate without intermediate float conversions.
+   - Proportional distribution absorbs residual fractions at the last active index (`decimalSubtract(totalClean, allocatedSum, targetScale)`, line 612), eliminating rounding drift.
 
-2. **Inspeção de Código — `app/features/xml/accessKeyValidator.js`:**
-   - **Tabela IBGE das UFs:** Linhas 14-42 mapeiam os 27 códigos IBGE de unidades federativas brasileiras.
-   - **Algoritmo Módulo 11 (SEFAZ MOC Anexo I):** Linhas 45 e 67-75 aplicam a sequência cíclica de pesos `[2, 3, 4, 5, 6, 7, 8, 9]` da direita para a esquerda (índice 42 descendo até 0). A regra estrita de resto SEFAZ é implementada na linha 75:
-     ```javascript
-     const remainder = sum % 11;
-     return (remainder === 0 || remainder === 1) ? 0 : (11 - remainder);
-     ```
-   - **Validações Estruturais da Chave:** Linhas 104-182 validam:
-     - Comprimento exato de 44 dígitos (`cleanKey.length !== 44`);
-     - Caracteres exclusivamente numéricos (`/^\d{44}$/`);
-     - Código IBGE da UF (posições 01-02);
-     - Mês de emissão entre 01 e 12 (posições 05-06);
-     - Modelo fiscal estritamente `'55'` (posições 21-22);
-     - Tipo de emissão entre `'1'` e `'7'` (posição 35);
-     - Dígito verificador na posição 44 comparado ao DV calculado.
-   - **Formatação de Chave:** Linhas 212-218 (`formatAccessKey`) formatam a chave em 11 blocos de 4 dígitos.
+2. **Unified Allocation Engine (`app/lib/calculations/allocationEngine.js`, 964 lines)**:
+   - Implements composite key identity `${sourceInvoiceId}__${sourceItemId}` (`buildCompositeKey` / `parseCompositeKey`, lines 70-126).
+   - Enforces canonical SEFAZ unit compatibility spanning 15 families (lines 41-57) with accent and superscript stripping (`normalizeUnit` lines 137-147, `checkUnitCompatibility` lines 170-192).
+   - Mathematical conservation rule: `calculateItemConservationBalance` (lines 219-280) computes `availableQty = originalQty - priorAllocatedQty` and `remainingQty = availableQty - allocatedTotal`.
+   - Non-negativity and excess guard (lines 245-255 and lines 827-832): `hasNegative = true` if any allocation is $< 0$, and `canSave = false` if `hasAnyExcess || hasAnyNegative || (requireBalanced && (!allBalanced || hasAnyRemaining))`.
+   - Multi-source accessory expense apportionment (lines 661-754) divides freight, insurance, other expenses, and discounts per source invoice proportionally to allocated product lines, absorbing cent residuals on the last active destination note.
 
-3. **Inspeção de Código — `app/features/xml/xmlToInvoiceMapper.js`:**
-   - **Estabilidade do `itemId`:** Linhas 34-38 geram deterministicamente `nfe-${cleanKey}-item-${itemNum}`, imune a ordenações ou filtros de tela.
-   - **Preservação de Precisão Decimal:** Linhas 81-98 normalizam quantidades com até 4 casas decimais e valores unitários com escala de 4 a 10 casas sem truncamento prematuro.
-   - **Conservação de Despesas Acessórias:** Linhas 201-204 e 264-267 conservam `valorFrete`, `valorSeguro`, `outrasDespesas` e `valorDesconto`.
-   - **Flags de Segurança Mandatórias:** Linhas 317-318 forçam `isDemo: false` e `isRealImport: true`.
+3. **Legacy Facade Delegation (`app/lib/calculations/divisionMath.js`, 486 lines)**:
+   - Functions `calculateRemainingBalance`, `validateDivisionBatch`, `distributeEqually`, `distributeRemainingEqually`, `apportionExpenses`, and `apportionAllInvoiceExpenses` delegate to `allocationEngine.js` while maintaining exact legacy signatures and return shapes.
 
-4. **Inspeção de Código — `app/features/invoiceRepository.js`:**
-   - Linha 26 define a coleção volátil `export const sessionInvoices = new Map()`.
-   - Linhas 634-655 no método `create()`: Se `isRealImport: true` ou `isDemo: false`, armazena exclusivamente em `sessionInvoices.set(newDoc.id, deepClone(newDoc))` e **NUNCA** invoca `saveAllInvoices()` nem toca em `localStorageService`.
-   - Linhas 193-196 no método `findById()`: Prioriza consulta à sessão volátil antes de recorrer ao storage persistente.
-   - Linhas 98-105 no método `list()`: Mescla documentos em sessão posicionando-os no topo da listagem e deduplica IDs.
-   - Linhas 214-234 e 275-403 (`update` e `updateItem`): Mutam diretamente `sessionInvoices` quando o ID pertence à sessão volátil.
-   - Linhas 579-583 (`resetDemoData`): Restaura apenas os mocks de demonstração no `localStorageService`, mantendo os documentos de `sessionInvoices` intactos.
-   - Linhas 600-604 (`resetInvoice`): Rejeita explicitamente restauração de notas de sessão volátil.
+4. **Session Isolation & Repositories (`preparedInvoiceRepository.js` & `preparationRepository.js`)**:
+   - `sessionPreparedInvoices = new Map()` and `sessionPreparations = new Map()` store volatile fiscal data when `isRealImport: true` or non-`demo-` IDs are present.
+   - Zero real XML data is persisted to `localStorageService`.
+   - Mutation concurrency serialized via promise queue `withMutationLock`.
+   - `getActiveAllocations(excludePreparationId)` aggregates active preparations per `${sourceInvoiceId}__${sourceItemId}`.
 
-5. **Execução de Testes Automatizados:**
-   - `node --test tests/integration/flow_a_xml_import.test.mjs`:
-     - Resultado: 14 testes, 5 suítes, **14 aprovados, 0 falhas** (165 ms).
-   - `node --test tests/tier1/m1_xml_engine.test.mjs`:
-     - Resultado: 14 testes, 4 suítes, **14 aprovados, 0 falhas** (153 ms).
-   - `node --test tests/integration/*.test.mjs`:
-     - Resultado: 43 testes, 18 suítes, **43 aprovados, 0 falhas** (352 ms).
-   - `node --test tests/tier5/m1_challenger2_session_integrity.test.mjs`:
-     - Resultado: 15 testes, 5 suítes, **15 aprovados, 0 falhas** (283 ms).
+5. **Package Configuration (`package.json`)**:
+   - Strictly inspected: zero arithmetic libraries (`bignumber.js`, `decimal.js`, `mathjs` are completely absent).
 
-6. **Validação Estática e Linter:**
-   - Comando: `npx eslint app/features/xml app/features/invoiceRepository.js app/documentos/importar/page.jsx`
-   - Resultado: Código de saída 0, **0 erros e 0 warnings**.
-
-7. **Compilação Next.js 16 (Turbopack):**
-   - Comando: `pnpm build`
-   - Resultado: Compilação bem-sucedida em 6.0s gerando todas as 11 rotas da aplicação, incluindo `/documentos/importar`. Código de saída 0.
+### 1.2 Tool Execution Results (Independently Executed)
+- **Allocation Engine Unit Suite**:
+  ```powershell
+  cd c:\www\smart-nfe; node --no-warnings --test tests/unit/allocationEngine.test.mjs
+  ```
+  Result: 35 tests passed across 9 suites in 240.6ms. Exit code 0.
+- **Full Project Test Suite**:
+  ```powershell
+  cd c:\www\smart-nfe; npm test
+  ```
+  Result: 552 tests passed across 157 suites, 0 failures, 0 skipped, 0 cancelled, in 12.5s. Exit code 0.
+- **Production Next.js Build**:
+  ```powershell
+  cd c:\www\smart-nfe; npm run build
+  ```
+  Result: Compiled successfully with Turbopack in 38.2s, all 11 static/dynamic pages optimized. Exit code 0.
+- **ESLint Verification**:
+  ```powershell
+  cd c:\www\smart-nfe; npx eslint app/lib/calculations/decimal.js app/lib/calculations/allocationEngine.js app/lib/calculations/divisionMath.js app/features/preparationRepository.js app/features/preparedInvoiceRepository.js
+  ```
+  Result: 0 errors, 0 warnings. Exit code 0.
 
 ---
 
 ## 2. Logic Chain
 
-1. **Da observação 1 e 5:** O parser em `nfeXmlParser.js` opera de modo transparente tanto no navegador quanto no runtime de testes do Node.js, sem requisições HTTP externas nem dependências npm pesadas adicionadas ao projeto. A navegação baseada em `localName` resolve satisfatoriamente o requisito R3 e isola colisões de tags filhas.
-2. **Da observação 2 e 5:** A fórmula do Módulo 11 em `accessKeyValidator.js` reflete com 100% de exatidão matemática o manual da SEFAZ: pesos cíclicos de 2 a 9 da direita para a esquerda e regra `(resto === 0 || resto === 1) ? 0 : (11 - resto)`. Os 4 testes específicos de fronteira executados confirmam que chaves com resto 0, 1 e >1 geram os DVs 0, 0 e 11-resto respectivamente, e que modelos diferentes de 55 (ex: modelo 65 NFC-e) são estritamente rejeitados.
-3. **Da observação 3 e 5:** A geração de identificadores de linha `itemId: nfe-${chaveAcesso}-item-${nItem}` é puramente determinística e garante a estabilidade de endereçamento necessária para a conferência fiscal (R1 e R3), prevenindo corrupção de estado sob filtros e ordenações.
-4. **Da observação 4 e 5:** O isolamento da memória volátil `sessionInvoices = new Map()` em `invoiceRepository.js` assegura que nenhum dado fiscal real importado vaze para o `localStorage`, atendendo com precisão à restrição de segurança e privacidade do usuário (R3), ao mesmo tempo em que permite a conferência e edição transparente das notas importadas.
-5. **Da observação 6 e 7:** A ausência de erros no ESLint e o sucesso no build de produção do Next.js 16 garantem a integridade da base de código para integração contínua e deploy na Vercel.
+1. **Mathematical Rigor & Zero Float Leaks**:
+   - *Observation*: Brazilian customs and Drawback regulations reject import/export reconciliations with fractional cent or gram discrepancies. `package.json` contains no external arithmetic libraries. `decimal.js` decomposes all strings into `BigInt` integer components (`sign`, `intVal`, `scale`).
+   - *Reasoning*: Because integer operations in `BigInt` do not suffer from binary IEEE-754 mantissa approximation (`0.1 + 0.2 === 0.3`), and scale shifts are performed via integer powers of 10 (`10n ** BigInt(scale)`), all arithmetic operations are exact.
+   - *Conclusion*: Mathematical rigor requirement R4 is completely satisfied.
+
+2. **Conservation Rule & Non-Negativity Enforcement**:
+   - *Observation*: `calculateItemConservationBalance` computes `available = original - priorAllocated` and `remaining = available - sum(currentAllocations)`. Any individual allocation with `isDecimalNegative(qStr)` sets `hasNegative = true`. Any negative balance sets `hasExcess = true`.
+   - *Reasoning*: In `calculateAllocationMatrix`, line 827 explicitly specifies:
+     ```javascript
+     if (hasAnyExcess || hasAnyNegative) {
+       canSave = false;
+     }
+     ```
+     This strictly blocks saving if an item is overallocated, if prior allocations already consumed the item, or if an adversarial payload attempts a zero-sum Trojan compensation (e.g., $+120$ and $-20$).
+   - *Conclusion*: The conservation rule and excess blocking are mathematically sound and fail-closed.
+
+3. **Multi-Source Zero-Drift Expense Conservation**:
+   - *Observation*: Lines 661-754 of `allocationEngine.js` group items by source invoice and allocate accessory expenses (freight, insurance, other, discount) across destinations using `decimalApportionProportional`.
+   - *Reasoning*: In `decimalApportionProportional`, for parts $0 \dots (N-2)$, integer-truncated slices are allocated; for part $N-1$ (the last active destination receiving goods), the slice is calculated as `totalClean - allocatedSum`.
+   - *Conclusion*: The mathematical sum of apportioned expenses across all destination notes equals the source invoice expense down to the exact cent ($0.00$ residual drift).
+
+4. **SEFAZ Physical Unit Families**:
+   - *Observation*: `UNIT_FAMILIES` defines 15 distinct equivalence sets (Mass KG, Mass Ton, Mass Gram, Unit/Item/Pça, Box, Sack, Package, Volume Liter, Length Meter, Area M², Volume M³, Pair, Dozen, Bale, Pallet). `normalizeUnit` normalizes unicode NFD, removes accents, and converts superscripts (`²` $\to$ `2`, `³` $\to$ `3`).
+   - *Reasoning*: Units within the same family (e.g. `KG` and `KGS`, `M³` and `MT3`, `PEÇAS` and `PC`) return `true`. Incompatible units (e.g. `KG` and `UN`) return `false`. Empty or untyped items default to `true` to avoid false rejections on optional SEFAZ fields.
+   - *Conclusion*: Unit compatibility conforms to Brazilian fiscal standards.
+
+5. **Integrity & Anti-Cheat Audit**:
+   - *Observation*: The source code was audited for hardcoded outputs, fake mocks, conditional shortcuts keyed to test descriptions, and fabricated files.
+   - *Reasoning*: All calculations derive dynamically from input arrays. No hardcoded results exist. All tests run against live exported functions.
+   - *Conclusion*: Zero integrity violations.
 
 ---
 
-## 3. Caveats
+## 3. Adversarial Stress-Test Results
 
-- **Ambiente de Testes Node.js vs DOMParser do Navegador:** `nfeXmlParser.js` implementa um fallback leve (`NodeXmlDomParser`) para testes automatizados em ambiente Node.js. Embora o fallback seja robusto e passe em 100% dos testes sintéticos, o navegador real executa nativamente `window.DOMParser` com motor C++ (Chromium/WebKit/Gecko), que possui tolerâncias adicionais a entidades HTML e caracteres de controle. Ambos os caminhos foram validados.
-- **Volatilidade da Sessão:** A memória de sessão em `sessionInvoices` é preservada durante a navegação entre rotas pelo App Router do Next.js (`router.push`). No caso de refresh total da página (F5) ou fechamento de aba, os dados são descartados. Esse comportamento é intencional e explicitamente documentado no banner da interface do usuário.
-
----
-
-## 4. Conclusion
-
-O trabalho entregue pelo Milestone 1 Worker (`teamwork_worker_m1`) cumpre com rigor técnico todas as exigências do Requisito R3 e dos critérios de aceitação do `PROJECT.md` e `ORIGINAL_REQUEST.md`.
-
-- Veredito formal: **APPROVE**.
-- Não foram encontradas violações de integridade nem regressões na base de código existente.
-
----
-
-## 5. Verification Method
-
-Para reproduzir de forma independente as constatações desta revisão:
-
-1. **Testes do Fluxo A (Importação XML e Validação de Chave):**
-   ```powershell
-   node --test tests/integration/flow_a_xml_import.test.mjs
-   ```
-   *Critério de aprovação:* 14 testes passando com 0 falhas.
-
-2. **Testes Unitários do Motor XML M1:**
-   ```powershell
-   node --test tests/tier1/m1_xml_engine.test.mjs
-   ```
-   *Critério de aprovação:* 14 testes passando com 0 falhas.
-
-3. **Testes Adversariais de Isolamento da Memória de Sessão (Tier 5):**
-   ```powershell
-   node --test tests/tier5/m1_challenger2_session_integrity.test.mjs
-   ```
-   *Critério de aprovação:* 15 testes passando com 0 falhas.
-
-4. **Linting dos Módulos do Milestone 1:**
-   ```powershell
-   npx eslint app/features/xml app/features/invoiceRepository.js app/documentos/importar/page.jsx
-   ```
-   *Critério de aprovação:* 0 erros e 0 warnings.
-
-5. **Build de Produção Next.js:**
-   ```powershell
-   pnpm build
-   ```
-   *Critério de aprovação:* Código de saída 0 e rotas compiladas com sucesso.
+| # | Stress Test Scenario | Attack / Edge Condition | Expected Behavior | Actual Behavior | Result |
+|---|----------------------|-------------------------|-------------------|-----------------|--------|
+| 1 | **Overdrawn Prior Allocation** | `originalQty: 100.0000`, `priorAllocated: 150.0000`, `current: 0.0000` | Block save, signal excess (`hasExcess: true`, status: `'excess'`) | `{ hasExcess: true, status: 'excess' }` | **PASS** |
+| 2 | **Trojan Zero-Sum Compensation** | `original: 100.0000`, allocations: `+120.0000` and `-20.0000` (sum = 100) | Block save due to negative input (`canSave: false`, `hasExcess: true`) | `canSave: false`, `hasNegative: true` | **PASS** |
+| 3 | **Non-Numeric Garbage Injection** | Allocations: `['abc', 'null', undefined]` | Sanitize to 0, preserve remaining, no crash | Allocated: `'0.0000'`, Remaining: `'100.0000'`, status: `'partial'` | **PASS** |
+| 4 | **Sub-Cent High Decimal Precision** | 10 decimal places (`100.1234567891` - `50.1234567891` at scale 10) | Exact subtraction without float truncation | Remaining: `'50.0000000000'`, status: `'partial'` | **PASS** |
+| 5 | **Extreme Large Values (Trillion+)** | Scale 4 arithmetic on `999999999999999.9999` | BigInt handles arbitrary length without overflow | Remaining: `'0.0000'`, status: `'ok'` | **PASS** |
+| 6 | **Division into Zero Parts** | `distributeEqually('100.0000', 0)` | Return empty array, do not divide by zero | `[]` returned cleanly | **PASS** |
+| 7 | **Unicode Superscript & Accents** | `checkUnitCompatibility('M³', 'MT3')`, `('PEÇAS', 'PC')`, `('TONELADA', 'T')` | Normalize accents and superscripts, return `true` | All return `true` | **PASS** |
+| 8 | **Empty Destinations with Source Items** | `safeSourceItems` populated, `destinationNotes: []` | Fail minimum destinations check (`canSave: false`) | `canSave: false` | **PASS** |
+| 9 | **Strict Balanced Mode Boundary** | `requireBalanced: true` with 8/10 allocated | Block save because remaining balance > 0 (`canSave: false`) | `canSave: false`, `hasRemaining: true` | **PASS** |
 
 ---
 
-## Adversarial Challenge & Stress-Testing
+## 4. Caveats
 
-### Challenge 1: Regra de Resto 0 e Resto 1 no Módulo 11 da SEFAZ
-- **Hipótese:** Algoritmos ingênuos de Módulo 11 aplicam apenas `11 - resto`, o que produziria DV = 11 para resto 0 ou DV = 10 para resto 1, corrompendo a validação da chave fiscal.
-- **Cenário de Teste:** Execução de vetores onde o somatório produz resto 0 (ex: chave da fixture `synthetic_nfe_simple.xml`) e resto 1.
-- **Resultado:** Aprovado. O validador aplica expressamente `(remainder === 0 || remainder === 1) ? 0 : (11 - remainder)`, gerando DV 0 corretamente.
-
-### Challenge 2: Injeção de Tags Malformadas e Namespace Prefixes
-- **Hipótese:** XMLs gerados por ERPs legados frequentemente usam prefixos variados (`<nfe:NFe>`, `<ns2:infNFe>`) ou estruturas com tags descasadas que poderiam travar o DOMParser do frontend.
-- **Cenário de Teste:** XML com tags abertas e não fechadas (`synthetic_malformed.xml`) e nós prefixados.
-- **Resultado:** Aprovado. O parser intercepta erros com segurança via `<parsererror>`, devolvendo objeto `{ success: false, error: ... }` amigável sem quebrar a UI, e localiza tags transparentemente ignorando prefixos via `getElementLocalName`.
-
-### Challenge 3: Isolamento Estrito do LocalStorage
-- **Hipótese:** Chamadas inadvertidas a métodos de persistência poderiam gravar dados fiscais reais de clientes no `localStorage` do navegador do usuário.
-- **Cenário de Teste:** Operações de `create`, `update`, `updateItem`, `list`, `resetDemoData` e `delete` auditando chamadas para `localStorageService.save`.
-- **Resultado:** Aprovado. Documentos reais possuem `isRealImport: true` e `isDemo: false`, sendo manipulados unicamente em `sessionInvoices = new Map()`, com zero gravações no storage persistente.
+1. **Heap Memory Bound**: Native `BigInt` operations are bounded by Node.js / V8 heap limits (~4 GB), which is vastly larger than any realistic batch of 50 to 1,000 fiscal invoices.
+2. **Volatile Session Lifetime**: In-memory session maps (`sessionPreparedInvoices`, `sessionPreparations`) reset on process reload, which is the required security architecture to prevent persistent leakage of real fiscal XMLs.
 
 ---
 
-## Verified Claims
+## 5. Conclusion
 
-- Suporte completo a layouts `nfeProc` v4.00 e `NFe` avulsa sem envelope -> Verificado via fixtures e testes automatizados -> **PASS**
-- Validação estrutural de chave de 44 dígitos, UF IBGE, mês 01-12 e modelo 55 estrito -> Verificado via testes unitários e vetores de fronteira -> **PASS**
-- Algoritmo Módulo 11 com pesos cíclicos de 2 a 9 e regra de resto 0/1 -> Verificado via `flow_a_xml_import.test.mjs` e `m1_xml_engine.test.mjs` -> **PASS**
-- Conservação de precisão decimal de até 4 casas em quantidades e unitários -> Verificado via `xmlToInvoiceMapper.js` -> **PASS**
-- Isolamento absoluto da memória de sessão em relação ao `localStorageService` -> Verificado via `m1_challenger2_session_integrity.test.mjs` -> **PASS**
-- Resiliência a arquivos inválidos, malformados ou corrompidos -> Verificado via `synthetic_malformed.xml` e entradas nulas -> **PASS**
-- Ausência de erros no ESLint e no build Next.js 16 -> Verificado via `npx eslint` e `pnpm build` -> **PASS**
+The Milestone 1 implementation of `decimal.js`, `allocationEngine.js`, `divisionMath.js`, and the repository layers is **fully verified, mathematically rigorous, robust against adversarial inputs, and clean of any integrity violations**.
+
+**Verdict**: **APPROVE**
+
+---
+
+## 6. Verification Method
+
+To independently reproduce this verification:
+
+1. **Run Unit Tests**:
+   ```powershell
+   cd c:\www\smart-nfe
+   node --no-warnings --test tests/unit/allocationEngine.test.mjs
+   ```
+   *Expected*: 35 passed, 0 failed.
+
+2. **Run Full Regression Suite**:
+   ```powershell
+   cd c:\www\smart-nfe
+   npm test
+   ```
+   *Expected*: 552 passed across 157 suites.
+
+3. **Run Production Build**:
+   ```powershell
+   cd c:\www\smart-nfe
+   npm run build
+   ```
+   *Expected*: Next.js 16 build exits with code 0.
+
+4. **Run Linter**:
+   ```powershell
+   cd c:\www\smart-nfe
+   npx eslint app/lib/calculations/decimal.js app/lib/calculations/allocationEngine.js app/lib/calculations/divisionMath.js app/features/preparationRepository.js app/features/preparedInvoiceRepository.js
+   ```
+   *Expected*: 0 errors, 0 warnings.
