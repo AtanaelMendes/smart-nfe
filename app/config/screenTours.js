@@ -22,6 +22,11 @@ import {
   faClipboardCheck,
   faGear,
   faBoxesStacked,
+  faFileCirclePlus,
+  faReceipt,
+  faFileLines,
+  faPenToSquare,
+  faEye,
 } from '@fortawesome/free-solid-svg-icons';
 
 export const SCREEN_TOURS = {
@@ -344,6 +349,190 @@ export const SCREEN_TOURS = {
     icon: faBoxesStacked,
     iconName: 'faBoxesStacked',
   },
+
+  notas: {
+    routeKey: 'notas',
+    route: '/notas',
+    title: 'Minhas Notas e Rascunhos',
+    titulo: 'Minhas Notas e Rascunhos',
+    objective:
+      'Gestão unificada de documentos fiscais manuais (NF-e e NFS-e), rascunhos em preparação e histórico.',
+    objetivo:
+      'Gestão unificada de documentos fiscais manuais (NF-e e NFS-e), rascunhos em preparação e histórico.',
+    steps: [
+      'Filtre os documentos por tipo (NF-e produtos ou NFS-e serviços), status ou período.',
+      'Abra um rascunho para revisar os dados antes de prosseguir.',
+      'Utilize as ações rápidas para duplicar, editar ou excluir rascunhos.',
+    ],
+    passos: [
+      'Filtre os documentos por tipo (NF-e produtos ou NFS-e serviços), status ou período.',
+      'Abra um rascunho para revisar os dados antes de prosseguir.',
+      'Utilize as ações rápidas para duplicar, editar ou excluir rascunhos.',
+    ],
+    tips: [
+      'Documentos manuais são identificados como rascunhos até a emissão definitiva.',
+      'NF-e de mercadorias podem ser integradas ao módulo de preparação de exportação.',
+    ],
+    dicas: [
+      'Documentos manuais são identificados como rascunhos até a emissão definitiva.',
+      'NF-e de mercadorias podem ser integradas ao módulo de preparação de exportação.',
+    ],
+    icon: faFileLines,
+    iconName: 'faFileLines',
+  },
+
+  notas_nova: {
+    routeKey: 'notas_nova',
+    route: '/notas/nova',
+    title: 'Nova Nota Fiscal',
+    titulo: 'Nova Nota Fiscal',
+    objective:
+      'Escolha da modalidade de documento fiscal: NF-e modelo 55 de mercadorias ou NFS-e de serviços.',
+    objetivo:
+      'Escolha da modalidade de documento fiscal: NF-e modelo 55 de mercadorias ou NFS-e de serviços.',
+    steps: [
+      'Selecione "NF-e de Produtos" para notas mercantis com mercadorias e insumos.',
+      'Selecione "NFS-e de Serviços" para prestação de serviços no padrão nacional ou regime MEI.',
+      'Consulte rascunhos existentes caso queira continuar uma nota anterior.',
+    ],
+    passos: [
+      'Selecione "NF-e de Produtos" para notas mercantis com mercadorias e insumos.',
+      'Selecione "NFS-e de Serviços" para prestação de serviços no padrão nacional ou regime MEI.',
+      'Consulte rascunhos existentes caso queira continuar uma nota anterior.',
+    ],
+    tips: [
+      'Cada modalidade possui regras e campos fiscais próprios (NCM/CFOP para produtos; LC 116 para serviços).',
+    ],
+    dicas: [
+      'Cada modalidade possui regras e campos fiscais próprios (NCM/CFOP para produtos; LC 116 para serviços).',
+    ],
+    icon: faFileCirclePlus,
+    iconName: 'faFileCirclePlus',
+  },
+
+  notas_nova_produtos: {
+    routeKey: 'notas_nova_produtos',
+    route: '/notas/nova/produtos',
+    title: 'Editor de NF-e de Produtos',
+    titulo: 'Editor de NF-e de Produtos',
+    objective:
+      'Criação manual de NF-e modelo 55 com tabela editável de produtos, cálculo de totais e validação fiscal.',
+    objetivo:
+      'Criação manual de NF-e modelo 55 com tabela editável de produtos, cálculo de totais e validação fiscal.',
+    steps: [
+      'Selecione a empresa emitente comercial ou exportadora e preencha o destinatário.',
+      'Adicione produtos informando código, descrição, NCM, CFOP, quantidade e preço.',
+      'Verifique o cálculo automático dos totais e despesas acessórias.',
+      'Salve como rascunho ou adicione à preparação de exportação.',
+    ],
+    passos: [
+      'Selecione a empresa emitente comercial ou exportadora e preencha o destinatário.',
+      'Adicione produtos informando código, descrição, NCM, CFOP, quantidade e preço.',
+      'Verifique o cálculo automático dos totais e despesas acessórias.',
+      'Salve como rascunho ou adicione à preparação de exportação.',
+    ],
+    tips: [
+      'Cálculos monetários utilizam precisão decimal com até 4 casas decimais para quantidades.',
+      'É possível salvar novos clientes e produtos nos catálogos reutilizáveis durante a digitação.',
+    ],
+    dicas: [
+      'Cálculos monetários utilizam precisão decimal com até 4 casas decimais para quantidades.',
+      'É possível salvar novos clientes e produtos nos catálogos reutilizáveis durante a digitação.',
+    ],
+    icon: faBoxesStacked,
+    iconName: 'faBoxesStacked',
+  },
+
+  notas_nova_servicos: {
+    routeKey: 'notas_nova_servicos',
+    route: '/notas/nova/servicos',
+    title: 'Editor de NFS-e de Serviços & MEI',
+    titulo: 'Editor de NFS-e de Serviços & MEI',
+    objective:
+      'Criação manual de NFS-e no padrão nacional, com modo simplificado dedicado a MEI prestador de serviços.',
+    objetivo:
+      'Criação manual de NFS-e no padrão nacional, com modo simplificado dedicado a MEI prestador de serviços.',
+    steps: [
+      'Selecione a empresa prestadora (MEI ou Normal) e o tomador do serviço.',
+      'Escolha o serviço no catálogo ou informe a discriminação e o código de tributação nacional.',
+      'Defina a competência e o valor dos serviços.',
+      'No modo MEI simplificado, campos complexos de retenção são ocultados automaticamente.',
+    ],
+    passos: [
+      'Selecione a empresa prestadora (MEI ou Normal) e o tomador do serviço.',
+      'Escolha o serviço no catálogo ou informe a discriminação e o código de tributação nacional.',
+      'Defina a competência e o valor dos serviços.',
+      'No modo MEI simplificado, campos complexos de retenção são ocultados automaticamente.',
+    ],
+    tips: [
+      'O MEI recolhe tributos de forma unificada pelo DAS-MEI, dispensando retenções na maioria dos casos.',
+      'NFS-e de serviços não admite campos mercantis como NCM ou CFOP.',
+    ],
+    dicas: [
+      'O MEI recolhe tributos de forma unificada pelo DAS-MEI, dispensando retenções na maioria dos casos.',
+      'NFS-e de serviços não admite campos mercantis como NCM ou CFOP.',
+    ],
+    icon: faReceipt,
+    iconName: 'faReceipt',
+  },
+
+  notas_detalhes: {
+    routeKey: 'notas_detalhes',
+    route: '/notas/[id]',
+    title: 'Revisão do Rascunho',
+    titulo: 'Revisão do Rascunho',
+    objective:
+      'Visualização completa do documento fiscal com selo de rascunho demonstrativo e auditoria de validações.',
+    objetivo:
+      'Visualização completa do documento fiscal com selo de rascunho demonstrativo e auditoria de validações.',
+    steps: [
+      'Confira todos os dados cadastrais, itens/serviços e componentes de valor.',
+      'Consulte o painel de validação para identificar pendências ou avisos regulatórios.',
+      'Acesse os atalhos para editar, duplicar ou integrar ao fluxo de exportação.',
+    ],
+    passos: [
+      'Confira todos os dados cadastrais, itens/serviços e componentes de valor.',
+      'Consulte o painel de validação para identificar pendências ou avisos regulatórios.',
+      'Acesse os atalhos para editar, duplicar ou integrar ao fluxo de exportação.',
+    ],
+    tips: [
+      'Este documento é um rascunho e não substitui uma nota fiscal autorizada pela SEFAZ ou Emissor Nacional.',
+    ],
+    dicas: [
+      'Este documento é um rascunho e não substitui uma nota fiscal autorizada pela SEFAZ ou Emissor Nacional.',
+    ],
+    icon: faEye,
+    iconName: 'faEye',
+  },
+
+  notas_editar: {
+    routeKey: 'notas_editar',
+    route: '/notas/[id]/editar',
+    title: 'Edição de Rascunho',
+    titulo: 'Edição de Rascunho',
+    objective:
+      'Ajuste de dados, quantidades, valores e destinatários em notas fiscais ainda não emitidas.',
+    objetivo:
+      'Ajuste de dados, quantidades, valores e destinatários em notas fiscais ainda não emitidas.',
+    steps: [
+      'Atualize os campos necessários no formulário ou na grade de itens.',
+      'Valide os dados em tempo real para verificar a consistência matemática e fiscal.',
+      'Salve as alterações para atualizar o rascunho.',
+    ],
+    passos: [
+      'Atualize os campos necessários no formulário ou na grade de itens.',
+      'Valide os dados em tempo real para verificar a consistência matemática e fiscal.',
+      'Salve as alterações para atualizar o rascunho.',
+    ],
+    tips: [
+      'Ao salvar, os totais são recalculados preservando a precisão decimal de fábrica.',
+    ],
+    dicas: [
+      'Ao salvar, os totais são recalculados preservando a precisão decimal de fábrica.',
+    ],
+    icon: faPenToSquare,
+    iconName: 'faPenToSquare',
+  },
 };
 
 // Aliases por caminho canônico de rota
@@ -357,6 +546,12 @@ SCREEN_TOURS['/documentos/[id]/divisao'] = SCREEN_TOURS.documentos_divisao;
 SCREEN_TOURS['/notas-preparadas'] = SCREEN_TOURS.notas_preparadas;
 SCREEN_TOURS['/preparacoes'] = SCREEN_TOURS.preparacoes;
 SCREEN_TOURS['/preparacoes/nova'] = SCREEN_TOURS.preparacoes_nova;
+SCREEN_TOURS['/notas'] = SCREEN_TOURS.notas;
+SCREEN_TOURS['/notas/nova'] = SCREEN_TOURS.notas_nova;
+SCREEN_TOURS['/notas/nova/produtos'] = SCREEN_TOURS.notas_nova_produtos;
+SCREEN_TOURS['/notas/nova/servicos'] = SCREEN_TOURS.notas_nova_servicos;
+SCREEN_TOURS['/notas/[id]'] = SCREEN_TOURS.notas_detalhes;
+SCREEN_TOURS['/notas/[id]/editar'] = SCREEN_TOURS.notas_editar;
 SCREEN_TOURS['/configuracoes'] = SCREEN_TOURS.configuracoes;
 
 /**
@@ -377,6 +572,12 @@ export function getRouteKeyByPath(pathname) {
   if (cleanPath === '/notas-preparadas') return 'notas_preparadas';
   if (cleanPath === '/preparacoes') return 'preparacoes';
   if (cleanPath === '/preparacoes/nova') return 'preparacoes_nova';
+  if (cleanPath === '/notas/nova/produtos') return 'notas_nova_produtos';
+  if (cleanPath === '/notas/nova/servicos') return 'notas_nova_servicos';
+  if (cleanPath === '/notas/nova') return 'notas_nova';
+  if (/^\/notas\/[^/]+\/editar$/.test(cleanPath)) return 'notas_editar';
+  if (/^\/notas\/[^/]+$/.test(cleanPath)) return 'notas_detalhes';
+  if (cleanPath === '/notas') return 'notas';
   if (cleanPath === '/configuracoes') return 'configuracoes';
 
   return null;
@@ -510,6 +711,14 @@ export function resetAllScreenTours() {
     'documentos_validacao',
     'documentos_divisao',
     'notas_preparadas',
+    'preparacoes',
+    'preparacoes_nova',
+    'notas',
+    'notas_nova',
+    'notas_nova_produtos',
+    'notas_nova_servicos',
+    'notas_detalhes',
+    'notas_editar',
     'configuracoes',
   ];
   for (const rk of knownRouteKeys) {

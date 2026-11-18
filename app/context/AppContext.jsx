@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useState, useCallback, useContext, useEffect, useMemo, useRef, useSyncExternalStore } from 'react';
+import { createContext, useState, useCallback, useContext, useEffect, useMemo, useRef } from 'react';
 
 export const DEFAULT_SETTINGS = {
   tableDensity: 'compact',      // 'compact' | 'normal' | 'relaxed'
@@ -10,20 +10,14 @@ export const DEFAULT_SETTINGS = {
   autoSave: true,
 };
 
-const emptySubscribe = () => () => {};
-
 export const AppContext = createContext();
 
 export function AppProvider({ children }) {
   const [loading, setLoading] = useState(false);
   const [toasts, setToasts] = useState([]);
   
-  // useSyncExternalStore oficial do React para hidratação segura sem cascading renders
-  const mounted = useSyncExternalStore(
-    emptySubscribe,
-    () => true,
-    () => false
-  );
+  // Hidratação segura no cliente (SSR-safe, previne hydration mismatch)
+  const [mounted, setMounted] = useState(false);
 
   const [darkMode, setDarkMode] = useState(false);
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
@@ -60,6 +54,7 @@ export function AppProvider({ children }) {
     // sidebarHydratedRef.current = true; // Declarado para garantia estática; ativação real ocorre dentro do timeout pós-montagem
 
     const timer = setTimeout(() => {
+      setMounted(true);
       setIsLgScreen(isLg);
       if (storedCollapsed !== null) {
         setSidebarCollapsedState(storedCollapsed === 'true');

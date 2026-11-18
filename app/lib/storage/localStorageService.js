@@ -17,6 +17,12 @@ export const STORAGE_KEYS = {
   PREPARED_INVOICES: 'smartnfe_prepared_invoices',
   SETTINGS: 'smartnfe_settings',
   DIVISIONS: 'smartnfe_divisions',
+  PREPARATIONS: 'smartnfe_preparations',
+  MANUAL_DOCUMENTS: 'smartnfe_manual_documents',
+  COMPANIES: 'smartnfe_companies',
+  PERSONS: 'smartnfe_persons',
+  PRODUCTS: 'smartnfe_products',
+  SERVICES: 'smartnfe_services',
 };
 
 /**

@@ -1,0 +1,133 @@
+/**
+ * Baseline de Pessoas / Clientes / Tomadores — SmartNFe
+ *
+ * Suporta:
+ * - Pessoa Jurídica (PJ) nacional com CNPJ e Inscrição Estadual/Municipal
+ * - Pessoa Física (PF) nacional com CPF
+ * - Tomador / Destinatário Estrangeiro com ID fiscal internacional
+ */
+
+export const MOCK_PERSONS = [
+  {
+    id: 'person-pj-01',
+    tipoPessoa: 'PJ',
+    nomeOuRazao: 'Nexus Digital Soluções Corporativas Ltda',
+    nomeFantasia: 'Nexus Digital',
+    documento: '33.445.566/0001-77',
+    inscricaoEstadual: '145.678.900.112',
+    inscricaoMunicipal: '998877-2',
+    pais: 'Brasil',
+    paisCodigo: 'BR',
+    uf: 'SP',
+    municipio: 'São Paulo',
+    municipioCodigo: '3550308',
+    endereco: {
+      logradouro: 'Avenida Paulista',
+      numero: '1754',
+      complemento: '14º andar',
+      bairro: 'Bela Vista',
+      cep: '01310-920',
+    },
+    email: 'financeiro@nexusdigital.com.br',
+    telefone: '(11) 3100-4400',
+    papeis: ['CLIENTE', 'TOMADOR'],
+  },
+  {
+    id: 'person-pf-02',
+    tipoPessoa: 'PF',
+    nomeOuRazao: 'Carlos Eduardo Mendes Ferreira',
+    documento: '284.912.873-45',
+    inscricaoEstadual: '',
+    inscricaoMunicipal: '',
+    pais: 'Brasil',
+    paisCodigo: 'BR',
+    uf: 'SC',
+    municipio: 'Florianópolis',
+    municipioCodigo: '4205407',
+    endereco: {
+      logradouro: 'Rua Bocaiúva',
+      numero: '890',
+      complemento: 'Apt 501',
+      bairro: 'Centro',
+      cep: '88015-530',
+    },
+    email: 'carlos.mendes@emailpessoal.com.br',
+    telefone: '(48) 99876-1122',
+    papeis: ['CLIENTE', 'TOMADOR'],
+  },
+  {
+    id: 'person-foreign-03',
+    tipoPessoa: 'ESTRANGEIRO',
+    nomeOuRazao: 'Global Trading Logistics B.V.',
+    nomeFantasia: 'Global Logistics NL',
+    documento: 'NL884920192B01',
+    idEstrangeiro: 'NL884920192B01',
+    inscricaoEstadual: '',
+    inscricaoMunicipal: '',
+    pais: 'Holanda',
+    paisCodigo: 'NL',
+    uf: 'EX',
+    municipio: 'Rotterdam',
+    endereco: {
+      logradouro: 'Maashaven Zuidzijde',
+      numero: '45',
+      complemento: 'Building B',
+      bairro: 'Havens',
+      cep: '3081 AE',
+    },
+    email: 'accounts@globallogistics.nl',
+    telefone: '+31 10 456 7890',
+    papeis: ['CLIENTE', 'DESTINATARIO', 'TOMADOR'],
+  },
+  {
+    id: 'person-pj-04',
+    tipoPessoa: 'PJ',
+    nomeOuRazao: 'Wipa Group Import & Export Ltda',
+    nomeFantasia: 'Wipa Group',
+    documento: '48.101.559/0001-34',
+    inscricaoEstadual: '263071413',
+    inscricaoMunicipal: '443322-1',
+    pais: 'Brasil',
+    paisCodigo: 'BR',
+    uf: 'SC',
+    municipio: 'Joinville',
+    municipioCodigo: '4209102',
+    endereco: {
+      logradouro: 'Rua Albano Schmidt',
+      numero: '497',
+      complemento: 'Galpão 2',
+      bairro: 'Boa Vista',
+      cep: '89205-100',
+    },
+    email: 'fiscal@wipagroup.com.br',
+    telefone: '(47) 9734-6575',
+    papeis: ['CLIENTE', 'DESTINATARIO'],
+  },
+  {
+    id: 'person-pf-05',
+    tipoPessoa: 'PF',
+    nomeOuRazao: 'Mariana Duarte Souza',
+    documento: '045.892.119-02',
+    inscricaoEstadual: '',
+    inscricaoMunicipal: '',
+    pais: 'Brasil',
+    paisCodigo: 'BR',
+    uf: 'RJ',
+    municipio: 'Rio de Janeiro',
+    municipioCodigo: '3304557',
+    endereco: {
+      logradouro: 'Avenida Atlântica',
+      numero: '2100',
+      complemento: 'Apt 1102',
+      bairro: 'Copacabana',
+      cep: '22041-001',
+    },
+    email: 'mariana.duarte@consultoria.com.br',
+    telefone: '(21) 98844-3321',
+    papeis: ['CLIENTE', 'TOMADOR'],
+  },
+];
+
+export function getMockPersons() {
+  return JSON.parse(JSON.stringify(MOCK_PERSONS));
+}

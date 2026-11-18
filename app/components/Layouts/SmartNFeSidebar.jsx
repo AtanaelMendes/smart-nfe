@@ -10,6 +10,7 @@ import {
   faClipboardCheck,
   faGear,
   faBoxesStacked,
+  faFileCirclePlus,
   faChevronLeft,
   faChevronRight,
   faXmark,
@@ -21,6 +22,11 @@ const menuItems = [
     label: 'Dashboard',
     href: '/dashboard',
     icon: faChartBar,
+  },
+  {
+    label: 'Nova Nota',
+    href: '/notas/nova',
+    icon: faFileCirclePlus,
   },
   {
     label: 'Documentos',
@@ -56,7 +62,9 @@ function NavItem({ item, collapsed, pathname, onClick }) {
       pathname.startsWith('/documentos/') &&
       pathname !== '/documentos/importar') ||
     (item.href === '/preparacoes' &&
-      pathname.startsWith('/preparacoes/'));
+      pathname.startsWith('/preparacoes/')) ||
+    (item.href === '/notas/nova' &&
+      pathname.startsWith('/notas'));
   const isActive = isCurrent || isNestedDocument;
 
   return (
