@@ -13,7 +13,7 @@
 
 import { localStorageService, STORAGE_KEYS } from '../lib/storage/localStorageService.js';
 import { getMockManualDocuments } from '../lib/data/mockManualDocuments.js';
-import { calculateInvoiceTotals } from '../lib/calculations/invoiceTotals.js';
+import { calculateItemTotal, calculateInvoiceTotals } from '../lib/calculations/invoiceTotals.js';
 import { cleanDecimalString, decimalAdd, decimalSubtract, decimalCompare } from '../lib/calculations/decimal.js';
 import { validateNFe } from './validation/nfeValidator.js';
 import { validateNFSe } from './validation/nfseValidator.js';
@@ -60,12 +60,7 @@ function recalculateNFeTotals(doc) {
     const descClean = cleanDecimalString(item.desconto || '0');
 
     // Totais SEFAZ do item
-    const computedTotal = calculateInvoiceTotals({
-      itens: [{ quantidade: qClean, valorUnitario: vuClean, valorDesconto: descClean }],
-      valorFrete: '0.00',
-      valorSeguro: '0.00',
-      outrasDespesas: '0.00',
-    });
+    const computedTotal = calculateItemTotal(vuClean, qClean);
 
     return {
       ...item,
@@ -74,7 +69,7 @@ function recalculateNFeTotals(doc) {
       quantidade: qClean,
       valorUnitario: vuClean,
       desconto: descClean,
-      valorTotal: computedTotal.valorProdutos,
+      valorTotal: computedTotal,
     };
   });
 
@@ -83,16 +78,11 @@ function recalculateNFeTotals(doc) {
   const outras = cleanDecimalString(doc.totais?.outrasDespesas || '0.00');
   const descGeral = cleanDecimalString(doc.totais?.valorDesconto || '0.00');
 
-  const totals = calculateInvoiceTotals({
-    itens: normalizedItems.map((it) => ({
-      quantidade: it.quantidade,
-      valorUnitario: it.valorUnitario,
-      valorDesconto: it.desconto,
-    })),
-    valorFrete: frete,
-    valorSeguro: seguro,
-    valorDesconto: descGeral,
-    outrasDespesas: outras,
+  const totals = calculateInvoiceTotals(normalizedItems, {
+    freight: frete,
+    insurance: seguro,
+    discount: descGeral,
+    otherExpenses: outras,
   });
 
   return {
@@ -379,34 +369,32 @@ export const documentRepository = {
    * Duplica um documento existente gerando um novo rascunho independente
    */
   async duplicate(id) {
-    return withMutationLock(async () => {
-      const original = await this.findById(id);
-      if (!original) {
-        throw new Error(`Documento "${id}" não encontrado para duplicação.`);
-      }
+    const original = await this.findById(id);
+    if (!original) {
+      throw new Error(`Documento "${id}" não encontrado para duplicação.`);
+    }
 
-      const newId = `draft-${original.documentType.toLowerCase()}-${Date.now()}`;
-      const now = new Date().toISOString();
+    const newId = `draft-${original.documentType.toLowerCase()}-${Date.now()}`;
+    const now = new Date().toISOString();
 
-      const duplicated = {
-        ...deepClone(original),
-        id: newId,
-        titulo: `${original.titulo || 'Documento'} (Cópia)`,
-        numeroPrevisto: '',
-        status: 'DRAFT',
-        createdAt: now,
-        updatedAt: now,
-      };
+    const duplicated = {
+      ...deepClone(original),
+      id: newId,
+      titulo: `${original.titulo || 'Documento'} (Cópia)`,
+      numeroPrevisto: '',
+      status: 'DRAFT',
+      createdAt: now,
+      updatedAt: now,
+    };
 
-      if (duplicated.documentType === 'NFE' && Array.isArray(duplicated.itens)) {
-        duplicated.itens = duplicated.itens.map((it, idx) => ({
-          ...it,
-          itemId: `item-${newId}-${idx + 1}`,
-        }));
-      }
+    if (duplicated.documentType === 'NFE' && Array.isArray(duplicated.itens)) {
+      duplicated.itens = duplicated.itens.map((it, idx) => ({
+        ...it,
+        itemId: `item-${newId}-${idx + 1}`,
+      }));
+    }
 
-      return this.create(duplicated);
-    });
+    return this.create(duplicated);
   },
 
   /**

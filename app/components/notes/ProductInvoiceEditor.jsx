@@ -27,7 +27,7 @@ import { documentRepository } from '@/features/documentRepository';
 import { validateNFe } from '@/features/validation/nfeValidator';
 import { formatBRL } from '@/lib/formatters';
 import { cleanDecimalString, decimalAdd, decimalSubtract, decimalCompare } from '@/lib/calculations/decimal';
-import { calculateInvoiceTotals } from '@/lib/calculations/invoiceTotals';
+import { calculateInvoiceTotals, calculateItemTotal } from '@/lib/calculations/invoiceTotals';
 import { useAppContext } from '@/context/AppContext';
 
 const INITIAL_EMPTY_ITEM = () => ({
@@ -189,12 +189,11 @@ export default function ProductInvoiceEditor({
     const outrasClean = cleanDecimalString(outrasDespesas || '0');
     const descClean = cleanDecimalString(valorDesconto || '0');
 
-    const totals = calculateInvoiceTotals({
-      itens: safeItens,
-      valorFrete: freteClean,
-      valorSeguro: seguroClean,
-      valorDesconto: descClean,
-      outrasDespesas: outrasClean,
+    const totals = calculateInvoiceTotals(safeItens, {
+      freight: freteClean,
+      insurance: seguroClean,
+      discount: descClean,
+      otherExpenses: outrasClean,
     });
 
     return totals;
@@ -209,19 +208,11 @@ export default function ProductInvoiceEditor({
         const updated = { ...item, [field]: value };
 
         // Recálculo do valor total do item se quantidade, valorUnitario ou desconto mudarem
-        if (field === 'quantidade' || field === 'valorUnitario' || field === 'desconto') {
+        if (field === 'quantidade' || field === 'valorUnitario') {
           const q = cleanDecimalString(field === 'quantidade' ? value : item.quantidade || '0');
           const vu = cleanDecimalString(field === 'valorUnitario' ? value : item.valorUnitario || '0');
-          const desc = cleanDecimalString(field === 'desconto' ? value : item.desconto || '0');
 
-          const lineTotals = calculateInvoiceTotals({
-            itens: [{ quantidade: q, valorUnitario: vu, valorDesconto: desc }],
-            valorFrete: '0.00',
-            valorSeguro: '0.00',
-            outrasDespesas: '0.00',
-          });
-
-          updated.valorTotal = lineTotals.valorProdutos;
+          updated.valorTotal = calculateItemTotal(vu, q);
         }
 
         return updated;

@@ -62,7 +62,11 @@ export function validateNFe(document) {
     });
   }
 
-  const isExterior = document.destinoOperacao === '3' || dest.tipoPessoa === 'ESTRANGEIRO' || dest.paisCodigo !== 'BR';
+  const isExterior =
+    document.destinoOperacao === '3' ||
+    dest.tipoPessoa === 'ESTRANGEIRO' ||
+    (Boolean(dest.pais) && dest.pais.toUpperCase() !== 'BRASIL') ||
+    (Boolean(dest.paisCodigo) && dest.paisCodigo !== '1058' && dest.paisCodigo !== 'BR');
   if (!isExterior) {
     const docClean = (dest.documento || '').replace(/\D/g, '');
     if (!docClean || (docClean.length !== 11 && docClean.length !== 14)) {
@@ -151,6 +155,16 @@ export function validateNFe(document) {
             field: `itens[${index}].cfop`,
             title: `Produto #${idxDisplay}: CFOP incompatível com Exterior`,
             message: `Para destino no Exterior, o CFOP deve iniciar com 7 (encontrado: ${it.cfop}).`,
+            tab: 'produtos',
+            itemId: it.itemId,
+          });
+        } else if (!isExterior && cfopClean.startsWith('7')) {
+          issues.push({
+            id: `nfe-item-${it.itemId || index}-cfop-interior`,
+            severity: 'error',
+            field: `itens[${index}].cfop`,
+            title: `Produto #${idxDisplay}: CFOP 7xxx incompatível com operação interna/interestadual`,
+            message: `CFOP iniciado por 7 é exclusivo para exportação/exterior (encontrado: ${it.cfop}).`,
             tab: 'produtos',
             itemId: it.itemId,
           });
