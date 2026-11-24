@@ -1,0 +1,57 @@
+# Dependências
+node_modules/
+.pnp
+.pnp.*
+.yarn/
+
+# Build, cache e cobertura
+.next/
+out/
+build/
+dist/
+.vercel/
+.cache/
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+
+# Git e ferramentas de desenvolvimento
+.git/
+.agents/
+.idea/
+.vscode/
+
+# Resultados do Graphify
+graphify-out/
+
+# Variáveis de ambiente e certificados
+.env*
+!.env.example
+*.pem
+*.key
+*.pfx
+*.p12
+
+# Logs e arquivos temporários
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
+
+# Dependências fixadas e arquivos gerados
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+/public/build-id.json
+
+# Imagens e fontes
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+*.ico
+*.woff
+*.woff2
+*.ttf
+*.eot
