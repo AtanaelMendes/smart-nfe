@@ -4,6 +4,10 @@ node_modules/
 .pnp.*
 .yarn/
 
+graphify-out/
+graphify-out-backup/
+graphify-out-*/
+
 # Build, cache e cobertura
 .next/
 out/
@@ -55,3 +59,16 @@ yarn.lock
 *.woff2
 *.ttf
 *.eot
+
+# Manter o grafo focado na aplicação
+/tests/
+/app/dev/
+
+# Ferramentas e automação
+/bitbucket-pipelines.yml
+/.eslintrc.json
+/eslint.config.mjs
+/postcss.config.mjs
+/tailwind.config.js
+/start.sh
+/vercel.json
