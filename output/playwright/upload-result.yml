@@ -1,0 +1,229 @@
+- generic [active] [ref=f1e1]:
+  - generic [ref=f1e2]:
+    - complementary "Menu principal" [ref=f1e3]:
+      - generic [ref=f1e4]: SmartNFe
+      - navigation [ref=f1e9]:
+        - list [ref=f1e10]:
+          - listitem [ref=f1e11]:
+            - link "Dashboard" [ref=f1e12] [cursor=pointer]:
+              - /url: /dashboard
+          - listitem [ref=f1e16]:
+            - link "Nova Nota" [ref=f1e17] [cursor=pointer]:
+              - /url: /notas/nova
+          - listitem [ref=f1e21]:
+            - link "Documentos" [ref=f1e22] [cursor=pointer]:
+              - /url: /documentos
+          - listitem [ref=f1e26]:
+            - link "Importar" [ref=f1e27] [cursor=pointer]:
+              - /url: /documentos/importar
+          - listitem [ref=f1e31]:
+            - link "Preparações" [ref=f1e32] [cursor=pointer]:
+              - /url: /preparacoes
+          - listitem [ref=f1e36]:
+            - link "Notas Preparadas" [ref=f1e37] [cursor=pointer]:
+              - /url: /notas-preparadas
+          - listitem [ref=f1e41]:
+            - link "Configurações" [ref=f1e42] [cursor=pointer]:
+              - /url: /configuracoes
+      - button "Recolher menu lateral" [ref=f1e47] [cursor=pointer]:
+        - generic [ref=f1e50]: Recolher
+    - generic [ref=f1e51]:
+      - banner [ref=f1e52]:
+        - navigation "Navegação estrutural" [ref=f1e53]:
+          - link "SmartNFe" [ref=f1e54] [cursor=pointer]:
+            - /url: /dashboard
+          - link "Dashboard" [ref=f1e58] [cursor=pointer]:
+            - /url: /dashboard
+          - link "Documentos" [ref=f1e62] [cursor=pointer]:
+            - /url: /documentos
+          - generic [ref=f1e63]: Importar
+        - generic [ref=f1e67]:
+          - generic [ref=f1e68]: Modo Demo
+          - 'button "Abrir guia explicativo: Importação de XML" [ref=f1e69] [cursor=pointer]'
+          - button "Alternar para modo escuro" [ref=f1e72]
+      - main [ref=f1e75]:
+        - generic [ref=f1e76]:
+          - generic [ref=f1e81]:
+            - paragraph [ref=f1e82]: Sessão Volátil em Memória — Isolamento de Dados Fiscais Reais
+            - paragraph [ref=f1e83]:
+              - text: Os arquivos XML reais importados são processados 100% no seu navegador e mantidos exclusivamente na memória volátil da sessão.
+              - strong [ref=f1e84]: Nenhum XML real é gravado em disco ou enviado a servidores externos
+              - text: . Os dados serão perdidos caso você feche ou recarregue a página.
+          - generic [ref=f1e86]:
+            - generic [ref=f1e87]:
+              - heading "Importação Múltipla de NF-e" [level=1] [ref=f1e88]
+              - paragraph [ref=f1e91]:
+                - text: Selecione ou arraste qualquer quantidade de arquivos
+                - strong [ref=f1e92]: .XML
+                - text: para processamento simultâneo em lote.
+            - generic [ref=f1e93]:
+              - link [ref=f1e94] [cursor=pointer]:
+                - /url: /documentos
+                - button "Ver Documentos" [ref=f1e95]
+              - button "Iniciar Preparação (4)" [ref=f1e392]
+          - generic [ref=f1e103]:
+            - paragraph [ref=f1e104]: Arraste vários arquivos XML aqui, ou procure no computador
+            - paragraph [ref=f1e105]:
+              - text: "Formatos aceitos:"
+              - strong [ref=f1e106]: .XML
+              - text: (NF-e modelo 55 padrão SEFAZ, sem limites arbitrários de quantidade)
+          - generic [ref=f1e280]:
+            - generic [ref=f1e281]:
+              - generic [ref=f1e282]:
+                - generic [ref=f1e283]: Lote de Arquivos (8)
+                - generic [ref=f1e284]: 4 importados • 0 duplicados • 4 erros • 0 pendentes
+              - generic [ref=f1e285]:
+                - button "Adicionar Mais" [ref=f1e286] [cursor=pointer]
+                - button "Repetir Erros (4)" [ref=f1e395] [cursor=pointer]
+                - button "Limpar seleção" [ref=f1e292] [cursor=pointer]
+            - generic [ref=f1e295]:
+              - generic [ref=f1e296]:
+                - generic [ref=f1e300]:
+                  - paragraph [ref=f1e301]: 42261104994734001409550020000764061472625801.xml
+                  - generic [ref=f1e302]: 9.4 KB • XML
+                - generic [ref=f1e303]:
+                  - generic [ref=f1e398]: NF-e 000.076.406 (2 itens)
+                  - button "Remover" [ref=f1e401] [cursor=pointer]
+              - generic [ref=f1e308]:
+                - generic [ref=f1e312]:
+                  - paragraph [ref=f1e313]: 42261118368896000121550010000148531000546560.xml
+                  - generic [ref=f1e314]: 9.4 KB • XML
+                - generic [ref=f1e315]:
+                  - generic [ref=f1e404]: NF-e 000.014.853 (2 itens)
+                  - button "Remover" [ref=f1e407] [cursor=pointer]
+              - generic [ref=f1e320]:
+                - generic [ref=f1e324]:
+                  - paragraph [ref=f1e325]: 42261139744286000155550010000097621534922614.xml
+                  - generic [ref=f1e326]: 7.7 KB • XML
+                - generic [ref=f1e327]:
+                  - generic [ref=f1e410]: NF-e 000.009.762 (2 itens)
+                  - button "Remover" [ref=f1e413] [cursor=pointer]
+              - generic [ref=f1e332]:
+                - generic [ref=f1e336]:
+                  - paragraph [ref=f1e337]: 42261152925406000189550100000022751965663820.xml
+                  - generic [ref=f1e338]: 7.4 KB • XML
+                - generic [ref=f1e339]:
+                  - generic [ref=f1e416]: NF-e 000.002.275 (1 itens)
+                  - button "Remover" [ref=f1e419] [cursor=pointer]
+              - generic [ref=f1e344]:
+                - generic [ref=f1e348]:
+                  - paragraph [ref=f1e349]: 42091022100000768232961000000004188026113126962796.xml
+                  - generic [ref=f1e350]: 10.5 KB • XML
+                - generic [ref=f1e351]:
+                  - generic "Documento XML não contém a tag <NFe>. O arquivo não parece ser uma Nota Fiscal Eletrônica." [ref=f1e422]: "Falha: Documento XML não contém a tag..."
+                  - button "Remover" [ref=f1e425] [cursor=pointer]
+              - generic [ref=f1e356]:
+                - generic [ref=f1e360]:
+                  - paragraph [ref=f1e361]: 42091022250450370000107000000000001426110626419331.xml
+                  - generic [ref=f1e362]: 7.0 KB • XML
+                - generic [ref=f1e363]:
+                  - generic "Documento XML não contém a tag <NFe>. O arquivo não parece ser uma Nota Fiscal Eletrônica." [ref=f1e428]: "Falha: Documento XML não contém a tag..."
+                  - button "Remover" [ref=f1e431] [cursor=pointer]
+              - generic [ref=f1e368]:
+                - generic [ref=f1e372]:
+                  - paragraph [ref=f1e373]: 42091022250655408000170000000000000826110908172865.xml
+                  - generic [ref=f1e374]: 5.9 KB • XML
+                - generic [ref=f1e375]:
+                  - generic "Documento XML não contém a tag <NFe>. O arquivo não parece ser uma Nota Fiscal Eletrônica." [ref=f1e434]: "Falha: Documento XML não contém a tag..."
+                  - button "Remover" [ref=f1e437] [cursor=pointer]
+              - generic [ref=f1e380]:
+                - generic [ref=f1e384]:
+                  - paragraph [ref=f1e385]: 42091022260514665000145000000000004526116431377666.xml
+                  - generic [ref=f1e386]: 6.0 KB • XML
+                - generic [ref=f1e387]:
+                  - generic "Documento XML não contém a tag <NFe>. O arquivo não parece ser uma Nota Fiscal Eletrônica." [ref=f1e440]: "Falha: Documento XML não contém a tag..."
+                  - button "Remover" [ref=f1e443] [cursor=pointer]
+            - generic [ref=f1e446]:
+              - generic [ref=f1e447]:
+                - paragraph [ref=f1e448]: 4 notas importadas com sucesso!
+                - paragraph [ref=f1e449]: "Total: 7 itens • Valor acumulado: R$ 23.058,31"
+              - button "Iniciar Preparação com 4 Notas" [ref=f1e450]
+          - generic [ref=f1e107]:
+            - generic [ref=f1e108]:
+              - generic [ref=f1e109]:
+                - heading "Cenários de Demonstração Prontos para Teste (1 Clique):" [level=2] [ref=f1e110]
+                - paragraph [ref=f1e113]: Clique em qualquer cenário abaixo para carregar instantaneamente o documento estruturado na tela de conferência.
+              - generic [ref=f1e114]: 5 Cenários Disponíveis
+            - generic [ref=f1e115]:
+              - generic [ref=f1e116] [cursor=pointer]:
+                - generic [ref=f1e117]:
+                  - generic [ref=f1e118]:
+                    - generic [ref=f1e119]:
+                      - generic [ref=f1e120]: Cenário 1 — NF-e XML Agro
+                      - generic [ref=f1e121]: 8 ITENS
+                    - generic [ref=f1e122]: R$ 291.200,00
+                  - paragraph [ref=f1e123]: Exportação de grãos e café com dados completos, CFOP 7101 e consistência fiscal perfeita.
+                  - generic [ref=f1e124]:
+                    - generic [ref=f1e125]: "Emitente: Agroexport Brasil S.A."
+                    - text: •
+                    - generic [ref=f1e126]: "Destino: Global Trading Logistics B.V. (Holanda)"
+                - generic [ref=f1e127]:
+                  - generic [ref=f1e128]: Formato XML
+                  - generic [ref=f1e131]: Abrir Conferência
+              - generic [ref=f1e135] [cursor=pointer]:
+                - generic [ref=f1e136]:
+                  - generic [ref=f1e137]:
+                    - generic [ref=f1e138]:
+                      - generic [ref=f1e139]: Cenário 2 — NF-e PDF Metalmecânica
+                      - generic [ref=f1e140]: 25 ITENS
+                    - generic [ref=f1e141]: R$ 148.750,00
+                  - paragraph [ref=f1e142]: Peças usinadas e insumos industriais com múltiplos itens para teste de rolagem.
+                  - generic [ref=f1e143]:
+                    - generic [ref=f1e144]: "Emitente: Metalúrgica Sul Americana Ltda"
+                    - text: •
+                    - generic [ref=f1e145]: "Destino: Industrial Supply Corp. (EUA)"
+                - generic [ref=f1e146]:
+                  - generic [ref=f1e147]: Formato PDF
+                  - generic [ref=f1e150]: Abrir Conferência
+              - generic [ref=f1e154] [cursor=pointer]:
+                - generic [ref=f1e155]:
+                  - generic [ref=f1e156]:
+                    - generic [ref=f1e157]:
+                      - generic [ref=f1e158]: Cenário 3 — Stress Test em Volume
+                      - generic [ref=f1e159]: 50 ITENS
+                    - generic [ref=f1e160]: R$ 625.800,00
+                  - paragraph [ref=f1e161]: Volume denso de mercadorias automotivas para validação de performance da tabela.
+                  - generic [ref=f1e162]:
+                    - generic [ref=f1e163]: "Emitente: Eletroparts do Brasil Componentes S.A."
+                    - text: •
+                    - generic [ref=f1e164]: "Destino: Auto Assembly Europe GmbH (Alemanha)"
+                - generic [ref=f1e165]:
+                  - generic [ref=f1e166]: Formato XML
+                  - generic [ref=f1e169]: Abrir Conferência
+              - generic [ref=f1e173] [cursor=pointer]:
+                - generic [ref=f1e174]:
+                  - generic [ref=f1e175]:
+                    - generic [ref=f1e176]:
+                      - generic [ref=f1e177]: Cenário 4 — Inconsistências Fiscais
+                      - generic [ref=f1e178]: ALERTA (12 ITENS)
+                    - generic [ref=f1e179]: R$ 89.300,00
+                  - paragraph [ref=f1e180]: Simula produtos sem NCM de 8 dígitos, divergências de soma e CFOPs incorretos.
+                  - generic [ref=f1e181]:
+                    - generic [ref=f1e182]: "Emitente: Calçados Vale do Rio Doce Ltda"
+                    - text: •
+                    - generic [ref=f1e183]: "Destino: Fashion Footwear Group S.L. (Espanha)"
+                - generic [ref=f1e184]:
+                  - generic [ref=f1e185]: Formato XML
+                  - generic [ref=f1e188]: Abrir Conferência
+              - generic [ref=f1e192] [cursor=pointer]:
+                - generic [ref=f1e193]:
+                  - generic [ref=f1e194]:
+                    - generic [ref=f1e195]:
+                      - generic [ref=f1e196]: Cenário 5 — Desmembramento & Lotes
+                      - generic [ref=f1e197]: 15 ITENS
+                    - generic [ref=f1e198]: R$ 342.000,00
+                  - paragraph [ref=f1e199]: Produtos agrícolas repetidos em 5 lotes preparados para divisão em contêineres.
+                  - generic [ref=f1e200]:
+                    - generic [ref=f1e201]: "Emitente: Cooperativa Agroindustrial Centro-Oeste"
+                    - text: •
+                    - generic [ref=f1e202]: "Destino: Asian Grain Corporation (China)"
+                - generic [ref=f1e203]:
+                  - generic [ref=f1e204]: Formato XML
+                  - generic [ref=f1e207]: Abrir Conferência
+    - alert [ref=f1e453]:
+      - generic [ref=f1e456]: Processamento do lote finalizado!
+      - button "Fechar notificação" [ref=f1e457]
+    - generic [aria-hidden]:
+      - generic: Modo Demonstração
+  - button "Open Next.js Dev Tools" [ref=f1e216] [cursor=pointer]
+  - alert [ref=f1e279]

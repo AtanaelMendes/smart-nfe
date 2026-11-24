@@ -1,0 +1,114 @@
+- generic [active] [ref=f1e1]:
+  - button "Open Next.js Dev Tools" [ref=f1e216] [cursor=pointer]
+  - alert [ref=f1e279]
+  - generic [ref=f1e460]:
+    - complementary "Menu principal" [ref=f1e461]:
+      - generic [ref=f1e462]: SmartNFe
+      - navigation [ref=f1e467]:
+        - list [ref=f1e468]:
+          - listitem [ref=f1e469]:
+            - link "Dashboard" [ref=f1e470] [cursor=pointer]:
+              - /url: /dashboard
+          - listitem [ref=f1e474]:
+            - link "Nova Nota" [ref=f1e475] [cursor=pointer]:
+              - /url: /notas/nova
+          - listitem [ref=f1e479]:
+            - link "Documentos" [ref=f1e480] [cursor=pointer]:
+              - /url: /documentos
+          - listitem [ref=f1e484]:
+            - link "Importar" [ref=f1e485] [cursor=pointer]:
+              - /url: /documentos/importar
+          - listitem [ref=f1e489]:
+            - link "Preparações" [ref=f1e490] [cursor=pointer]:
+              - /url: /preparacoes
+          - listitem [ref=f1e494]:
+            - link "Notas Preparadas" [ref=f1e495] [cursor=pointer]:
+              - /url: /notas-preparadas
+          - listitem [ref=f1e499]:
+            - link "Configurações" [ref=f1e500] [cursor=pointer]:
+              - /url: /configuracoes
+      - button "Recolher menu lateral" [ref=f1e505] [cursor=pointer]:
+        - generic [ref=f1e508]: Recolher
+    - generic [ref=f1e509]:
+      - banner [ref=f1e510]:
+        - navigation "Navegação estrutural" [ref=f1e511]:
+          - link "SmartNFe" [ref=f1e512] [cursor=pointer]:
+            - /url: /dashboard
+          - link "Dashboard" [ref=f1e516] [cursor=pointer]:
+            - /url: /dashboard
+          - link "Preparações" [ref=f1e520] [cursor=pointer]:
+            - /url: /preparacoes
+          - generic [ref=f1e521]: Nova Preparação
+        - generic [ref=f1e525]:
+          - generic [ref=f1e526]: Modo Demo
+          - 'button "Abrir guia explicativo: Editor de Preparação (N → M)" [ref=f1e527] [cursor=pointer]'
+          - button "Alternar para modo escuro" [ref=f1e530]
+      - main [ref=f1e533]:
+        - generic [ref=f1e534]:
+          - generic [ref=f1e538]:
+            - text: "Aviso de Sessão Temporária: Esta preparação envolve documentos fiscais reais mantidos exclusivamente na memória volátil do navegador."
+            - strong [ref=f1e539]: Não feche ou recarregue esta aba
+            - text: sob risco de perda dos dados em andamento.
+          - generic [ref=f1e540]:
+            - generic [ref=f1e541]:
+              - generic [ref=f1e542]:
+                - link [ref=f1e543] [cursor=pointer]:
+                  - /url: /preparacoes
+                - heading "Preparação de Exportação" [level=1] [ref=f1e546]
+                - generic [ref=f1e549]: Agrupamento (N → 1)
+              - paragraph [ref=f1e550]: "Origens: 4 NF-e • Destinos: 1 • Total Geral: R$ 22.310,29"
+            - generic [ref=f1e551]:
+              - button "Salvar Rascunho" [ref=f1e552]
+              - button "Concluir Preparação" [ref=f1e555]
+          - generic [ref=f1e558]:
+            - button "1 Origens (4)" [ref=f1e559] [cursor=pointer]:
+              - generic [ref=f1e560]: "1"
+              - text: Origens (4)
+            - button "2 Cliente Exportação" [ref=f1e561] [cursor=pointer]:
+              - generic [ref=f1e562]: "2"
+              - text: Cliente Exportação
+            - button "3 Destinos (1)" [ref=f1e563] [cursor=pointer]:
+              - generic [ref=f1e564]: "3"
+              - text: Destinos (1)
+            - button "4 Alocação de Mercadorias (Matriz N:M)" [ref=f1e565] [cursor=pointer]:
+              - generic [ref=f1e566]: "4"
+              - text: Alocação de Mercadorias (Matriz N:M)
+            - button "5 Revisão & Totais" [ref=f1e567] [cursor=pointer]:
+              - generic [ref=f1e568]: "5"
+              - text: Revisão & Totais
+          - generic [ref=f1e884]:
+            - generic [ref=f1e885]:
+              - 'heading "Passo 5: Revisão Geral da Preparação" [level=2] [ref=f1e886]'
+              - paragraph [ref=f1e887]: Valide as notas de saída que serão geradas, os totais consolidados e as notas de origem envolvidas.
+            - generic [ref=f1e888]:
+              - generic [ref=f1e889]:
+                - generic [ref=f1e890]: Total de NF-e Origens
+                - generic [ref=f1e891]: 4 notas
+                - generic [ref=f1e892]: 7 itens originais disponíveis
+              - generic [ref=f1e893]:
+                - generic [ref=f1e894]: Notas de Destino
+                - generic [ref=f1e895]: 1 notas preparadas
+                - generic [ref=f1e896]:
+                  - text: Operação do tipo
+                  - strong [ref=f1e897]: AGRUPAMENTO
+              - generic [ref=f1e898]:
+                - generic [ref=f1e899]: Valor Total Preparado
+                - text: R$ 22.310,29
+                - generic [ref=f1e900]: "Cliente: Não atribuído"
+            - generic [ref=f1e901]:
+              - heading "Detalhamento por Nota de Destino:" [level=3] [ref=f1e902]
+              - generic [ref=f1e903]:
+                - generic [ref=f1e904]:
+                  - generic [ref=f1e905]: Exportação 1 - Principal
+                  - generic [ref=f1e906]: R$ 22.310,29 (7 mercadorias)
+                - generic [ref=f1e907]:
+                  - text: "Cliente:"
+                  - strong [ref=f1e908]: Padrão da Preparação
+                  - text: (Exterior)
+            - generic [ref=f1e909]:
+              - button "Voltar para Alocação" [ref=f1e910]
+              - generic [ref=f1e913]:
+                - button "Salvar Rascunho" [ref=f1e914]
+                - button "Concluir Preparação" [ref=f1e917]
+    - generic [aria-hidden]:
+      - generic: Modo Demonstração

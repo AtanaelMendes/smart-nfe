@@ -1,0 +1,87 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary "Menu principal" [ref=e3]:
+      - generic [ref=e4]: SmartNFe
+      - navigation [ref=e9]:
+        - list [ref=e10]:
+          - listitem [ref=e11]:
+            - link "Dashboard" [ref=e12] [cursor=pointer]:
+              - /url: /dashboard
+          - listitem [ref=e16]:
+            - link "Nova Nota" [ref=e17] [cursor=pointer]:
+              - /url: /notas/nova
+          - listitem [ref=e21]:
+            - link "Documentos" [ref=e22] [cursor=pointer]:
+              - /url: /documentos
+          - listitem [ref=e26]:
+            - link "Importar" [ref=e27] [cursor=pointer]:
+              - /url: /documentos/importar
+          - listitem [ref=e31]:
+            - link "Preparações" [ref=e32] [cursor=pointer]:
+              - /url: /preparacoes
+          - listitem [ref=e36]:
+            - link "Notas Preparadas" [ref=e37] [cursor=pointer]:
+              - /url: /notas-preparadas
+          - listitem [ref=e41]:
+            - link "Configurações" [ref=e42] [cursor=pointer]:
+              - /url: /configuracoes
+      - button "Recolher menu lateral" [ref=e47] [cursor=pointer]:
+        - generic [ref=e50]: Recolher
+    - generic [ref=e51]:
+      - banner [ref=e52]:
+        - navigation "Navegação estrutural" [ref=e53]:
+          - link "SmartNFe" [ref=e54] [cursor=pointer]:
+            - /url: /dashboard
+          - link "Dashboard" [ref=e58] [cursor=pointer]:
+            - /url: /dashboard
+          - generic [ref=e59]: Preparações
+        - generic [ref=e63]:
+          - generic [ref=e64]: Modo Demo
+          - 'button "Abrir guia explicativo: Preparações de Exportação" [ref=e65] [cursor=pointer]'
+          - button "Alternar para modo escuro" [ref=e68]
+      - main [ref=e71]:
+        - generic [ref=e72]:
+          - generic [ref=e73]:
+            - generic [ref=e74]:
+              - heading "Preparações de Exportação (N → M)" [level=1] [ref=e75]
+              - paragraph [ref=e78]: Agrupamento, divisão e alocação unificada de mercadorias de múltiplos fornecedores para notas de saída.
+            - generic [ref=e79]:
+              - button "Restaurar" [ref=e80]
+              - button "Nova Preparação" [ref=e83]
+          - generic [ref=e86]:
+            - textbox "Buscar por número, título ou cliente..." [ref=e90]
+            - generic [ref=e91]:
+              - combobox [ref=e92]:
+                - option "Todos os tipos" [selected]
+                - option "Agrupamento (N → 1)"
+                - option "Divisão (1 → M)"
+                - option "Mista (N → M)"
+              - combobox [ref=e93]:
+                - option "Todos os status" [selected]
+                - option "Rascunho"
+                - option "Ativa"
+                - option "Concluída"
+                - option "Cancelada"
+          - generic [ref=e95]:
+            - generic [ref=e96]:
+              - generic [ref=e97]: Preparações Cadastradas (0)
+              - textbox "Filtrar dados..." [ref=e101]
+            - table [ref=e103]:
+              - rowgroup [ref=e104]:
+                - row [ref=e105]:
+                  - columnheader "Número / Título" [ref=e106]
+                  - columnheader "Tipo Operação" [ref=e107]
+                  - columnheader "Cliente Exportação" [ref=e108]
+                  - columnheader "Origens / Destinos" [ref=e109]
+                  - columnheader "Valor Preparado" [ref=e110]
+                  - columnheader "Situação" [ref=e111]
+                  - columnheader "Ações" [ref=e112]
+              - rowgroup [ref=e113]:
+                - row [ref=e114]:
+                  - cell "Não há dados para exibir..." [ref=e115]
+              - rowgroup [ref=e116]:
+                - row [ref=e117]:
+                  - cell "Exibindo 0 de 0 registros" [ref=e118]
+    - generic [aria-hidden]:
+      - generic: Modo Demonstração
+  - button "Open Next.js Dev Tools" [ref=e124] [cursor=pointer]

@@ -1,0 +1,144 @@
+- generic [active] [ref=f1e1]:
+  - button "Open Next.js Dev Tools" [ref=f1e216] [cursor=pointer]
+  - alert [ref=f1e279]
+  - generic [ref=f1e920]:
+    - complementary "Menu principal" [ref=f1e921]:
+      - generic [ref=f1e922]: SmartNFe
+      - navigation [ref=f1e927]:
+        - list [ref=f1e928]:
+          - listitem [ref=f1e929]:
+            - link "Dashboard" [ref=f1e930] [cursor=pointer]:
+              - /url: /dashboard
+          - listitem [ref=f1e934]:
+            - link "Nova Nota" [ref=f1e935] [cursor=pointer]:
+              - /url: /notas/nova
+          - listitem [ref=f1e939]:
+            - link "Documentos" [ref=f1e940] [cursor=pointer]:
+              - /url: /documentos
+          - listitem [ref=f1e944]:
+            - link "Importar" [ref=f1e945] [cursor=pointer]:
+              - /url: /documentos/importar
+          - listitem [ref=f1e949]:
+            - link "Preparações" [ref=f1e950] [cursor=pointer]:
+              - /url: /preparacoes
+          - listitem [ref=f1e954]:
+            - link "Notas Preparadas" [ref=f1e955] [cursor=pointer]:
+              - /url: /notas-preparadas
+          - listitem [ref=f1e959]:
+            - link "Configurações" [ref=f1e960] [cursor=pointer]:
+              - /url: /configuracoes
+      - button "Recolher menu lateral" [ref=f1e965] [cursor=pointer]:
+        - generic [ref=f1e968]: Recolher
+    - generic [ref=f1e969]:
+      - banner [ref=f1e970]:
+        - navigation "Navegação estrutural" [ref=f1e971]:
+          - link "SmartNFe" [ref=f1e972] [cursor=pointer]:
+            - /url: /dashboard
+          - link "Dashboard" [ref=f1e976] [cursor=pointer]:
+            - /url: /dashboard
+          - generic [ref=f1e977]: Preparações
+        - generic [ref=f1e981]:
+          - generic [ref=f1e982]: Modo Demo
+          - 'button "Abrir guia explicativo: Preparações de Exportação" [ref=f1e983] [cursor=pointer]'
+          - button "Alternar para modo escuro" [ref=f1e986]
+      - main [ref=f1e989]:
+        - generic [ref=f1e990]:
+          - generic [ref=f1e991]: "Aviso de Sessão Temporária: Existem 1 preparação com origens reais mantidas exclusivamente em memória volátil. Fechar ou atualizar o navegador descartará essas preparações."
+          - generic [ref=f1e995]:
+            - generic [ref=f1e996]:
+              - heading "Preparações de Exportação (N → M)" [level=1] [ref=f1e997]
+              - paragraph [ref=f1e1000]: Agrupamento, divisão e alocação unificada de mercadorias de múltiplos fornecedores para notas de saída.
+            - generic [ref=f1e1001]:
+              - button "Restaurar" [ref=f1e1002]
+              - button "Nova Preparação" [ref=f1e1005]
+          - generic [ref=f1e1008]:
+            - textbox "Buscar por número, título ou cliente..." [ref=f1e1012]
+            - generic [ref=f1e1013]:
+              - combobox [ref=f1e1014]:
+                - option "Todos os tipos" [selected]
+                - option "Agrupamento (N → 1)"
+                - option "Divisão (1 → M)"
+                - option "Mista (N → M)"
+              - combobox [ref=f1e1015]:
+                - option "Todos os status" [selected]
+                - option "Rascunho"
+                - option "Ativa"
+                - option "Concluída"
+                - option "Cancelada"
+          - generic [ref=f1e1017]:
+            - generic [ref=f1e1018]:
+              - generic [ref=f1e1019]: Preparações Cadastradas (1)
+              - textbox "Filtrar dados..." [ref=f1e1023]
+            - table [ref=f1e1025]:
+              - rowgroup [ref=f1e1026]:
+                - row [ref=f1e1027]:
+                  - columnheader "Número / Título" [ref=f1e1028]
+                  - columnheader "Tipo Operação" [ref=f1e1029]
+                  - columnheader "Cliente Exportação" [ref=f1e1030]
+                  - columnheader "Origens / Destinos" [ref=f1e1031]
+                  - columnheader "Valor Preparado" [ref=f1e1032]
+                  - columnheader "Situação" [ref=f1e1033]
+                  - columnheader "Ações" [ref=f1e1034]
+              - rowgroup [ref=f1e1035]:
+                - row [ref=f1e1036]:
+                  - cell "PREP-2026-5193 Preparação de Exportação" [ref=f1e1037]:
+                    - generic [ref=f1e1038]:
+                      - generic [ref=f1e1039]: PREP-2026-5193
+                      - generic "Preparação de Exportação" [ref=f1e1040]
+                  - cell "Agrupamento (N → 1)" [ref=f1e1041]
+                  - cell "Sem cliente definido" [ref=f1e1043]
+                  - cell "4 origens → 1 destinos" [ref=f1e1044]
+                  - cell "R$ 22.310,29" [ref=f1e1046]
+                  - cell "Ativa" [ref=f1e1047]
+                  - cell [ref=f1e1049]:
+                    - generic [ref=f1e1050]:
+                      - button "Editar" [ref=f1e1051]
+                      - button "Excluir preparação" [ref=f1e1054] [cursor=pointer]
+              - rowgroup [ref=f1e1057]:
+                - row [ref=f1e1058]:
+                  - cell "Exibindo 1 de 1 registros" [ref=f1e1059]
+    - 'region "Guia explicativo: Preparações de Exportação" [ref=f1e1060]':
+      - generic [ref=f1e1062]:
+        - generic [ref=f1e1067]:
+          - generic [ref=f1e1068]:
+            - heading "Preparações de Exportação" [level=2] [ref=f1e1069]
+            - generic [ref=f1e1070]: Guia da Tela
+          - paragraph [ref=f1e1071]: /preparacoes
+        - generic [ref=f1e1072]:
+          - button "Minimizar guia explicativo" [expanded] [ref=f1e1073] [cursor=pointer]
+          - button "Fechar guia explicativo" [ref=f1e1076] [cursor=pointer]
+      - generic [ref=f1e1079]:
+        - generic [ref=f1e1080]:
+          - generic [ref=f1e1081]: Objetivo da Tela
+          - paragraph [ref=f1e1082]: Gerenciamento de preparações unificadas (Agrupamento N->1, Divisão 1->M e Mistas N->M).
+        - generic [ref=f1e1083]:
+          - generic [ref=f1e1084]: Passos Práticos Recomendados
+          - list [ref=f1e1085]:
+            - listitem [ref=f1e1086]:
+              - generic [ref=f1e1087]: "1"
+              - generic [ref=f1e1088]: Visualize todas as preparações em rascunho, ativas ou concluídas.
+            - listitem [ref=f1e1089]:
+              - generic [ref=f1e1090]: "2"
+              - generic [ref=f1e1091]: Acompanhe o número de origens de fornecedores e destinos de saída vinculados.
+            - listitem [ref=f1e1092]:
+              - generic [ref=f1e1093]: "3"
+              - generic [ref=f1e1094]: Inicie novas preparações livres ou continue editando rascunhos em andamento.
+        - generic [ref=f1e1095]:
+          - generic [ref=f1e1096]: Dicas Fiscais e de Segurança
+          - list [ref=f1e1100]:
+            - listitem [ref=f1e1101]:
+              - generic [ref=f1e1104]: Excluir uma preparação libera imediatamente as quantidades das notas de origem para novas alocações.
+            - listitem [ref=f1e1105]:
+              - generic [ref=f1e1108]: Preparações envolvendo dados fiscais reais são mantidas em memória temporária para conformidade.
+      - generic [ref=f1e1109]:
+        - generic [ref=f1e1110]:
+          - generic [ref=f1e1111]:
+            - generic [ref=f1e1112]: Esc
+            - generic [ref=f1e1113]: para fechar
+          - button "Minimizar guia explicativo" [expanded] [ref=f1e1114] [cursor=pointer]: Minimizar
+        - button "Entendi / Não mostrar novamente" [ref=f1e1115] [cursor=pointer]
+    - alert [ref=f1e1119]:
+      - generic [ref=f1e1122]: Preparação PREP-2026-5193 criada com sucesso!
+      - button "Fechar notificação" [ref=f1e1123]
+    - generic [aria-hidden]:
+      - generic: Modo Demonstração

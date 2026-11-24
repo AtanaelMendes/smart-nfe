@@ -1,0 +1,178 @@
+- generic [active] [ref=f1e1]:
+  - button "Open Next.js Dev Tools" [ref=f1e216] [cursor=pointer]
+  - alert [ref=f1e279]
+  - generic [ref=f1e460]:
+    - complementary "Menu principal" [ref=f1e461]:
+      - generic [ref=f1e462]: SmartNFe
+      - navigation [ref=f1e467]:
+        - list [ref=f1e468]:
+          - listitem [ref=f1e469]:
+            - link "Dashboard" [ref=f1e470] [cursor=pointer]:
+              - /url: /dashboard
+          - listitem [ref=f1e474]:
+            - link "Nova Nota" [ref=f1e475] [cursor=pointer]:
+              - /url: /notas/nova
+          - listitem [ref=f1e479]:
+            - link "Documentos" [ref=f1e480] [cursor=pointer]:
+              - /url: /documentos
+          - listitem [ref=f1e484]:
+            - link "Importar" [ref=f1e485] [cursor=pointer]:
+              - /url: /documentos/importar
+          - listitem [ref=f1e489]:
+            - link "Preparações" [ref=f1e490] [cursor=pointer]:
+              - /url: /preparacoes
+          - listitem [ref=f1e494]:
+            - link "Notas Preparadas" [ref=f1e495] [cursor=pointer]:
+              - /url: /notas-preparadas
+          - listitem [ref=f1e499]:
+            - link "Configurações" [ref=f1e500] [cursor=pointer]:
+              - /url: /configuracoes
+      - button "Recolher menu lateral" [ref=f1e505] [cursor=pointer]:
+        - generic [ref=f1e508]: Recolher
+    - generic [ref=f1e509]:
+      - banner [ref=f1e510]:
+        - navigation "Navegação estrutural" [ref=f1e511]:
+          - link "SmartNFe" [ref=f1e512] [cursor=pointer]:
+            - /url: /dashboard
+          - link "Dashboard" [ref=f1e516] [cursor=pointer]:
+            - /url: /dashboard
+          - link "Preparações" [ref=f1e520] [cursor=pointer]:
+            - /url: /preparacoes
+          - generic [ref=f1e521]: Nova Preparação
+        - generic [ref=f1e525]:
+          - generic [ref=f1e526]: Modo Demo
+          - 'button "Abrir guia explicativo: Editor de Preparação (N → M)" [ref=f1e527] [cursor=pointer]'
+          - button "Alternar para modo escuro" [ref=f1e530]
+      - main [ref=f1e533]:
+        - generic [ref=f1e534]:
+          - generic [ref=f1e538]:
+            - text: "Aviso de Sessão Temporária: Esta preparação envolve documentos fiscais reais mantidos exclusivamente na memória volátil do navegador."
+            - strong [ref=f1e539]: Não feche ou recarregue esta aba
+            - text: sob risco de perda dos dados em andamento.
+          - generic [ref=f1e540]:
+            - generic [ref=f1e541]:
+              - generic [ref=f1e542]:
+                - link [ref=f1e543] [cursor=pointer]:
+                  - /url: /preparacoes
+                - heading "Preparação de Exportação" [level=1] [ref=f1e546]
+                - generic [ref=f1e549]: Agrupamento (N → 1)
+              - paragraph [ref=f1e550]: "Origens: 4 NF-e • Destinos: 1 • Total Geral: R$ 0,00"
+            - generic [ref=f1e551]:
+              - button "Salvar Rascunho" [ref=f1e552]
+              - button "Concluir Preparação" [ref=f1e555]
+          - generic [ref=f1e558]:
+            - button "1 Origens (4)" [ref=f1e559] [cursor=pointer]:
+              - generic [ref=f1e560]: "1"
+              - text: Origens (4)
+            - button "2 Cliente Exportação" [ref=f1e561] [cursor=pointer]:
+              - generic [ref=f1e562]: "2"
+              - text: Cliente Exportação
+            - button "3 Destinos (1)" [ref=f1e563] [cursor=pointer]:
+              - generic [ref=f1e564]: "3"
+              - text: Destinos (1)
+            - button "4 Alocação de Mercadorias (Matriz N:M)" [ref=f1e565] [cursor=pointer]:
+              - generic [ref=f1e566]: "4"
+              - text: Alocação de Mercadorias (Matriz N:M)
+            - button "5 Revisão & Totais" [ref=f1e567] [cursor=pointer]:
+              - generic [ref=f1e568]: "5"
+              - text: Revisão & Totais
+          - generic [ref=f1e569]:
+            - generic [ref=f1e570]:
+              - generic [ref=f1e571]:
+                - 'heading "Passo 1: Selecionar NF-e de Fornecedores (Origens)" [level=2] [ref=f1e572]'
+                - paragraph [ref=f1e573]: Adicione quantas notas fiscais de fornecedores forem necessárias. Não há limite de quantidade.
+              - textbox "Buscar notas disponíveis..." [ref=f1e577]
+            - generic [ref=f1e578]:
+              - generic [ref=f1e579] [cursor=pointer]:
+                - generic [ref=f1e580]:
+                  - generic [ref=f1e581]:
+                    - generic [ref=f1e582]: NF-e 000.014.853 (Série 1)
+                    - generic [ref=f1e583]: Selecionada
+                  - paragraph [ref=f1e584]: 3DHS SERVIÇOS LTDA
+                  - paragraph [ref=f1e585]: "42261118368896000121550010000148531000546560"
+                - generic [ref=f1e586]:
+                  - generic [ref=f1e587]: 2 produtos
+                  - generic [ref=f1e588]: R$ 22.507,92
+              - generic [ref=f1e589] [cursor=pointer]:
+                - generic [ref=f1e590]:
+                  - generic [ref=f1e591]:
+                    - generic [ref=f1e592]: NF-e 000.076.406 (Série 2)
+                    - generic [ref=f1e593]: Selecionada
+                  - paragraph [ref=f1e594]: WGS DISTRIBUIDORA DE AUTO PECAS LTDA F-16
+                  - paragraph [ref=f1e595]: "42261104994734001409550020000764061472625801"
+                - generic [ref=f1e596]:
+                  - generic [ref=f1e597]: 2 produtos
+                  - generic [ref=f1e598]: R$ 197,20
+              - generic [ref=f1e599] [cursor=pointer]:
+                - generic [ref=f1e600]:
+                  - generic [ref=f1e601]:
+                    - generic [ref=f1e602]: NF-e 000.009.762 (Série 1)
+                    - generic [ref=f1e603]: Selecionada
+                  - paragraph [ref=f1e604]: Heiko Custom Clothing Ltda
+                  - paragraph [ref=f1e605]: "42261139744286000155550010000097621534922614"
+                - generic [ref=f1e606]:
+                  - generic [ref=f1e607]: 2 produtos
+                  - generic [ref=f1e608]: R$ 340,84
+              - generic [ref=f1e609] [cursor=pointer]:
+                - generic [ref=f1e610]:
+                  - generic [ref=f1e611]:
+                    - generic [ref=f1e612]: NF-e 000.002.275 (Série 10)
+                    - generic [ref=f1e613]: Selecionada
+                  - paragraph [ref=f1e614]: E DECOR SERVICOS LTDA
+                  - paragraph [ref=f1e615]: "42261152925406000189550100000022751965663820"
+                - generic [ref=f1e616]:
+                  - generic [ref=f1e617]: 1 produtos
+                  - generic [ref=f1e618]: R$ 12,35
+              - generic [ref=f1e619] [cursor=pointer]:
+                - generic [ref=f1e620]:
+                  - generic [ref=f1e621]:
+                    - generic [ref=f1e622]: NF-e 000.145.892 (Série 1)
+                    - generic [ref=f1e623]: Adicionar
+                  - paragraph [ref=f1e624]: Agroexport Brasil S.A.
+                  - paragraph [ref=f1e625]: "35241112345678000190550010001458921001234567"
+                - generic [ref=f1e626]:
+                  - generic [ref=f1e627]: 8 produtos
+                  - generic [ref=f1e628]: R$ 291.200,00
+              - generic [ref=f1e629] [cursor=pointer]:
+                - generic [ref=f1e630]:
+                  - generic [ref=f1e631]:
+                    - generic [ref=f1e632]: NF-e 000.089.410 (Série 2)
+                    - generic [ref=f1e633]: Adicionar
+                  - paragraph [ref=f1e634]: Metalúrgica Sul Americana Ltda
+                  - paragraph [ref=f1e635]: "41241198765432000155550020000894101007654321"
+                - generic [ref=f1e636]:
+                  - generic [ref=f1e637]: 25 produtos
+                  - generic [ref=f1e638]: R$ 148.750,00
+              - generic [ref=f1e639] [cursor=pointer]:
+                - generic [ref=f1e640]:
+                  - generic [ref=f1e641]:
+                    - generic [ref=f1e642]: NF-e 000.320.100 (Série 1)
+                    - generic [ref=f1e643]: Adicionar
+                  - paragraph [ref=f1e644]: Eletroparts do Brasil Componentes S.A.
+                  - paragraph [ref=f1e645]: "43241155544433000188550010003201001009988776"
+                - generic [ref=f1e646]:
+                  - generic [ref=f1e647]: 50 produtos
+                  - generic [ref=f1e648]: R$ 625.800,00
+              - generic [ref=f1e649] [cursor=pointer]:
+                - generic [ref=f1e650]:
+                  - generic [ref=f1e651]:
+                    - generic [ref=f1e652]: NF-e 000.012.789 (Série 1)
+                    - generic [ref=f1e653]: Adicionar
+                  - paragraph [ref=f1e654]: Calçados Vale do Rio Doce Ltda
+                  - paragraph [ref=f1e655]: "31241111122233000144550010000127891004433221"
+                - generic [ref=f1e656]:
+                  - generic [ref=f1e657]: 12 produtos
+                  - generic [ref=f1e658]: R$ 89.300,00
+              - generic [ref=f1e659] [cursor=pointer]:
+                - generic [ref=f1e660]:
+                  - generic [ref=f1e661]:
+                    - generic [ref=f1e662]: NF-e 000.205.670 (Série 3)
+                    - generic [ref=f1e663]: Adicionar
+                  - paragraph [ref=f1e664]: Cooperativa Agroindustrial Centro-Oeste
+                  - paragraph [ref=f1e665]: "50241177788899000122550030002056701001122334"
+                - generic [ref=f1e666]:
+                  - generic [ref=f1e667]: 15 produtos
+                  - generic [ref=f1e668]: R$ 342.000,00
+            - button "Prosseguir para Cliente de Exportação" [ref=f1e670]
+    - generic [aria-hidden]:
+      - generic: Modo Demonstração

@@ -1,0 +1,152 @@
+- generic [active] [ref=f1e1]:
+  - button "Open Next.js Dev Tools" [ref=f1e216] [cursor=pointer]
+  - alert [ref=f1e279]
+  - generic [ref=f1e1126]:
+    - complementary "Menu principal" [ref=f1e1127]:
+      - generic [ref=f1e1128]: SmartNFe
+      - navigation [ref=f1e1133]:
+        - list [ref=f1e1134]:
+          - listitem [ref=f1e1135]:
+            - link "Dashboard" [ref=f1e1136] [cursor=pointer]:
+              - /url: /dashboard
+          - listitem [ref=f1e1140]:
+            - link "Nova Nota" [ref=f1e1141] [cursor=pointer]:
+              - /url: /notas/nova
+          - listitem [ref=f1e1145]:
+            - link "Documentos" [ref=f1e1146] [cursor=pointer]:
+              - /url: /documentos
+          - listitem [ref=f1e1150]:
+            - link "Importar" [ref=f1e1151] [cursor=pointer]:
+              - /url: /documentos/importar
+          - listitem [ref=f1e1155]:
+            - link "Preparações" [ref=f1e1156] [cursor=pointer]:
+              - /url: /preparacoes
+          - listitem [ref=f1e1160]:
+            - link "Notas Preparadas" [ref=f1e1161] [cursor=pointer]:
+              - /url: /notas-preparadas
+          - listitem [ref=f1e1165]:
+            - link "Configurações" [ref=f1e1166] [cursor=pointer]:
+              - /url: /configuracoes
+      - button "Recolher menu lateral" [ref=f1e1171] [cursor=pointer]:
+        - generic [ref=f1e1174]: Recolher
+    - generic [ref=f1e1175]:
+      - banner [ref=f1e1176]:
+        - navigation "Navegação estrutural" [ref=f1e1177]:
+          - link "SmartNFe" [ref=f1e1178] [cursor=pointer]:
+            - /url: /dashboard
+          - link "Dashboard" [ref=f1e1182] [cursor=pointer]:
+            - /url: /dashboard
+          - generic [ref=f1e1183]: Notas Preparadas
+        - generic [ref=f1e1187]:
+          - generic [ref=f1e1188]: Modo Demo
+          - 'button "Abrir guia explicativo: Notas Preparadas" [ref=f1e1189] [cursor=pointer]'
+          - button "Alternar para modo escuro" [ref=f1e1192]
+      - main [ref=f1e1195]:
+        - generic [ref=f1e1196]:
+          - generic [ref=f1e1197]:
+            - generic [ref=f1e1198]:
+              - heading "Notas Fiscais Preparadas" [level=1] [ref=f1e1199]
+              - paragraph [ref=f1e1202]: Visualize os lotes e desmembramentos resultantes das divisões efetuadas para emissão final de exportação.
+            - generic [ref=f1e1203]:
+              - link [ref=f1e1204] [cursor=pointer]:
+                - /url: /documentos
+                - button "Nova Divisão" [ref=f1e1205]
+              - button "Atualizar" [ref=f1e1208]
+          - generic [ref=f1e1212]:
+            - generic [ref=f1e1213]:
+              - generic [ref=f1e1214]: Notas Preparadas (2 lotes gerados)
+              - textbox "Filtrar dados..." [ref=f1e1218]
+            - table [ref=f1e1220]:
+              - rowgroup [ref=f1e1221]:
+                - row [ref=f1e1222]:
+                  - columnheader "NF Preparada / Lote" [ref=f1e1223]
+                  - columnheader "Empresa Destinatária" [ref=f1e1224]
+                  - columnheader "Data de Preparação" [ref=f1e1225]
+                  - columnheader "Itens" [ref=f1e1226]
+                  - columnheader "Valor Total" [ref=f1e1227]
+                  - columnheader "Ações" [ref=f1e1228]
+              - rowgroup [ref=f1e1229]:
+                - row [ref=f1e1230]:
+                  - 'cell "000.205.670-A Contêiner Marítimo 01 - Soja e Milho Lotes L01-L02 Origem: NF-e 000.205.670" [ref=f1e1231]':
+                    - generic [ref=f1e1232]:
+                      - generic [ref=f1e1233]: 000.205.670-A
+                      - generic [ref=f1e1237]: Contêiner Marítimo 01 - Soja e Milho Lotes L01-L02
+                      - generic [ref=f1e1238]: "Origem: NF-e 000.205.670"
+                  - cell "Asian Grain Corporation China" [ref=f1e1239]:
+                    - generic [ref=f1e1240]:
+                      - generic [ref=f1e1241]: Asian Grain Corporation
+                      - generic [ref=f1e1242]: China
+                  - cell "26/10/2026" [ref=f1e1245]
+                  - cell "6 itens" [ref=f1e1246]
+                  - cell "R$ 134.750,00" [ref=f1e1248]
+                  - cell [ref=f1e1249]:
+                    - generic [ref=f1e1250]:
+                      - button "Visualizar Espelho DANFE" [ref=f1e1251] [cursor=pointer]
+                      - button "Baixar XML Simulado" [ref=f1e1254] [cursor=pointer]
+                      - button "Excluir Nota Preparada" [ref=f1e1257] [cursor=pointer]
+                - row [ref=f1e1260]:
+                  - 'cell "000.205.670-B Contêiner Marítimo 02 - Sorgo e Restante de Lotes Origem: NF-e 000.205.670" [ref=f1e1261]':
+                    - generic [ref=f1e1262]:
+                      - generic [ref=f1e1263]: 000.205.670-B
+                      - generic [ref=f1e1267]: Contêiner Marítimo 02 - Sorgo e Restante de Lotes
+                      - generic [ref=f1e1268]: "Origem: NF-e 000.205.670"
+                  - cell "Asian Grain Corporation China" [ref=f1e1269]:
+                    - generic [ref=f1e1270]:
+                      - generic [ref=f1e1271]: Asian Grain Corporation
+                      - generic [ref=f1e1272]: China
+                  - cell "26/10/2026" [ref=f1e1275]
+                  - cell "9 itens" [ref=f1e1276]
+                  - cell "R$ 207.250,00" [ref=f1e1278]
+                  - cell [ref=f1e1279]:
+                    - generic [ref=f1e1280]:
+                      - button "Visualizar Espelho DANFE" [ref=f1e1281] [cursor=pointer]
+                      - button "Baixar XML Simulado" [ref=f1e1284] [cursor=pointer]
+                      - button "Excluir Nota Preparada" [ref=f1e1287] [cursor=pointer]
+              - rowgroup [ref=f1e1290]:
+                - row [ref=f1e1291]:
+                  - cell "Exibindo 2 de 2 registros" [ref=f1e1292]
+    - 'region "Guia explicativo: Notas Preparadas" [ref=f1e1293]':
+      - generic [ref=f1e1295]:
+        - generic [ref=f1e1300]:
+          - generic [ref=f1e1301]:
+            - heading "Notas Preparadas" [level=2] [ref=f1e1302]
+            - generic [ref=f1e1303]: Guia da Tela
+          - paragraph [ref=f1e1304]: /notas-preparadas
+        - generic [ref=f1e1305]:
+          - button "Minimizar guia explicativo" [expanded] [ref=f1e1306] [cursor=pointer]
+          - button "Fechar guia explicativo" [ref=f1e1309] [cursor=pointer]
+      - generic [ref=f1e1312]:
+        - generic [ref=f1e1313]:
+          - generic [ref=f1e1314]: Objetivo da Tela
+          - paragraph [ref=f1e1315]: Consulta e conferência das notas finais geradas para exportação.
+        - generic [ref=f1e1316]:
+          - generic [ref=f1e1317]: Passos Práticos Recomendados
+          - list [ref=f1e1318]:
+            - listitem [ref=f1e1319]:
+              - generic [ref=f1e1320]: "1"
+              - generic [ref=f1e1321]: Consulte as notas fiscais preparadas a partir dos desmembramentos e conferências homologadas.
+            - listitem [ref=f1e1322]:
+              - generic [ref=f1e1323]: "2"
+              - generic [ref=f1e1324]: Utilize os filtros de busca por número do lote, destinatário no exterior ou data de emissão.
+            - listitem [ref=f1e1325]:
+              - generic [ref=f1e1326]: "3"
+              - generic [ref=f1e1327]: Verifique os totais matemáticos de cada nota filha e a reconciliação com o documento original.
+            - listitem [ref=f1e1328]:
+              - generic [ref=f1e1329]: "4"
+              - generic [ref=f1e1330]: Exporte ou envie as notas preparadas para o fluxo de emissão e registro aduaneiro.
+        - generic [ref=f1e1331]:
+          - generic [ref=f1e1332]: Dicas Fiscais e de Segurança
+          - list [ref=f1e1336]:
+            - listitem [ref=f1e1337]:
+              - generic [ref=f1e1340]: Cada nota preparada herda a rastreabilidade completa do documento de origem e do processo de divisão.
+            - listitem [ref=f1e1341]:
+              - generic [ref=f1e1344]: Exclusões e alterações de notas preparadas são sincronizadas no repositório com proteção transacional.
+      - generic [ref=f1e1345]:
+        - generic [ref=f1e1346]:
+          - generic [ref=f1e1347]:
+            - generic [ref=f1e1348]: Esc
+            - generic [ref=f1e1349]: para fechar
+          - button "Minimizar guia explicativo" [expanded] [ref=f1e1350] [cursor=pointer]: Minimizar
+        - button "Entendi / Não mostrar novamente" [ref=f1e1351] [cursor=pointer]
+    - generic [aria-hidden]:
+      - generic: Modo Demonstração

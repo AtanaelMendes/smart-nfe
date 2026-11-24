@@ -1,0 +1,232 @@
+- generic [ref=f1e1]:
+  - button "Open Next.js Dev Tools" [ref=f1e216] [cursor=pointer]
+  - alert [ref=f1e279]
+  - generic [ref=f1e460]:
+    - complementary "Menu principal" [ref=f1e461]:
+      - generic [ref=f1e462]: SmartNFe
+      - navigation [ref=f1e467]:
+        - list [ref=f1e468]:
+          - listitem [ref=f1e469]:
+            - link "Dashboard" [ref=f1e470] [cursor=pointer]:
+              - /url: /dashboard
+          - listitem [ref=f1e474]:
+            - link "Nova Nota" [ref=f1e475] [cursor=pointer]:
+              - /url: /notas/nova
+          - listitem [ref=f1e479]:
+            - link "Documentos" [ref=f1e480] [cursor=pointer]:
+              - /url: /documentos
+          - listitem [ref=f1e484]:
+            - link "Importar" [ref=f1e485] [cursor=pointer]:
+              - /url: /documentos/importar
+          - listitem [ref=f1e489]:
+            - link "Preparações" [ref=f1e490] [cursor=pointer]:
+              - /url: /preparacoes
+          - listitem [ref=f1e494]:
+            - link "Notas Preparadas" [ref=f1e495] [cursor=pointer]:
+              - /url: /notas-preparadas
+          - listitem [ref=f1e499]:
+            - link "Configurações" [ref=f1e500] [cursor=pointer]:
+              - /url: /configuracoes
+      - button "Recolher menu lateral" [ref=f1e505] [cursor=pointer]:
+        - generic [ref=f1e508]: Recolher
+    - generic [ref=f1e509]:
+      - banner [ref=f1e510]:
+        - navigation "Navegação estrutural" [ref=f1e511]:
+          - link "SmartNFe" [ref=f1e512] [cursor=pointer]:
+            - /url: /dashboard
+          - link "Dashboard" [ref=f1e516] [cursor=pointer]:
+            - /url: /dashboard
+          - link "Preparações" [ref=f1e520] [cursor=pointer]:
+            - /url: /preparacoes
+          - generic [ref=f1e521]: Nova Preparação
+        - generic [ref=f1e525]:
+          - generic [ref=f1e526]: Modo Demo
+          - 'button "Abrir guia explicativo: Editor de Preparação (N → M)" [ref=f1e527] [cursor=pointer]'
+          - button "Alternar para modo escuro" [ref=f1e530]
+      - main [ref=f1e533]:
+        - generic [ref=f1e534]:
+          - generic [ref=f1e538]:
+            - text: "Aviso de Sessão Temporária: Esta preparação envolve documentos fiscais reais mantidos exclusivamente na memória volátil do navegador."
+            - strong [ref=f1e539]: Não feche ou recarregue esta aba
+            - text: sob risco de perda dos dados em andamento.
+          - generic [ref=f1e540]:
+            - generic [ref=f1e541]:
+              - generic [ref=f1e542]:
+                - link [ref=f1e543] [cursor=pointer]:
+                  - /url: /preparacoes
+                - heading "Preparação de Exportação" [level=1] [ref=f1e546]
+                - generic [ref=f1e549]: Agrupamento (N → 1)
+              - paragraph [ref=f1e550]: "Origens: 4 NF-e • Destinos: 1 • Total Geral: R$ 0,00"
+            - generic [ref=f1e551]:
+              - button "Salvar Rascunho" [ref=f1e552]
+              - button "Concluir Preparação" [ref=f1e555]
+          - generic [ref=f1e558]:
+            - button "1 Origens (4)" [ref=f1e559] [cursor=pointer]:
+              - generic [ref=f1e560]: "1"
+              - text: Origens (4)
+            - button "2 Cliente Exportação" [ref=f1e561] [cursor=pointer]:
+              - generic [ref=f1e562]: "2"
+              - text: Cliente Exportação
+            - button "3 Destinos (1)" [ref=f1e563] [cursor=pointer]:
+              - generic [ref=f1e564]: "3"
+              - text: Destinos (1)
+            - button "4 Alocação de Mercadorias (Matriz N:M)" [active] [ref=f1e565] [cursor=pointer]:
+              - generic [ref=f1e566]: "4"
+              - text: Alocação de Mercadorias (Matriz N:M)
+            - button "5 Revisão & Totais" [ref=f1e567] [cursor=pointer]:
+              - generic [ref=f1e568]: "5"
+              - text: Revisão & Totais
+          - generic [ref=f1e735]:
+            - generic [ref=f1e736]:
+              - generic [ref=f1e737]:
+                - heading "Matriz de Alocação de Mercadorias (N origens → M destinos)" [level=2] [ref=f1e738]
+                - paragraph [ref=f1e741]: Edite as quantidades alocadas para cada destino. O saldo disponível é conferido em tempo real com precisão decimal estrita.
+              - combobox [ref=f1e743]:
+                - option "Todas as origens" [selected]
+                - option "NF-e 000.014.853 (3DHS SERVIÇOS L...)"
+                - option "NF-e 000.076.406 (WGS DISTRIBUIDO...)"
+                - option "NF-e 000.009.762 (Heiko Custom Cl...)"
+                - option "NF-e 000.002.275 (E DECOR SERVICO...)"
+            - table [ref=f1e745]:
+              - rowgroup [ref=f1e746]:
+                - row [ref=f1e747]:
+                  - columnheader "NF-e Origem" [ref=f1e748]
+                  - columnheader "Item" [ref=f1e749]
+                  - columnheader "Produto / Descrição" [ref=f1e750]
+                  - columnheader "NCM / UN" [ref=f1e751]
+                  - columnheader "Qtd Orig." [ref=f1e752]
+                  - columnheader "Saldo Disp." [ref=f1e753]
+                  - columnheader "Exportação 1 - Principal" [ref=f1e754]
+                  - columnheader "Preço Orig." [ref=f1e756]
+              - rowgroup [ref=f1e757]:
+                - row [ref=f1e758]:
+                  - cell "000.014.853 3DHS SERVIÇOS LTDA" [ref=f1e759]:
+                    - text: 000.014.853
+                    - generic "3DHS SERVIÇOS LTDA" [ref=f1e760]
+                  - cell "1" [ref=f1e761]
+                  - 'cell "PUXADOR DECORATO VETRO 5B G3 Cód: 101063066" [ref=f1e762]':
+                    - generic "PUXADOR DECORATO VETRO 5B G3" [ref=f1e763]
+                    - generic [ref=f1e764]: "Cód: 101063066"
+                  - cell "76169900 PEÇ" [ref=f1e765]:
+                    - generic [ref=f1e766]: "76169900"
+                    - text: PEÇ
+                  - cell "700.0000" [ref=f1e767]
+                  - cell "700.0000" [ref=f1e768]
+                  - cell [ref=f1e769]:
+                    - generic [ref=f1e771]:
+                      - spinbutton "0.0000" [ref=f1e772]
+                      - button "Max" [ref=f1e773] [cursor=pointer]
+                  - cell "R$ 22,09" [ref=f1e774]
+                - row [ref=f1e775]:
+                  - cell "000.014.853 3DHS SERVIÇOS LTDA" [ref=f1e776]:
+                    - text: 000.014.853
+                    - generic "3DHS SERVIÇOS LTDA" [ref=f1e777]
+                  - cell "2" [ref=f1e778]
+                  - 'cell "PUXADOR 5Q DECORATO G3 Cód: 101063064" [ref=f1e779]':
+                    - generic "PUXADOR 5Q DECORATO G3" [ref=f1e780]
+                    - generic [ref=f1e781]: "Cód: 101063064"
+                  - cell "76169900 PEÇ" [ref=f1e782]:
+                    - generic [ref=f1e783]: "76169900"
+                    - text: PEÇ
+                  - cell "300.0000" [ref=f1e784]
+                  - cell "300.0000" [ref=f1e785]
+                  - cell [ref=f1e786]:
+                    - generic [ref=f1e788]:
+                      - spinbutton "0.0000" [ref=f1e789]
+                      - button "Max" [ref=f1e790] [cursor=pointer]
+                  - cell "R$ 21,11" [ref=f1e791]
+                - row [ref=f1e792]:
+                  - cell "000.076.406 WGS DISTRIBUIDORA DE AUTO PECAS LTDA F-16" [ref=f1e793]:
+                    - text: 000.076.406
+                    - generic "WGS DISTRIBUIDORA DE AUTO PECAS LTDA F-16" [ref=f1e794]
+                  - cell "1" [ref=f1e795]
+                  - 'cell "ROLAM. CUBO DIANT. L200 4X2/HR 2.5/H100 (KIT PRA UMA RODA) - ASH Cód: 3706" [ref=f1e796]':
+                    - generic "ROLAM. CUBO DIANT. L200 4X2/HR 2.5/H100 (KIT PRA UMA RODA) - ASH" [ref=f1e797]
+                    - generic [ref=f1e798]: "Cód: 3706"
+                  - cell "87087090 UN" [ref=f1e799]:
+                    - generic [ref=f1e800]: "87087090"
+                    - text: UN
+                  - cell "1.0000" [ref=f1e801]
+                  - cell "1.0000" [ref=f1e802]
+                  - cell [ref=f1e803]:
+                    - generic [ref=f1e805]:
+                      - spinbutton "0.0000" [ref=f1e806]
+                      - button "Max" [ref=f1e807] [cursor=pointer]
+                  - cell "R$ 78,20" [ref=f1e808]
+                - row [ref=f1e809]:
+                  - cell "000.076.406 WGS DISTRIBUIDORA DE AUTO PECAS LTDA F-16" [ref=f1e810]:
+                    - text: 000.076.406
+                    - generic "WGS DISTRIBUIDORA DE AUTO PECAS LTDA F-16" [ref=f1e811]
+                  - cell "2" [ref=f1e812]
+                  - 'cell "REPARO PINCA FREIO HR C/ 2 PISTOES (45,95MM) - PATRAL Cód: 39193" [ref=f1e813]':
+                    - generic "REPARO PINCA FREIO HR C/ 2 PISTOES (45,95MM) - PATRAL" [ref=f1e814]
+                    - generic [ref=f1e815]: "Cód: 39193"
+                  - cell "87083090 JG" [ref=f1e816]:
+                    - generic [ref=f1e817]: "87083090"
+                    - text: JG
+                  - cell "1.0000" [ref=f1e818]
+                  - cell "1.0000" [ref=f1e819]
+                  - cell [ref=f1e820]:
+                    - generic [ref=f1e822]:
+                      - spinbutton "0.0000" [ref=f1e823]
+                      - button "Max" [ref=f1e824] [cursor=pointer]
+                  - cell "R$ 99,00" [ref=f1e825]
+                - row [ref=f1e826]:
+                  - cell "000.009.762 Heiko Custom Clothing Ltda" [ref=f1e827]:
+                    - text: 000.009.762
+                    - generic "Heiko Custom Clothing Ltda" [ref=f1e828]
+                  - cell "1" [ref=f1e829]
+                  - 'cell "Camiseta Regular Oda Clan - Preto - G Cód: STRODA-3" [ref=f1e830]':
+                    - generic "Camiseta Regular Oda Clan - Preto - G" [ref=f1e831]
+                    - generic [ref=f1e832]: "Cód: STRODA-3"
+                  - cell "61091000 UN" [ref=f1e833]:
+                    - generic [ref=f1e834]: "61091000"
+                    - text: UN
+                  - cell "1.0000" [ref=f1e835]
+                  - cell "1.0000" [ref=f1e836]
+                  - cell [ref=f1e837]:
+                    - generic [ref=f1e839]:
+                      - spinbutton "0.0000" [ref=f1e840]
+                      - button "Max" [ref=f1e841] [cursor=pointer]
+                  - cell "R$ 159,00" [ref=f1e842]
+                - row [ref=f1e843]:
+                  - cell "000.009.762 Heiko Custom Clothing Ltda" [ref=f1e844]:
+                    - text: 000.009.762
+                    - generic "Heiko Custom Clothing Ltda" [ref=f1e845]
+                  - cell "2" [ref=f1e846]
+                  - 'cell "Camiseta Regular Oda Clan - OffWhite - G Cód: STRODA-9" [ref=f1e847]':
+                    - generic "Camiseta Regular Oda Clan - OffWhite - G" [ref=f1e848]
+                    - generic [ref=f1e849]: "Cód: STRODA-9"
+                  - cell "61091000 UN" [ref=f1e850]:
+                    - generic [ref=f1e851]: "61091000"
+                    - text: UN
+                  - cell "1.0000" [ref=f1e852]
+                  - cell "1.0000" [ref=f1e853]
+                  - cell [ref=f1e854]:
+                    - generic [ref=f1e856]:
+                      - spinbutton "0.0000" [ref=f1e857]
+                      - button "Max" [ref=f1e858] [cursor=pointer]
+                  - cell "R$ 159,00" [ref=f1e859]
+                - row [ref=f1e860]:
+                  - cell "000.002.275 E DECOR SERVICOS LTDA" [ref=f1e861]:
+                    - text: 000.002.275
+                    - generic "E DECOR SERVICOS LTDA" [ref=f1e862]
+                  - cell "1" [ref=f1e863]
+                  - 'cell "Anel Giratório Spinner Sensorial Diversas Cores Fidget Terapeutico Relaxante TDAH Branco,1 Cód: 169421643242" [ref=f1e864]':
+                    - generic "Anel Giratório Spinner Sensorial Diversas Cores Fidget Terapeutico Relaxante TDAH Branco,1" [ref=f1e865]
+                    - generic [ref=f1e866]: "Cód: 169421643242"
+                  - cell "39269090 PC" [ref=f1e867]:
+                    - generic [ref=f1e868]: "39269090"
+                    - text: PC
+                  - cell "1.0000" [ref=f1e869]
+                  - cell "1.0000" [ref=f1e870]
+                  - cell [ref=f1e871]:
+                    - generic [ref=f1e873]:
+                      - spinbutton "0.0000" [ref=f1e874]
+                      - button "Max" [ref=f1e875] [cursor=pointer]
+                  - cell "R$ 15,65" [ref=f1e876]
+            - generic [ref=f1e877]:
+              - button "Voltar para Destinos" [ref=f1e878]
+              - button "Prosseguir para Revisão" [ref=f1e881]
+    - generic [aria-hidden]:
+      - generic: Modo Demonstração
