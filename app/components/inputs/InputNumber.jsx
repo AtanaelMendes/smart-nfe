@@ -39,7 +39,7 @@ const InputNumber = ({ label, value, onChange, placeholder, id, name, required, 
         if (empty(errorMsg)) return;
 
         return (
-            <div className="text-xs text-red-600">
+            <div className="text-xs text-red-600 dark:text-red-400">
                 {errorMsg}
             </div>
         )
@@ -77,15 +77,15 @@ const InputNumber = ({ label, value, onChange, placeholder, id, name, required, 
                 className={`
                     rounded-lg block w-full
                     border 
-                    ${hasError() ? "border-red-500 focus:ring-red-500 focus:border-red-500" : "border-gray-300 focus:ring-blue-500 focus:border-blue-500"}
-                    text-gray-900 text-sm
-                    ${disabled ? "bg-gray-100 cursor-not-allowed" : ""}
+                    ${hasError() ? "border-red-500 dark:border-red-500 focus:ring-red-500 focus:border-red-500" : "border-gray-300 dark:border-slate-600 focus:ring-blue-500 focus:border-blue-500"}
+                    text-sm
+                    ${disabled ? "bg-gray-100 dark:bg-slate-900 text-gray-500 dark:text-slate-400 cursor-not-allowed" : "bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 dark:placeholder-slate-400"}
                     ${getInputClass()}
                     ${className}
                 `}
                 placeholder={placeholder || ""} />
             {renderError()}
-            {helperText && <div className="text-xs text-blue-600 absolute bottom-[-12px] right-0"> {helperText} </div>}
+            {helperText && <div className="text-xs text-blue-600 dark:text-blue-400 absolute bottom-[-12px] right-0"> {helperText} </div>}
         </div>
     );
 }
