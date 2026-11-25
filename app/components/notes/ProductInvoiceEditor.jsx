@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, Fragment } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -21,10 +21,14 @@ import {
   faXmark,
   faArrowRight,
   faTruck,
+  faChevronDown,
+  faChevronUp,
+  faLayerGroup,
 } from '@fortawesome/free-solid-svg-icons';
 import { catalogsRepository } from '@/features/catalogsRepository';
 import { documentRepository } from '@/features/documentRepository';
 import { validateNFe } from '@/features/validation/nfeValidator';
+import { FiscalField, FiscalSelect, FiscalGroup } from './FiscalField';
 import { formatBRL } from '@/lib/formatters';
 import { cleanDecimalString, decimalAdd, decimalSubtract, decimalCompare } from '@/lib/calculations/decimal';
 import { calculateInvoiceTotals, calculateItemTotal } from '@/lib/calculations/invoiceTotals';
@@ -36,14 +40,56 @@ const INITIAL_EMPTY_ITEM = () => ({
   codigo: '',
   descricao: '',
   ncm: '',
+  cest: '',
   cfop: '5101',
   unidade: 'UN',
+  cEAN: 'SEM GTIN',
+  cEANTrib: 'SEM GTIN',
+  unidadeTributavel: 'UN',
   quantidade: '1.0000',
+  quantidadeTributavel: '1.0000',
   valorUnitario: '0.0000',
+  valorUnitarioTributavel: '0.0000',
   valorTotal: '0.00',
   desconto: '0.00',
+  indicadorComposicaoTotal: '1',
+  pedido: '',
+  itemPedido: '',
+  informacoesAdicionais: '',
   observacoes: '',
+  tributos: {
+    icms: { cst: '', csosn: '', origem: '', modalidadeBase: '', vBC: '0.00', pRedBC: '0.00', pICMS: '0.00', vICMS: '0.00' },
+    ipi: { cst: '', cEnq: '', vBC: '0.00', pIPI: '0.00', vIPI: '0.00' },
+    pis: { cst: '', vBC: '0.00', pPIS: '0.00', vPIS: '0.00' },
+    cofins: { cst: '', vBC: '0.00', pCOFINS: '0.00', vCOFINS: '0.00' },
+    ibsCbs: { cst: '', cClassTrib: '', vBC: '0.00', pIBSUF: '0.00', vIBSUF: '0.00', pIBSMun: '0.00', vIBSMun: '0.00', vIBS: '0.00', pCBS: '0.00', vCBS: '0.00' },
+  },
 });
+
+/**
+ * Garante que itens importados ou antigos possuam o contrato completo de tributos
+ * e identificadores estáveis para edição.
+ */
+function withItemDefaults(item, index) {
+  const base = INITIAL_EMPTY_ITEM();
+  const trib = item?.tributos || {};
+  return {
+    ...base,
+    ...item,
+    itemId: item?.itemId || item?.id || base.itemId,
+    item: item?.item || index + 1,
+    tributos: {
+      icms: { ...base.tributos.icms, ...(trib.icms || {}) },
+      ipi: { ...base.tributos.ipi, ...(trib.ipi || {}) },
+      pis: { ...base.tributos.pis, ...(trib.pis || {}) },
+      cofins: { ...base.tributos.cofins, ...(trib.cofins || {}) },
+      ibsCbs: { ...base.tributos.ibsCbs, ...(trib.ibsCbs || {}) },
+    },
+  };
+}
+
+const INPUT_CLS =
+  'w-full px-2 py-1 text-xs bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none';
 
 export default function ProductInvoiceEditor({
   initialData = null,
@@ -102,15 +148,36 @@ export default function ProductInvoiceEditor({
   // Itens
   const [itens, setItens] = useState(
     Array.isArray(initialData?.itens) && initialData.itens.length > 0
-      ? initialData.itens
+      ? initialData.itens.map((it, idx) => withItemDefaults(it, idx))
       : [INITIAL_EMPTY_ITEM()]
   );
+
+  const [expandedItems, setExpandedItems] = useState(() => new Set());
+
+  // Endereços completos de emitente/destinatário
+  const [emitenteEndereco, setEmitenteEndereco] = useState(initialData?.emitente?.endereco || {});
+  const [destinatarioEndereco, setDestinatarioEndereco] = useState(initialData?.destinatario?.endereco || {});
+
+  // Identificação fiscal complementar (preservada do XML ou preenchida manualmente)
+  const [ideExtra, setIdeExtra] = useState({
+    modelo: initialData?.ide?.modelo || initialData?.modelo || '55',
+    cMunFG: initialData?.ide?.cMunFG || '',
+    indFinal: initialData?.ide?.indFinal || '',
+    indPres: initialData?.ide?.indPres || '',
+    indIntermed: initialData?.ide?.indIntermed || '',
+    tpImp: initialData?.ide?.tpImp || '',
+    tpEmis: initialData?.ide?.tpEmis || '',
+    tpAmb: initialData?.ide?.tpAmb ?? initialData?.ide?.ambiente ?? '',
+    procEmi: initialData?.ide?.procEmi || '',
+    verProc: initialData?.ide?.verProc || '',
+  });
 
   // Despesas e Totais
   const [valorFrete, setValorFrete] = useState(initialData?.totais?.valorFrete || '0.00');
   const [valorSeguro, setValorSeguro] = useState(initialData?.totais?.valorSeguro || '0.00');
   const [outrasDespesas, setOutrasDespesas] = useState(initialData?.totais?.outrasDespesas || '0.00');
   const [valorDesconto, setValorDesconto] = useState(initialData?.totais?.valorDesconto || '0.00');
+  const [valorIPI, setValorIPI] = useState(initialData?.totais?.valorIPI || '0.00');
 
   // Painel de Validação
   const [validationResult, setValidationResult] = useState(null);
@@ -188,16 +255,18 @@ export default function ProductInvoiceEditor({
     const seguroClean = cleanDecimalString(valorSeguro || '0');
     const outrasClean = cleanDecimalString(outrasDespesas || '0');
     const descClean = cleanDecimalString(valorDesconto || '0');
+    const ipiClean = cleanDecimalString(valorIPI || '0');
 
     const totals = calculateInvoiceTotals(safeItens, {
       freight: freteClean,
       insurance: seguroClean,
       discount: descClean,
       otherExpenses: outrasClean,
+      ipi: ipiClean,
     });
 
     return totals;
-  }, [itens, valorFrete, valorSeguro, outrasDespesas, valorDesconto]);
+  }, [itens, valorFrete, valorSeguro, outrasDespesas, valorDesconto, valorIPI]);
 
   // Edição granular de campo de item por itemId estável
   const handleItemChange = useCallback((itemId, field, value) => {
@@ -219,6 +288,33 @@ export default function ProductInvoiceEditor({
       })
     );
   }, []);
+
+  // Edição de campo aninhado (tributos, unidades tributáveis, pedido etc.)
+  const handleItemDetailChange = useCallback((itemId, path, value) => {
+    setItens((prevItens) =>
+      prevItens.map((item) => {
+        if (item.itemId !== itemId) return item;
+        const keys = path.split('.');
+        const clone = { ...item };
+        let ref = clone;
+        for (let i = 0; i < keys.length - 1; i++) {
+          ref[keys[i]] = { ...(ref[keys[i]] || {}) };
+          ref = ref[keys[i]];
+        }
+        ref[keys[keys.length - 1]] = value;
+        return clone;
+      })
+    );
+  }, []);
+
+  const toggleItemDetails = (itemId) => {
+    setExpandedItems((prev) => {
+      const next = new Set(prev);
+      if (next.has(itemId)) next.delete(itemId);
+      else next.add(itemId);
+      return next;
+    });
+  };
 
   // Adicionar linha de produto em branco
   const handleAddItem = () => {
@@ -262,18 +358,22 @@ export default function ProductInvoiceEditor({
   // Inserir produto a partir do catálogo modal
   const handleInsertFromCatalog = (product) => {
     const newItem = {
-      itemId: `item-nfe-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      ...INITIAL_EMPTY_ITEM(),
       item: itens.length + 1,
       codigo: product.codigo || '',
       descricao: product.descricao || '',
       ncm: product.ncm || '',
       cfop: destinoOperacao === '3' ? '7101' : product.cfopPadrao || '5101',
       unidade: product.unidadeComercial || 'UN',
+      unidadeTributavel: product.unidadeTributavel || product.unidadeComercial || 'UN',
       quantidade: '1.0000',
+      quantidadeTributavel: '1.0000',
       valorUnitario: cleanDecimalString(product.precoPadrao || '0.00'),
+      valorUnitarioTributavel: cleanDecimalString(product.precoPadrao || '0.00'),
       valorTotal: cleanDecimalString(product.precoPadrao || '0.00'),
       desconto: '0.00',
       observacoes: product.cest ? `CEST: ${product.cest}` : '',
+      cest: product.cest || '',
     };
     setItens((prev) => [...prev, newItem]);
     setCatalogModalOpen(false);
@@ -322,10 +422,21 @@ export default function ProductInvoiceEditor({
       modalidadeFrete,
       informacoesAdicionais,
       isDemo: true,
+      modelo: ideExtra.modelo || '55',
+      ide: {
+        ...ideExtra,
+        finNFe: finalidadeEmissao,
+        idDest: destinoOperacao,
+      },
       emitenteId: selectedCompanyId,
-      emitente,
+      emitente: emitente
+        ? { ...emitente, endereco: { ...(emitente.endereco || {}), ...emitenteEndereco } }
+        : emitente,
       destinatarioId: selectedPersonId,
-      destinatario,
+      destinatario: {
+        ...destinatario,
+        endereco: { ...(destinatario.endereco || {}), ...destinatarioEndereco },
+      },
       itens: itens.map((it, idx) => ({
         ...it,
         item: idx + 1,
@@ -336,7 +447,11 @@ export default function ProductInvoiceEditor({
         valorSeguro: calculatedTotals.valorSeguro,
         valorDesconto: calculatedTotals.valorDesconto,
         outrasDespesas: calculatedTotals.outrasDespesas,
+        valorIPI: calculatedTotals.valorIPI,
         valorTotalNota: calculatedTotals.valorTotalNota,
+      },
+      transporte: {
+        modalidadeFrete,
       },
     };
   }, [
@@ -353,8 +468,11 @@ export default function ProductInvoiceEditor({
     informacoesAdicionais,
     selectedCompanyId,
     emitente,
+    emitenteEndereco,
     selectedPersonId,
     destinatario,
+    destinatarioEndereco,
+    ideExtra,
     itens,
     calculatedTotals,
   ]);
@@ -629,7 +747,81 @@ export default function ProductInvoiceEditor({
               />
             </div>
           </div>
+
+          {/* Identificação fiscal complementar */}
+          <FiscalSelect
+            label="Modelo"
+            value={ideExtra.modelo}
+            onChange={(v) => setIdeExtra((p) => ({ ...p, modelo: v }))}
+            options={[{ value: '55', label: '55 - NF-e' }, { value: '65', label: '65 - NFC-e' }]}
+          />
+          <FiscalField
+            label="Município Fato Gerador (IBGE)"
+            value={ideExtra.cMunFG}
+            onChange={(v) => setIdeExtra((p) => ({ ...p, cMunFG: v }))}
+            mono
+          />
+          <FiscalSelect
+            label="Consumidor Final"
+            value={ideExtra.indFinal}
+            onChange={(v) => setIdeExtra((p) => ({ ...p, indFinal: v }))}
+            options={[{ value: '', label: '—' }, { value: '0', label: '0 - Não' }, { value: '1', label: '1 - Sim' }]}
+          />
+          <FiscalSelect
+            label="Presença do Comprador"
+            value={ideExtra.indPres}
+            onChange={(v) => setIdeExtra((p) => ({ ...p, indPres: v }))}
+            options={[
+              { value: '', label: '—' },
+              { value: '0', label: '0 - Não se aplica' },
+              { value: '1', label: '1 - Presencial' },
+              { value: '2', label: '2 - Internet' },
+              { value: '3', label: '3 - Telefone' },
+              { value: '9', label: '9 - Outros' },
+            ]}
+          />
+          <FiscalSelect
+            label="Intermediação"
+            value={ideExtra.indIntermed}
+            onChange={(v) => setIdeExtra((p) => ({ ...p, indIntermed: v }))}
+            options={[{ value: '', label: '—' }, { value: '0', label: '0 - Sem intermediador' }, { value: '1', label: '1 - Com intermediador' }]}
+          />
+          <FiscalSelect
+            label="Ambiente"
+            value={ideExtra.tpAmb}
+            onChange={(v) => setIdeExtra((p) => ({ ...p, tpAmb: v }))}
+            options={[{ value: '', label: '—' }, { value: '1', label: '1 - Produção' }, { value: '2', label: '2 - Homologação' }]}
+          />
+          <FiscalField
+            label="Tipo de Emissão"
+            value={ideExtra.tpEmis}
+            onChange={(v) => setIdeExtra((p) => ({ ...p, tpEmis: v }))}
+            mono
+          />
+          <FiscalField
+            label="Processo de Emissão"
+            value={ideExtra.procEmi}
+            onChange={(v) => setIdeExtra((p) => ({ ...p, procEmi: v }))}
+            mono
+          />
         </div>
+
+        {/* Endereço completo do emitente */}
+        <details className="rounded-lg border border-gray-200 dark:border-slate-800">
+          <summary className="px-3 py-2 text-xs font-semibold text-gray-700 dark:text-slate-300 cursor-pointer">
+            Endereço completo do emitente
+          </summary>
+          <div className="p-3 grid grid-cols-2 md:grid-cols-4 gap-2">
+            <FiscalField label="Logradouro" value={emitenteEndereco.logradouro} onChange={(v) => setEmitenteEndereco((p) => ({ ...p, logradouro: v }))} className="md:col-span-2" />
+            <FiscalField label="Número" value={emitenteEndereco.numero} onChange={(v) => setEmitenteEndereco((p) => ({ ...p, numero: v }))} />
+            <FiscalField label="Complemento" value={emitenteEndereco.complemento} onChange={(v) => setEmitenteEndereco((p) => ({ ...p, complemento: v }))} />
+            <FiscalField label="Bairro" value={emitenteEndereco.bairro} onChange={(v) => setEmitenteEndereco((p) => ({ ...p, bairro: v }))} />
+            <FiscalField label="CEP" value={emitenteEndereco.cep} onChange={(v) => setEmitenteEndereco((p) => ({ ...p, cep: v }))} mono />
+            <FiscalField label="Cód. IBGE Município" value={emitenteEndereco.cMun} onChange={(v) => setEmitenteEndereco((p) => ({ ...p, cMun: v }))} mono />
+            <FiscalField label="Telefone" value={emitenteEndereco.fone} onChange={(v) => setEmitenteEndereco((p) => ({ ...p, fone: v }))} />
+            <FiscalField label="E-mail" value={emitenteEndereco.email} onChange={(v) => setEmitenteEndereco((p) => ({ ...p, email: v }))} />
+          </div>
+        </details>
       </div>
 
       {/* SEÇÃO B: Destinatário da Mercadoria */}
@@ -752,6 +944,25 @@ export default function ProductInvoiceEditor({
           </div>
         </div>
 
+        {/* Endereço e contato completos do destinatário */}
+        <details className="rounded-lg border border-gray-200 dark:border-slate-800">
+          <summary className="px-3 py-2 text-xs font-semibold text-gray-700 dark:text-slate-300 cursor-pointer">
+            Endereço e contato completos do destinatário
+          </summary>
+          <div className="p-3 grid grid-cols-2 md:grid-cols-4 gap-2">
+            <FiscalField label="Logradouro" value={destinatarioEndereco.logradouro} onChange={(v) => setDestinatarioEndereco((p) => ({ ...p, logradouro: v }))} className="md:col-span-2" />
+            <FiscalField label="Número" value={destinatarioEndereco.numero} onChange={(v) => setDestinatarioEndereco((p) => ({ ...p, numero: v }))} />
+            <FiscalField label="Complemento" value={destinatarioEndereco.complemento} onChange={(v) => setDestinatarioEndereco((p) => ({ ...p, complemento: v }))} />
+            <FiscalField label="Bairro" value={destinatarioEndereco.bairro} onChange={(v) => setDestinatarioEndereco((p) => ({ ...p, bairro: v }))} />
+            <FiscalField label="CEP" value={destinatarioEndereco.cep} onChange={(v) => setDestinatarioEndereco((p) => ({ ...p, cep: v }))} mono />
+            <FiscalField label="Cód. IBGE Município" value={destinatarioEndereco.cMun} onChange={(v) => setDestinatarioEndereco((p) => ({ ...p, cMun: v }))} mono />
+            <FiscalField label="Telefone" value={destinatarioEndereco.fone} onChange={(v) => setDestinatarioEndereco((p) => ({ ...p, fone: v }))} />
+            <FiscalField label="E-mail" value={destinatarioEndereco.email || destinatario.email || ''} onChange={(v) => setDestinatarioEndereco((p) => ({ ...p, email: v }))} />
+            <FiscalField label="País (cód.)" value={destinatarioEndereco.cPais || destinatario.paisCodigo || ''} onChange={(v) => setDestinatarioEndereco((p) => ({ ...p, cPais: v }))} mono />
+            <FiscalField label="País (nome)" value={destinatarioEndereco.xPais || destinatario.pais || ''} onChange={(v) => setDestinatarioEndereco((p) => ({ ...p, xPais: v }))} className="md:col-span-2" />
+          </div>
+        </details>
+
         {/* Checkbox para salvar cliente no catálogo */}
         <div className="pt-2 flex items-center gap-2">
           <input
@@ -821,8 +1032,8 @@ export default function ProductInvoiceEditor({
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-slate-800">
               {itens.map((it, idx) => (
+                <Fragment key={it.itemId}>
                 <tr
-                  key={it.itemId}
                   className="hover:bg-blue-50/40 dark:hover:bg-slate-800/40 transition-colors"
                 >
                   <td className="px-2 py-2 text-center text-gray-500 font-mono text-[11px]">
@@ -930,6 +1141,15 @@ export default function ProductInvoiceEditor({
                     <div className="flex items-center justify-center gap-1">
                       <button
                         type="button"
+                        onClick={() => toggleItemDetails(it.itemId)}
+                        title="Detalhes fiscais do item"
+                        className="p-1 rounded text-gray-500 hover:text-blue-600 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
+                      >
+                        <FontAwesomeIcon icon={expandedItems.has(it.itemId) ? faChevronUp : faChevronDown} className="w-3.5 h-3.5" />
+                      </button>
+
+                      <button
+                        type="button"
                         onClick={() => handleSaveProductToCatalog(it)}
                         title="Salvar produto no catálogo reutilizável"
                         className="p-1 rounded text-gray-500 hover:text-blue-600 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
@@ -957,6 +1177,88 @@ export default function ProductInvoiceEditor({
                     </div>
                   </td>
                 </tr>
+
+                {expandedItems.has(it.itemId) && (
+                  <tr className="bg-blue-50/20 dark:bg-slate-800/40">
+                    <td colSpan={11} className="px-3 py-3">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-[11px] font-bold uppercase text-blue-700 dark:text-blue-300">
+                          <FontAwesomeIcon icon={faLayerGroup} />
+                          Detalhes fiscais do item {idx + 1}
+                        </div>
+
+                        <FiscalGroup title="Produto e Unidades" accent="slate">
+                          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
+                            <FiscalField label="CEST" value={it.cest} onChange={(v) => handleItemDetailChange(it.itemId, 'cest', v)} mono />
+                            <FiscalField label="GTIN Comercial" value={it.cEAN} onChange={(v) => handleItemDetailChange(it.itemId, 'cEAN', v)} mono />
+                            <FiscalField label="GTIN Tributável" value={it.cEANTrib} onChange={(v) => handleItemDetailChange(it.itemId, 'cEANTrib', v)} mono />
+                            <FiscalField label="UN Tributável" value={it.unidadeTributavel} onChange={(v) => handleItemDetailChange(it.itemId, 'unidadeTributavel', v)} mono />
+                            <FiscalField label="Qtd Tributável" value={it.quantidadeTributavel} onChange={(v) => handleItemDetailChange(it.itemId, 'quantidadeTributavel', v)} mono />
+                            <FiscalField label="Valor Unit. Trib." value={it.valorUnitarioTributavel} onChange={(v) => handleItemDetailChange(it.itemId, 'valorUnitarioTributavel', v)} mono />
+                            <FiscalField label="Compõe Total (indTot)" value={it.indicadorComposicaoTotal} onChange={(v) => handleItemDetailChange(it.itemId, 'indicadorComposicaoTotal', v)} mono />
+                            <FiscalField label="Pedido" value={it.pedido} onChange={(v) => handleItemDetailChange(it.itemId, 'pedido', v)} />
+                            <FiscalField label="Item do Pedido" value={it.itemPedido} onChange={(v) => handleItemDetailChange(it.itemId, 'itemPedido', v)} />
+                            <FiscalField label="Info. Adicional" value={it.informacoesAdicionais} onChange={(v) => handleItemDetailChange(it.itemId, 'informacoesAdicionais', v)} className="md:col-span-2" />
+                          </div>
+                        </FiscalGroup>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2">
+                          <FiscalGroup title="ICMS" accent="blue">
+                            <div className="grid grid-cols-2 gap-1.5">
+                              <FiscalField label="CST" value={it.tributos.icms.cst} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.icms.cst', v)} mono />
+                              <FiscalField label="CSOSN" value={it.tributos.icms.csosn} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.icms.csosn', v)} mono />
+                              <FiscalField label="Origem" value={it.tributos.icms.origem} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.icms.origem', v)} mono />
+                              <FiscalField label="Mod. Base" value={it.tributos.icms.modalidadeBase} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.icms.modalidadeBase', v)} mono />
+                              <FiscalField label="Base ICMS" value={it.tributos.icms.vBC} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.icms.vBC', v)} mono />
+                              <FiscalField label="% Redução" value={it.tributos.icms.pRedBC} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.icms.pRedBC', v)} mono />
+                              <FiscalField label="Alíquota %" value={it.tributos.icms.pICMS} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.icms.pICMS', v)} mono />
+                              <FiscalField label="Valor ICMS" value={it.tributos.icms.vICMS} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.icms.vICMS', v)} mono />
+                            </div>
+                          </FiscalGroup>
+
+                          <FiscalGroup title="IPI" accent="blue">
+                            <div className="grid grid-cols-2 gap-1.5">
+                              <FiscalField label="CST" value={it.tributos.ipi.cst} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.ipi.cst', v)} mono />
+                              <FiscalField label="Enquadramento" value={it.tributos.ipi.cEnq} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.ipi.cEnq', v)} mono />
+                              <FiscalField label="Base IPI" value={it.tributos.ipi.vBC} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.ipi.vBC', v)} mono />
+                              <FiscalField label="Alíquota %" value={it.tributos.ipi.pIPI} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.ipi.pIPI', v)} mono />
+                              <FiscalField label="Valor IPI" value={it.tributos.ipi.vIPI} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.ipi.vIPI', v)} mono />
+                            </div>
+                          </FiscalGroup>
+
+                          <FiscalGroup title="PIS / COFINS" accent="blue">
+                            <div className="grid grid-cols-2 gap-1.5">
+                              <FiscalField label="CST PIS" value={it.tributos.pis.cst} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.pis.cst', v)} mono />
+                              <FiscalField label="Base PIS" value={it.tributos.pis.vBC} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.pis.vBC', v)} mono />
+                              <FiscalField label="Alíq. PIS %" value={it.tributos.pis.pPIS} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.pis.pPIS', v)} mono />
+                              <FiscalField label="Valor PIS" value={it.tributos.pis.vPIS} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.pis.vPIS', v)} mono />
+                              <FiscalField label="CST COFINS" value={it.tributos.cofins.cst} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.cofins.cst', v)} mono />
+                              <FiscalField label="Base COFINS" value={it.tributos.cofins.vBC} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.cofins.vBC', v)} mono />
+                              <FiscalField label="Alíq. COFINS %" value={it.tributos.cofins.pCOFINS} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.cofins.pCOFINS', v)} mono />
+                              <FiscalField label="Valor COFINS" value={it.tributos.cofins.vCOFINS} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.cofins.vCOFINS', v)} mono />
+                            </div>
+                          </FiscalGroup>
+
+                          <FiscalGroup title="IBS / CBS" accent="emerald">
+                            <div className="grid grid-cols-2 gap-1.5">
+                              <FiscalField label="CST" value={it.tributos.ibsCbs.cst} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.ibsCbs.cst', v)} mono />
+                              <FiscalField label="Class. Trib." value={it.tributos.ibsCbs.cClassTrib} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.ibsCbs.cClassTrib', v)} mono />
+                              <FiscalField label="Base IBS/CBS" value={it.tributos.ibsCbs.vBC} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.ibsCbs.vBC', v)} mono />
+                              <FiscalField label="% IBS UF" value={it.tributos.ibsCbs.pIBSUF} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.ibsCbs.pIBSUF', v)} mono />
+                              <FiscalField label="Valor IBS UF" value={it.tributos.ibsCbs.vIBSUF} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.ibsCbs.vIBSUF', v)} mono />
+                              <FiscalField label="% IBS Mun" value={it.tributos.ibsCbs.pIBSMun} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.ibsCbs.pIBSMun', v)} mono />
+                              <FiscalField label="Valor IBS Mun" value={it.tributos.ibsCbs.vIBSMun} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.ibsCbs.vIBSMun', v)} mono />
+                              <FiscalField label="Valor IBS" value={it.tributos.ibsCbs.vIBS} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.ibsCbs.vIBS', v)} mono />
+                              <FiscalField label="% CBS" value={it.tributos.ibsCbs.pCBS} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.ibsCbs.pCBS', v)} mono />
+                              <FiscalField label="Valor CBS" value={it.tributos.ibsCbs.vCBS} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.ibsCbs.vCBS', v)} mono />
+                            </div>
+                          </FiscalGroup>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+                </Fragment>
               ))}
             </tbody>
           </table>
@@ -1027,6 +1329,19 @@ export default function ProductInvoiceEditor({
                 className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white font-mono"
               />
             </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
+                Valor do IPI (R$)
+              </label>
+              <input
+                type="text"
+                value={valorIPI}
+                onChange={(e) => setValorIPI(e.target.value)}
+                placeholder="0.00"
+                className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white font-mono"
+              />
+            </div>
           </div>
 
           <div>
@@ -1077,6 +1392,13 @@ export default function ProductInvoiceEditor({
               </div>
             )}
 
+            {decimalCompare(cleanDecimalString(valorIPI), '0.00') > 0 && (
+              <div className="flex justify-between text-gray-600 dark:text-slate-400">
+                <span>(+) IPI:</span>
+                <span className="font-mono">{formatBRL(valorIPI)}</span>
+              </div>
+            )}
+
             {decimalCompare(cleanDecimalString(calculatedTotals.valorDesconto), '0.00') > 0 && (
               <div className="flex justify-between text-emerald-600 dark:text-emerald-400">
                 <span>(-) Desconto Total:</span>
@@ -1093,7 +1415,7 @@ export default function ProductInvoiceEditor({
           </div>
 
           <div className="text-[11px] text-gray-500 dark:text-slate-400 bg-white dark:bg-slate-800 p-2.5 rounded-lg border border-gray-200 dark:border-slate-700">
-            Fórmula SEFAZ: Total = Produtos - Descontos + Frete + Seguro + Outras Despesas.
+            Fórmula SEFAZ: Total = Produtos - Descontos + Frete + Seguro + Outras Despesas + IPI.
           </div>
         </div>
       </div>

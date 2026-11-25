@@ -27,9 +27,13 @@ import AppLayout from '@/components/Layouts/AppLayout';
 import Button from '@/components/buttons/Button';
 import { useAppContext } from '@/context/AppContext';
 import { invoiceRepository } from '@/features/invoiceRepository';
+import { documentRepository } from '@/features/documentRepository';
 import { parseNFeXml } from '@/features/xml/nfeXmlParser';
+import { parseNFSeXml } from '@/features/xml/nfseXmlParser';
+import { detectXmlLayout } from '@/features/xml/xmlLayoutDetector';
 import { validateAccessKey } from '@/features/xml/accessKeyValidator';
 import { mapXmlToInvoice } from '@/features/xml/xmlToInvoiceMapper';
+import { mapNFSeToDocument } from '@/features/xml/nfseToDocumentMapper';
 import { formatBRL } from '@/lib/formatters/currency';
 
 const DEMO_SCENARIOS = [
@@ -176,7 +180,7 @@ export default function ImportarDocumentoPage() {
     setOverallProgress(0);
   };
 
-  const processSingleFile = async (item, existingKeys) => {
+  const processSingleFile = async (item, existingKeys, existingNfseKeys) => {
     if (item.type === 'PDF') {
       return {
         status: 'error',
@@ -190,6 +194,16 @@ export default function ImportarDocumentoPage() {
         return { status: 'error', error: 'Arquivo XML vazio.' };
       }
 
+      const layout = detectXmlLayout(xmlString);
+      if (!layout.success) {
+        return { status: 'error', error: layout.error || 'Layout XML não reconhecido.' };
+      }
+
+      if (layout.tipoFiscal === 'NFSE') {
+        return processNfseFile(xmlString, existingNfseKeys);
+      }
+
+      // NF-e modelo 55 (produtos)
       const parseResult = parseNFeXml(xmlString);
       if (!parseResult.success) {
         return { status: 'error', error: parseResult.error || 'Falha ao analisar estrutura XML.' };
@@ -210,6 +224,7 @@ export default function ImportarDocumentoPage() {
         return {
           status: 'duplicate',
           error: `NF-e já importada anteriormente (Chave: ${extracted.chaveAcesso.substring(0, 15)}...).`,
+          fiscalType: 'NFE',
         };
       }
 
@@ -223,6 +238,7 @@ export default function ImportarDocumentoPage() {
       return {
         status: 'success',
         invoice: savedInvoice,
+        fiscalType: 'NFE',
       };
     } catch (err) {
       return {
@@ -232,16 +248,43 @@ export default function ImportarDocumentoPage() {
     }
   };
 
+  const processNfseFile = async (xmlString, existingNfseKeys) => {
+    const parseResult = parseNFSeXml(xmlString);
+    if (!parseResult.success) {
+      return { status: 'error', error: parseResult.error || 'Falha ao analisar NFS-e.' };
+    }
+
+    const extracted = parseResult.data;
+    const duplicateKey = extracted.chaveAcesso || `nfse-${extracted.nNFSe}`;
+    if (existingNfseKeys.has(duplicateKey)) {
+      return {
+        status: 'duplicate',
+        error: `NFS-e ${extracted.nNFSe || ''} já importada anteriormente.`,
+        fiscalType: 'NFSE',
+      };
+    }
+
+    const documentData = mapNFSeToDocument(extracted);
+    const saved = await documentRepository.create(documentData);
+    existingNfseKeys.add(duplicateKey);
+
+    return { status: 'success', invoice: saved, fiscalType: 'NFSE' };
+  };
+
   const processQueue = async (onlyErrors = false) => {
     const toProcess = fileQueue.filter((f) => (onlyErrors ? f.status === 'error' : f.status === 'pending'));
     if (toProcess.length === 0) return;
 
     setIsProcessing(true);
 
-    // Load existing access keys to detect duplicates
+    // Load existing access keys to detect duplicates (NF-e e NFS-e separadamente)
     const allExisting = await invoiceRepository.list();
     const existingKeys = new Set(
       allExisting.map((inv) => inv.chaveAcesso).filter(Boolean)
+    );
+    const allExistingNfse = await documentRepository.list({ documentType: 'NFSE', limit: 100000 });
+    const existingNfseKeys = new Set(
+      (allExistingNfse.data || []).map((d) => d.chaveAcesso || `nfse-${d.numero}`).filter(Boolean)
     );
 
     const CONCURRENCY = 3;
@@ -260,7 +303,7 @@ export default function ImportarDocumentoPage() {
       );
 
       const results = await Promise.all(
-        chunk.map((item) => processSingleFile(item, existingKeys))
+        chunk.map((item) => processSingleFile(item, existingKeys, existingNfseKeys))
       );
 
       localCompleted += chunk.length;
@@ -276,6 +319,7 @@ export default function ImportarDocumentoPage() {
               status: res.status,
               error: res.error || null,
               invoice: res.invoice || null,
+              fiscalType: res.fiscalType || item.fiscalType || null,
             };
           }
           return item;
@@ -294,7 +338,12 @@ export default function ImportarDocumentoPage() {
     const duplicates = fileQueue.filter((f) => f.status === 'duplicate').length;
     const errors = fileQueue.filter((f) => f.status === 'error').length;
     const pending = fileQueue.filter((f) => f.status === 'pending').length;
-    const successInvoices = fileQueue.filter((f) => f.status === 'success' && f.invoice).map((f) => f.invoice);
+    const successItems = fileQueue.filter((f) => f.status === 'success' && f.invoice);
+    const nfseCount = successItems.filter((f) => f.fiscalType === 'NFSE').length;
+    // A preparação N:M só aceita NF-e de mercadorias elegíveis.
+    const successInvoices = successItems
+      .filter((f) => f.fiscalType !== 'NFSE')
+      .map((f) => f.invoice);
 
     const totalValue = successInvoices.reduce(
       (acc, inv) => acc + parseFloat(inv?.totais?.valorTotalNota || 0),
@@ -305,7 +354,7 @@ export default function ImportarDocumentoPage() {
       0
     );
 
-    return { total, success, duplicates, errors, pending, successInvoices, totalValue, totalItems };
+    return { total, success, duplicates, errors, pending, successInvoices, nfseCount, totalValue, totalItems };
   }, [fileQueue]);
 
   const handleStartPreparation = () => {
@@ -508,7 +557,7 @@ export default function ImportarDocumentoPage() {
                     {item.status === 'success' && (
                       <span className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300">
                         <FontAwesomeIcon icon={faCircleCheck} className="w-3 h-3" />
-                        NF-e {item.invoice?.numero || 'OK'} ({item.invoice?.itens?.length || 0} itens)
+                        {item.fiscalType === 'NFSE' ? 'NFS-e' : 'NF-e'} {item.invoice?.numero || 'OK'} ({item.invoice?.itens?.length || 0} itens)
                       </span>
                     )}
                     {item.status === 'duplicate' && (
@@ -547,7 +596,8 @@ export default function ImportarDocumentoPage() {
                     {stats.success} {stats.success === 1 ? 'nota importada' : 'notas importadas'} com sucesso!
                   </p>
                   <p className="text-emerald-700 dark:text-emerald-300">
-                    Total: {stats.totalItems} itens • Valor acumulado: {formatBRL(stats.totalValue)}
+                    NF-e: {stats.totalItems} itens • Valor acumulado: {formatBRL(stats.totalValue)}
+                    {stats.nfseCount > 0 ? ` • ${stats.nfseCount} NFS-e importada(s)` : ''}
                   </p>
                 </div>
                 <Button buttonType="primary" size="small" onClick={handleStartPreparation}>

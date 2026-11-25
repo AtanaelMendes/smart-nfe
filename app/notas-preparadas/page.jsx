@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faClipboardCheck,
@@ -31,9 +32,12 @@ import { useAppContext } from '@/context/AppContext';
 import { formatBRL } from '@/lib/formatters/currency';
 import { formatDateBR, formatDateTimeBR } from '@/lib/formatters/dates';
 import { preparedInvoiceRepository } from '@/features/preparedInvoiceRepository';
+import { deletePreparedInvoiceWithLinks } from '@/features/preparationCompletionService';
 
-export default function NotasPreparadasPage() {
+function NotasPreparadasInner() {
   const { toast } = useAppContext();
+  const searchParams = useSearchParams();
+  const preparationFilter = searchParams.get('preparationId');
   const [notes, setNotes] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -45,14 +49,16 @@ export default function NotasPreparadasPage() {
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await preparedInvoiceRepository.list();
+      const data = await preparedInvoiceRepository.list(
+        preparationFilter ? { preparationId: preparationFilter } : {}
+      );
       setNotes(data || []);
     } catch {
       toast.error('Erro ao listar notas preparadas.');
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, [toast, preparationFilter]);
 
   useEffect(() => {
     loadData();
@@ -214,7 +220,7 @@ ${detXml}
     if (!noteToDelete) return;
     try {
       setIsDeleting(true);
-      const success = await preparedInvoiceRepository.delete(noteToDelete.id);
+      const success = await deletePreparedInvoiceWithLinks(noteToDelete.id);
       if (success) {
         toast.success(`Nota preparada "${noteToDelete.numero}" excluída com sucesso.`);
         await loadData();
@@ -680,5 +686,13 @@ ${detXml}
         />
       </div>
     </AppLayout>
+  );
+}
+
+export default function NotasPreparadasPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-xs text-slate-500">Carregando notas preparadas...</div>}>
+      <NotasPreparadasInner />
+    </Suspense>
   );
 }

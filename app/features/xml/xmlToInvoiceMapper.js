@@ -157,8 +157,10 @@ export function mapXmlToInvoice(extractedData) {
     razaoSocial: String(emit.xNome || emit.razaoSocial || '').trim(),
     nomeFantasia: String(emit.xFant || emit.nomeFantasia || emit.xNome || emit.razaoSocial || '').trim(),
     inscricaoEstadual: String(emit.IE || emit.inscricaoEstadual || '').trim(),
+    crt: String(emit.CRT || emit.crt || '').trim(),
     uf: String(enderEmit.UF || emit.uf || '').trim().toUpperCase(),
     municipio: String(enderEmit.xMun || emit.municipio || '').trim(),
+    endereco: emit.endereco || (Object.keys(enderEmit).length > 0 ? enderEmit : null),
   };
 
   // 4. Destinatário
@@ -176,6 +178,10 @@ export function mapXmlToInvoice(extractedData) {
     paisCodigo: String(enderDest.cPais || dest.paisCodigo || (isExterior ? '' : 'BR')).trim(),
     uf: destUf || (isExterior ? 'EX' : ''),
     municipio: String(enderDest.xMun || dest.municipio || '').trim(),
+    inscricaoEstadual: String(dest.IE || dest.inscricaoEstadual || '').trim(),
+    indicadorIeDestinatario: String(dest.indicadorIeDestinatario || dest.indIEDest || '').trim(),
+    email: String(dest.email || enderDest.email || '').trim(),
+    endereco: dest.endereco || (Object.keys(enderDest).length > 0 ? enderDest : null),
   };
 
   // 5. Itens e Produtos
@@ -208,52 +214,82 @@ export function mapXmlToInvoice(extractedData) {
     const ipi = imposto.ipi || imposto.IPI || {};
     const pis = imposto.pis || imposto.PIS || {};
     const cofins = imposto.cofins || imposto.COFINS || {};
+    const ibsCbs = imposto.ibsCbs || imposto.IBSCBS || null;
 
     return {
       id: itemId,
       item: Number(nItem),
       codigo: String(prod.cProd ?? prod.codigo ?? '').trim(),
       cEAN: String(prod.cEAN ?? prod.ean ?? 'SEM GTIN').trim(),
+      cEANTrib: String(prod.cEANTrib ?? prod.cEAN ?? 'SEM GTIN').trim(),
       descricao: String(prod.xProd ?? prod.descricao ?? '').trim(),
       ncm: String(prod.NCM ?? prod.ncm ?? '').trim(),
+      cest: String(prod.CEST ?? prod.cest ?? '').trim(),
       cfop: String(prod.CFOP ?? prod.cfop ?? '').trim(),
       unidade: String(prod.uCom ?? prod.unidade ?? '').trim().toUpperCase(),
+      unidadeTributavel: String(prod.uTrib ?? prod.uCom ?? prod.unidade ?? '').trim().toUpperCase(),
       quantidade,
+      quantidadeTributavel: normalizeQuantity(prod.qTrib ?? prod.qCom ?? prod.quantidade),
       valorUnitario,
+      valorUnitarioTributavel: normalizeUnitPrice(prod.vUnTrib ?? prod.vUnCom ?? prod.valorUnitario),
       valorTotal,
       valorFrete,
       valorSeguro,
       valorDesconto,
       outrasDespesas,
+      indicadorComposicaoTotal: String(prod.indTot ?? prod.indicadorComposicaoTotal ?? '').trim(),
+      pedido: prod.xPed || prod.pedido || '',
+      itemPedido: prod.nItemPed || prod.itemPedido || '',
+      informacoesAdicionais: prod.infAdProd || prod.informacoesAdicionais || '',
+      valorItem: prod.vItem !== undefined ? normalizeMonetary(prod.vItem) : undefined,
       situacao: 'pendente',
       modificado: false,
       valorOriginal: null,
       inconsistencias: [],
       tributos: {
         icms: {
-          cst: String(icms.cst || icms.CST || icms.CSOSN || '40').trim(),
+          cst: String(icms.cst || icms.CST || icms.CSOSN || '').trim(),
+          csosn: String(icms.csosn || icms.CSOSN || '').trim(),
+          origem: String(icms.origem ?? icms.orig ?? '').trim(),
+          modalidadeBase: String(icms.modalidadeBase ?? icms.modBC ?? '').trim(),
           vBC: normalizeMonetary(icms.vBC || '0.00'),
+          pRedBC: normalizeMonetary(icms.pRedBC || '0.00'),
           pICMS: normalizeMonetary(icms.pICMS || '0.00'),
           vICMS: normalizeMonetary(icms.vICMS || '0.00'),
         },
         ipi: {
-          cst: String(ipi.cst || ipi.CST || '53').trim(),
+          cst: String(ipi.cst || ipi.CST || '').trim(),
+          cEnq: String(ipi.cEnq || ipi.enquadramento || '').trim(),
           vBC: normalizeMonetary(ipi.vBC || '0.00'),
           pIPI: normalizeMonetary(ipi.pIPI || '0.00'),
           vIPI: normalizeMonetary(ipi.vIPI || '0.00'),
         },
         pis: {
-          cst: String(pis.cst || pis.CST || '08').trim(),
+          cst: String(pis.cst || pis.CST || '').trim(),
           vBC: normalizeMonetary(pis.vBC || '0.00'),
           pPIS: normalizeMonetary(pis.pPIS || '0.00'),
           vPIS: normalizeMonetary(pis.vPIS || '0.00'),
         },
         cofins: {
-          cst: String(cofins.cst || cofins.CST || '08').trim(),
+          cst: String(cofins.cst || cofins.CST || '').trim(),
           vBC: normalizeMonetary(cofins.vBC || '0.00'),
           pCOFINS: normalizeMonetary(cofins.pCOFINS || '0.00'),
           vCOFINS: normalizeMonetary(cofins.vCOFINS || '0.00'),
         },
+        ibsCbs: ibsCbs
+          ? {
+              cst: String(ibsCbs.cst || ibsCbs.CST || '').trim(),
+              cClassTrib: String(ibsCbs.cClassTrib || '').trim(),
+              vBC: normalizeMonetary(ibsCbs.vBC || '0.00'),
+              pIBSUF: normalizeMonetary(ibsCbs.pIBSUF || '0.00'),
+              vIBSUF: normalizeMonetary(ibsCbs.vIBSUF || '0.00'),
+              pIBSMun: normalizeMonetary(ibsCbs.pIBSMun || '0.00'),
+              vIBSMun: normalizeMonetary(ibsCbs.vIBSMun || '0.00'),
+              vIBS: normalizeMonetary(ibsCbs.vIBS || '0.00'),
+              pCBS: normalizeMonetary(ibsCbs.pCBS || '0.00'),
+              vCBS: normalizeMonetary(ibsCbs.vCBS || '0.00'),
+            }
+          : null,
       },
     };
   });
@@ -265,6 +301,7 @@ export function mapXmlToInvoice(extractedData) {
   const valorSeguro = normalizeMonetary(totalObj.valorSeguro ?? totalObj.vSeg ?? '0.00');
   const valorDesconto = normalizeMonetary(totalObj.valorDesconto ?? totalObj.vDesc ?? '0.00');
   const outrasDespesas = normalizeMonetary(totalObj.outrasDespesas ?? totalObj.vOutro ?? '0.00');
+  const valorIPI = normalizeMonetary(totalObj.valorIPI ?? totalObj.vIPI ?? '0.00');
   let valorTotalNota = normalizeMonetary(totalObj.valorTotalNota ?? totalObj.vNF);
 
   // Reconciliação se produtos totalizados estiverem zerados e existirem itens
@@ -283,6 +320,7 @@ export function mapXmlToInvoice(extractedData) {
       valorFrete,
       valorSeguro,
       outrasDespesas,
+      valorIPI,
     });
     valorTotalNota = calc.valorTotalNota;
   }
@@ -310,12 +348,32 @@ export function mapXmlToInvoice(extractedData) {
     serie,
     chaveAcesso,
     tipoDocumento: 'XML',
+    modelo: String(ide.mod || '55'),
     naturezaOperacao: String(ide.natOp || extractedData.naturezaOperacao || 'VENDA DE MERCADORIAS').trim(),
     emissao,
     dataEmissao,
+    dataSaida: ide.dhSaiEnt || '',
+    ambiente: String(ide.tpAmb ?? ''),
     status: 'importado',
     isDemo: false,          // MANDATÓRIO: Impede gravação em LocalStorage e identifica documento real
     isRealImport: true,     // MANDATÓRIO: Destina para memória de sessão e exibe banner
+    ide: {
+      cUF: ide.cUF || '',
+      cNF: ide.cNF || '',
+      cMunFG: ide.cMunFG || '',
+      tpNF: ide.tpNF ?? null,
+      idDest: ide.idDest ?? null,
+      tpAmb: ide.tpAmb ?? null,
+      tpImp: ide.tpImp || '',
+      tpEmis: ide.tpEmis || '',
+      finNFe: ide.finNFe || '',
+      indFinal: ide.indFinal || '',
+      indPres: ide.indPres || '',
+      indIntermed: ide.indIntermed || '',
+      procEmi: ide.procEmi || '',
+      verProc: ide.verProc || '',
+      cDV: ide.cDV || '',
+    },
     emitente,
     destinatario,
     itens,
@@ -325,10 +383,25 @@ export function mapXmlToInvoice(extractedData) {
       valorSeguro,
       valorDesconto,
       outrasDespesas,
+      valorIPI,
+      valorII: normalizeMonetary(totalObj.valorII ?? totalObj.vII ?? '0.00'),
+      valorTotTrib: normalizeMonetary(totalObj.valorTotTrib ?? totalObj.vTotTrib ?? '0.00'),
       valorTotalNota,
       pesoLiquido,
       pesoBruto,
+      ibsCbs: totalObj.ibsCbs || null,
     },
+    transporte: {
+      modalidadeFrete: String(transp.modFrete ?? transp.modalidadeFrete ?? '9'),
+      transportador: transp.transporta || null,
+      volumes: Array.isArray(transp.volumesList)
+        ? transp.volumesList
+        : (transp.volumes ? [transp.volumes] : []),
+    },
+    cobranca: extractedData.cobranca || null,
+    pagamento: extractedData.pagamento || null,
+    informacoesAdicionais: extractedData.informacoesAdicionais || null,
+    assinatura: extractedData.assinatura || null,
     protocolo: prot,
     criadoEm: nowIso,
     atualizadoEm: nowIso,

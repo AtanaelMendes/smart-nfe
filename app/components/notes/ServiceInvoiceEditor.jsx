@@ -19,10 +19,13 @@ import {
   faBolt,
   faShieldHalved,
   faLightbulb,
+  faChevronDown,
+  faChevronUp,
 } from '@fortawesome/free-solid-svg-icons';
 import { catalogsRepository } from '@/features/catalogsRepository';
 import { documentRepository } from '@/features/documentRepository';
 import { validateNFSe } from '@/features/validation/nfseValidator';
+import { FiscalField, FiscalSelect, FiscalGroup } from './FiscalField';
 import { formatBRL } from '@/lib/formatters';
 import { cleanDecimalString, decimalAdd, decimalSubtract, decimalCompare } from '@/lib/calculations/decimal';
 import { useAppContext } from '@/context/AppContext';
@@ -58,11 +61,12 @@ export default function ServiceInvoiceEditor({
   const [selectedCompanyId, setSelectedCompanyId] = useState(initialData?.prestadorId || '');
   const [prestador, setPrestador] = useState(initialData?.prestador || null);
 
-  // Modo Simplificado MEI (ativo se prestador for MEI ou se definido no documento)
+  // Modo Simplificado MEI (ativo se prestador for MEI ou se definido no documento).
+  // Documentos importados de XML abrem em modo completo para preservar retenções do emitente.
   const [modoSimplificadoMei, setModoSimplificadoMei] = useState(
     initialData?.modoSimplificadoMei !== undefined
       ? Boolean(initialData.modoSimplificadoMei)
-      : true
+      : (initialData?.nfse || initialData?.valores?.tributosFederais ? false : true)
   );
 
   // Tomador de Serviços
@@ -122,6 +126,75 @@ export default function ServiceInvoiceEditor({
   const [inss, setInss] = useState(initialData?.valores?.retencoesFederais?.inss || '0.00');
   const [ir, setIr] = useState(initialData?.valores?.retencoesFederais?.ir || '0.00');
   const [csll, setCsll] = useState(initialData?.valores?.retencoesFederais?.csll || '0.00');
+
+  // ---- Campos fiscais preservados do XML / regime / IBS-CBS ----
+  const [showFiscalDetails, setShowFiscalDetails] = useState(false);
+
+  const [regime, setRegime] = useState({
+    opSimpNac:
+      initialData?.prestador?.regimeTributario?.opSimpNac ||
+      initialData?.nfse?.prest?.regimeTributario?.opSimpNac ||
+      '',
+    regApTribSN:
+      initialData?.prestador?.regimeTributario?.regApTribSN ||
+      initialData?.nfse?.prest?.regimeTributario?.regApTribSN ||
+      '',
+    regEspTrib:
+      initialData?.prestador?.regimeTributario?.regEspTrib ||
+      initialData?.nfse?.prest?.regimeTributario?.regEspTrib ||
+      '',
+  });
+
+  const [nfseExtra, setNfseExtra] = useState({
+    cTribNac: initialData?.servico?.cTribNac || initialData?.nfse?.serv?.cTribNac || '',
+    descricaoNacional: initialData?.servico?.descricaoNacional || initialData?.nfse?.xTribNac || '',
+    cNBS: initialData?.servico?.cNBS || initialData?.nfse?.serv?.cNBS || '',
+    descricaoNBS: initialData?.servico?.descricaoNBS || initialData?.nfse?.xNBS || '',
+    cLocPrestacao: initialData?.servico?.cLocPrestacao || initialData?.nfse?.serv?.cLocPrestacao || '',
+    cLocIncid: initialData?.servico?.cLocIncid || initialData?.nfse?.cLocIncid || '',
+    xLocIncid: initialData?.servico?.xLocIncid || initialData?.nfse?.xLocIncid || '',
+    xLocPrestacao: initialData?.servico?.xLocPrestacao || initialData?.nfse?.xLocPrestacao || '',
+    tribISSQN: initialData?.valores?.tribISSQN || initialData?.nfse?.valoresDps?.tribISSQN || '',
+    tpRetISSQN: initialData?.valores?.tpRetISSQN || initialData?.nfse?.valoresDps?.tpRetISSQN || '',
+    valorBaseISS: initialData?.valores?.valorBaseISS || initialData?.nfse?.valoresInf?.vBC || '',
+    valorDeducaoCalculada:
+      initialData?.valores?.valorDeducaoCalculada || initialData?.nfse?.valoresInf?.vCalcDR || '',
+    valorTotalRetido:
+      initialData?.valores?.valorTotalRetido || initialData?.nfse?.valoresInf?.vTotalRet || '',
+  });
+
+  const [federais, setFederais] = useState({
+    cst: initialData?.valores?.tributosFederais?.cst || initialData?.nfse?.valoresDps?.piscofins?.cst || '',
+    base:
+      initialData?.valores?.tributosFederais?.base ||
+      initialData?.nfse?.valoresDps?.piscofins?.vBC ||
+      '',
+    aliquotaPis: initialData?.valores?.tributosFederais?.aliquotaPis || initialData?.nfse?.valoresDps?.piscofins?.pPis || '',
+    aliquotaCofins: initialData?.valores?.tributosFederais?.aliquotaCofins || initialData?.nfse?.valoresDps?.piscofins?.pCofins || '',
+    valorPis: initialData?.valores?.tributosFederais?.valorPis || initialData?.nfse?.valoresDps?.piscofins?.vPis || '',
+    valorCofins: initialData?.valores?.tributosFederais?.valorCofins || initialData?.nfse?.valoresDps?.piscofins?.vCofins || '',
+    tpRetPisCofins:
+      initialData?.valores?.tributosFederais?.tpRetPisCofins ||
+      initialData?.nfse?.valoresDps?.piscofins?.tpRetPisCofins ||
+      '',
+    retido: Boolean(initialData?.valores?.tributosFederais?.retido),
+  });
+
+  const [transparencia, setTransparencia] = useState({
+    federal: initialData?.tributos?.percentuaisAproximados?.federal || '',
+    estadual: initialData?.tributos?.percentuaisAproximados?.estadual || '',
+    municipal: initialData?.tributos?.percentuaisAproximados?.municipal || '',
+    simplesNacional: initialData?.tributos?.percentuaisAproximados?.simplesNacional || '',
+  });
+
+  const [ibscbs, setIbscbs] = useState({
+    finNFSe: initialData?.ibsCbs?.declarado?.finNFSe || '',
+    indFinal: initialData?.ibsCbs?.declarado?.indFinal || '',
+    cIndOp: initialData?.ibsCbs?.declarado?.cIndOp || '',
+    indDest: initialData?.ibsCbs?.declarado?.indDest || '',
+    cst: initialData?.ibsCbs?.declarado?.cst || '',
+    cClassTrib: initialData?.ibsCbs?.declarado?.cClassTrib || '',
+  });
 
   // Validação e Ações
   const [validationResult, setValidationResult] = useState(null);
@@ -288,10 +361,24 @@ export default function ServiceInvoiceEditor({
       ambiente: 'HOMOLOGACAO',
       isDemo: true,
       prestadorId: selectedCompanyId,
-      prestador,
+      prestador: prestador
+        ? { ...prestador, regimeTributario: { ...(prestador.regimeTributario || {}), ...regime } }
+        : prestador,
       tomadorId: selectedPersonId,
       tomador,
-      servico,
+      servico: {
+        ...servico,
+        ...nfseExtra,
+      },
+      tributos: {
+        ...(initialData?.tributos || {}),
+        percentuaisAproximados: transparencia,
+      },
+      ibsCbs: {
+        ...(initialData?.ibsCbs || {}),
+        declarado: ibscbs,
+      },
+      original: initialData?.original || undefined,
       valores: {
         valorBruto: calculatedValues.valorBruto,
         valorDescontoIncondicionado: calculatedValues.valorDescontoIncondicionado,
@@ -300,6 +387,15 @@ export default function ServiceInvoiceEditor({
         issRetido,
         aliquotaIss: cleanDecimalString(aliquotaIss || '0.00'),
         valorIssRetido: issRetido ? cleanDecimalString(valorIssRetido || '0.00') : '0.00',
+        valorBaseISS: nfseExtra.valorBaseISS,
+        valorDeducaoCalculada: nfseExtra.valorDeducaoCalculada,
+        valorTotalRetido: nfseExtra.valorTotalRetido,
+        tribISSQN: nfseExtra.tribISSQN,
+        tpRetISSQN: nfseExtra.tpRetISSQN,
+        tributosFederais: {
+          ...federais,
+          retido: modoSimplificadoMei ? false : federais.retido,
+        },
         retencoesFederais: modoSimplificadoMei
           ? { pis: '0.00', cofins: '0.00', inss: '0.00', ir: '0.00', csll: '0.00' }
           : {
@@ -320,11 +416,16 @@ export default function ServiceInvoiceEditor({
     competencia,
     dataPrevistaEmissao,
     prestador,
+    regime,
     modoSimplificadoMei,
     selectedCompanyId,
     selectedPersonId,
     tomador,
     servico,
+    nfseExtra,
+    transparencia,
+    ibscbs,
+    federais,
     calculatedValues,
     issRetido,
     aliquotaIss,
@@ -334,6 +435,7 @@ export default function ServiceInvoiceEditor({
     inss,
     ir,
     csll,
+    initialData,
   ]);
 
   // Validar formulário
@@ -561,6 +663,23 @@ export default function ServiceInvoiceEditor({
             </div>
           </div>
         </div>
+
+        {/* Regime tributário do prestador */}
+        <div className="pt-2 border-t border-gray-100 dark:border-slate-800 grid grid-cols-1 sm:grid-cols-3 gap-2">
+          <FiscalSelect
+            label="Opção Simples Nacional (opSimpNac)"
+            value={regime.opSimpNac}
+            onChange={(v) => setRegime((p) => ({ ...p, opSimpNac: v }))}
+            options={[
+              { value: '', label: '—' },
+              { value: '1', label: '1 - Não optante' },
+              { value: '2', label: '2 - Optante MEI' },
+              { value: '3', label: '3 - Optante ME/EPP' },
+            ]}
+          />
+          <FiscalField label="Regime Apuração SN" value={regime.regApTribSN} onChange={(v) => setRegime((p) => ({ ...p, regApTribSN: v }))} mono />
+          <FiscalField label="Regime Especial (regEspTrib)" value={regime.regEspTrib} onChange={(v) => setRegime((p) => ({ ...p, regEspTrib: v }))} mono />
+        </div>
       </div>
 
       {/* SEÇÃO B: Tomador de Serviços */}
@@ -761,6 +880,13 @@ export default function ServiceInvoiceEditor({
               className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500"
             />
           </div>
+
+          <FiscalField label="Código NBS" value={nfseExtra.cNBS} onChange={(v) => setNfseExtra((p) => ({ ...p, cNBS: v }))} mono />
+          <FiscalField label="Descrição Nacional (xTribNac)" value={nfseExtra.descricaoNacional} onChange={(v) => setNfseExtra((p) => ({ ...p, descricaoNacional: v }))} />
+          <FiscalField label="Descrição NBS" value={nfseExtra.descricaoNBS} onChange={(v) => setNfseExtra((p) => ({ ...p, descricaoNBS: v }))} />
+          <FiscalField label="Cód. Local Prestação (IBGE)" value={nfseExtra.cLocPrestacao} onChange={(v) => setNfseExtra((p) => ({ ...p, cLocPrestacao: v }))} mono />
+          <FiscalField label="Cód. Local Incidência (IBGE)" value={nfseExtra.cLocIncid} onChange={(v) => setNfseExtra((p) => ({ ...p, cLocIncid: v }))} mono />
+          <FiscalField label="Município Incidência" value={nfseExtra.xLocIncid} onChange={(v) => setNfseExtra((p) => ({ ...p, xLocIncid: v }))} />
         </div>
       </div>
 
@@ -944,6 +1070,94 @@ export default function ServiceInvoiceEditor({
             <span>Padrão Nacional de NFS-e (Receita Federal / CNM).</span>
           </div>
         </div>
+      </div>
+
+      {/* SEÇÃO E: Campos fiscais completos preservados do XML */}
+      <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-xl p-5 shadow-xs space-y-3">
+        <button
+          type="button"
+          onClick={() => setShowFiscalDetails((v) => !v)}
+          className="w-full flex items-center justify-between text-sm font-bold text-gray-900 dark:text-white"
+        >
+          <span className="flex items-center gap-2">
+            <FontAwesomeIcon icon={faSliders} className="text-emerald-600" />
+            E. Campos fiscais completos da NFS-e (ISS, PIS/COFINS, Transparência e IBS/CBS)
+          </span>
+          <FontAwesomeIcon icon={showFiscalDetails ? faChevronUp : faChevronDown} className="text-gray-400" />
+        </button>
+
+        {showFiscalDetails && (
+          <div className="space-y-2 pt-2 border-t border-gray-100 dark:border-slate-800">
+            <FiscalGroup title="ISS e Base de Cálculo" accent="emerald">
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
+                <FiscalField label="Base ISS (vBC)" value={nfseExtra.valorBaseISS} onChange={(v) => setNfseExtra((p) => ({ ...p, valorBaseISS: v }))} mono />
+                <FiscalField label="Dedução Calculada (vCalcDR)" value={nfseExtra.valorDeducaoCalculada} onChange={(v) => setNfseExtra((p) => ({ ...p, valorDeducaoCalculada: v }))} mono />
+                <FiscalField label="Total Retido (vTotalRet)" value={nfseExtra.valorTotalRetido} onChange={(v) => setNfseExtra((p) => ({ ...p, valorTotalRetido: v }))} mono />
+                <FiscalField label="Alíquota ISS %" value={aliquotaIss} onChange={setAliquotaIss} mono />
+                <FiscalField label="Tributação ISS (tribISSQN)" value={nfseExtra.tribISSQN} onChange={(v) => setNfseExtra((p) => ({ ...p, tribISSQN: v }))} mono />
+                <FiscalField label="Retenção ISS (tpRetISSQN)" value={nfseExtra.tpRetISSQN} onChange={(v) => setNfseExtra((p) => ({ ...p, tpRetISSQN: v }))} mono />
+              </div>
+            </FiscalGroup>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              <FiscalGroup title="PIS / COFINS (calculados)" accent="blue">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  <FiscalField label="CST" value={federais.cst} onChange={(v) => setFederais((p) => ({ ...p, cst: v }))} mono />
+                  <FiscalField label="Base PIS/COFINS" value={federais.base} onChange={(v) => setFederais((p) => ({ ...p, base: v }))} mono />
+                  <FiscalField label="Alíquota PIS %" value={federais.aliquotaPis} onChange={(v) => setFederais((p) => ({ ...p, aliquotaPis: v }))} mono />
+                  <FiscalField label="Alíquota COFINS %" value={federais.aliquotaCofins} onChange={(v) => setFederais((p) => ({ ...p, aliquotaCofins: v }))} mono />
+                  <FiscalField label="Valor PIS" value={federais.valorPis} onChange={(v) => setFederais((p) => ({ ...p, valorPis: v }))} mono />
+                  <FiscalField label="Valor COFINS" value={federais.valorCofins} onChange={(v) => setFederais((p) => ({ ...p, valorCofins: v }))} mono />
+                  <FiscalField label="Indicador Retenção" value={federais.tpRetPisCofins} onChange={(v) => setFederais((p) => ({ ...p, tpRetPisCofins: v }))} mono />
+                  <label className="flex items-end gap-1.5 pb-1 text-[11px] text-gray-600 dark:text-slate-300">
+                    <input
+                      type="checkbox"
+                      checked={federais.retido}
+                      onChange={(e) => setFederais((p) => ({ ...p, retido: e.target.checked }))}
+                      className="w-3.5 h-3.5 rounded text-emerald-600"
+                    />
+                    Efetivamente retido
+                  </label>
+                </div>
+              </FiscalGroup>
+
+              <FiscalGroup title="Transparência Tributária (%)" accent="slate">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  <FiscalField label="Federal" value={transparencia.federal} onChange={(v) => setTransparencia((p) => ({ ...p, federal: v }))} mono />
+                  <FiscalField label="Estadual" value={transparencia.estadual} onChange={(v) => setTransparencia((p) => ({ ...p, estadual: v }))} mono />
+                  <FiscalField label="Municipal" value={transparencia.municipal} onChange={(v) => setTransparencia((p) => ({ ...p, municipal: v }))} mono />
+                  <FiscalField label="Simples Nacional (pTotTribSN)" value={transparencia.simplesNacional} onChange={(v) => setTransparencia((p) => ({ ...p, simplesNacional: v }))} mono />
+                </div>
+              </FiscalGroup>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              <FiscalGroup title="IBS / CBS declarado na DPS" accent="emerald">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                  <FiscalField label="Finalidade (finNFSe)" value={ibscbs.finNFSe} onChange={(v) => setIbscbs((p) => ({ ...p, finNFSe: v }))} mono />
+                  <FiscalField label="Consumidor Final" value={ibscbs.indFinal} onChange={(v) => setIbscbs((p) => ({ ...p, indFinal: v }))} mono />
+                  <FiscalField label="Indicador Operação" value={ibscbs.cIndOp} onChange={(v) => setIbscbs((p) => ({ ...p, cIndOp: v }))} mono />
+                  <FiscalField label="Indicador Destinatário" value={ibscbs.indDest} onChange={(v) => setIbscbs((p) => ({ ...p, indDest: v }))} mono />
+                  <FiscalField label="CST" value={ibscbs.cst} onChange={(v) => setIbscbs((p) => ({ ...p, cst: v }))} mono />
+                  <FiscalField label="Classificação Tributária" value={ibscbs.cClassTrib} onChange={(v) => setIbscbs((p) => ({ ...p, cClassTrib: v }))} mono />
+                </div>
+              </FiscalGroup>
+
+              {initialData?.ibsCbs?.apurado && (
+                <FiscalGroup title="IBS / CBS apurado (somente consulta)" accent="slate">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-[11px] font-mono text-gray-700 dark:text-slate-300">
+                    <span>Base: {initialData.ibsCbs.apurado.vBC || '—'}</span>
+                    <span>vIBS: {initialData.ibsCbs.apurado.vIBS || '—'}</span>
+                    <span>vCBS: {initialData.ibsCbs.apurado.vCBS || '—'}</span>
+                    <span>Local: {initialData.ibsCbs.apurado.xLocalidadeIncid || '—'}</span>
+                    <span>Tot. NF: {initialData.ibsCbs.apurado.totais?.vTotNF || '—'}</span>
+                    <span>Total CBS: {initialData.ibsCbs.apurado.totais?.vCBS || '—'}</span>
+                  </div>
+                </FiscalGroup>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* BARRA DE AÇÕES FIXA INFERIOR */}

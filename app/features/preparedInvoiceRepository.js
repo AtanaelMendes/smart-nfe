@@ -158,6 +158,11 @@ export const preparedInvoiceRepository = {
       });
     }
 
+    // 2b. Filtro por preparação de origem
+    if (filters.preparationId) {
+      list = list.filter((p) => p.preparationId === filters.preparationId);
+    }
+
     // 3. Filtro por status
     if (filters.status && filters.status !== 'todos' && filters.status !== 'all') {
       list = list.filter((p) => p.status === filters.status);
