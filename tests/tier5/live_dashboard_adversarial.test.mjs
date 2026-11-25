@@ -2,38 +2,67 @@
  * SmartNFe — Tier 5 Adversarial Test Suite: Live Dashboard Stress & Surface Challenge
  *
  * Verificações adversariais:
- * 1. Protocol & Redirection: HTTP 200, ausência de redirecionamentos (301/302/307/308 para /login),
- *    diversos headers Accept, User-Agent, cookies arbitrários e parâmetros maliciosos.
+ * 1. Protocol & Redirection: rota privada sem sessão redireciona para /login;
+ *    com sessão assinada válida responde HTTP 200 sob headers, User-Agents e
+ *    parâmetros maliciosos, sem loop de redirecionamento.
  * 2. Visual Component Inspection: Badge "Modo Demonstração", 5 menus raiz da Sidebar,
  *    5 cards de KPIs, 5 botões de carga rápida de cenários demo, tabela recente com 7 colunas.
  * 3. Concurrency & Stress: Rajadas sequenciais e concorrentes sem vazamento de memória ou travamento.
  * 4. Runtime Integrity: Ausência de banners de erro do Next.js, scripts de redirecionamento ou falhas SSR.
  *
- * Execução: node --no-warnings --test tests/tier5/live_dashboard_adversarial.test.mjs
+ * Execução (com servidor em :3000): node --no-warnings --test tests/tier5/live_dashboard_adversarial.test.mjs
  */
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+
+import { SESSION_COOKIE } from '../../app/lib/auth/config.js';
+import { createSessionToken } from '../../app/lib/auth/session.js';
 
 const BASE_URL = 'http://localhost:3000/dashboard';
+const LOGIN_URL = 'http://localhost:3000/login';
+
+function loadAuthSecret() {
+  if (process.env.AUTH_SECRET) return process.env.AUTH_SECRET;
+  try {
+    const content = readFileSync(new URL('../../.env.local', import.meta.url), 'utf-8');
+    return content.match(/^AUTH_SECRET=(.+)$/m)?.[1]?.trim() || '';
+  } catch {
+    return '';
+  }
+}
+
+const AUTH_SECRET = loadAuthSecret();
+const SESSION_TOKEN = AUTH_SECRET
+  ? await createSessionToken(
+      { sub: 'atanaelmendes', name: 'Atanael Mendes' },
+      { secret: AUTH_SECRET, ttlSeconds: 3600 }
+    )
+  : '';
+const AUTH_COOKIE = SESSION_TOKEN ? `${SESSION_COOKIE}=${SESSION_TOKEN}` : '';
+const AUTH_HEADERS = AUTH_COOKIE ? { Cookie: AUTH_COOKIE } : {};
+
+function withAuth(headers = {}) {
+  return { ...headers, ...AUTH_HEADERS };
+}
 
 describe('Tier 5 Challenge: Protocol & Redirection Hardening', () => {
-  it('GET /dashboard com redirect manual retorna HTTP 200 sem qualquer header Location para /login', async () => {
-    const res = await fetch(BASE_URL, {
-      redirect: 'manual',
-    });
+  it('GET /dashboard sem sessão redireciona para /login e com sessão retorna HTTP 200', async () => {
+    const anonymous = await fetch(BASE_URL, { redirect: 'manual' });
+    assert.strictEqual(anonymous.status, 307, 'Acesso sem sessão deve ser bloqueado');
+    assert.match(
+      anonymous.headers.get('location') || '',
+      /\/login$/,
+      'Acesso sem sessão deve redirecionar para /login'
+    );
 
-    assert.strictEqual(
-      res.status,
-      200,
-      `Esperado HTTP 200 em acesso direto, recebido ${res.status}`
-    );
-    const location = res.headers.get('location');
-    assert.strictEqual(
-      location,
-      null,
-      `Header Location inesperado detectado: ${location}`
-    );
+    const authenticated = await fetch(BASE_URL, {
+      redirect: 'manual',
+      headers: withAuth(),
+    });
+    assert.strictEqual(authenticated.status, 200, 'Sessão válida deve acessar o dashboard');
+    assert.strictEqual(authenticated.headers.get('location'), null);
   });
 
   it('Responde HTTP 200 sob diversos cabeçalhos Accept e compressão', async () => {
@@ -47,7 +76,7 @@ describe('Tier 5 Challenge: Protocol & Redirection Hardening', () => {
 
     for (const accept of acceptHeaders) {
       const res = await fetch(BASE_URL, {
-        headers: { Accept: accept },
+        headers: withAuth({ Accept: accept }),
         redirect: 'manual',
       });
       assert.strictEqual(
@@ -69,7 +98,7 @@ describe('Tier 5 Challenge: Protocol & Redirection Hardening', () => {
 
     for (const ua of userAgents) {
       const res = await fetch(BASE_URL, {
-        headers: { 'User-Agent': ua },
+        headers: withAuth({ 'User-Agent': ua }),
         redirect: 'manual',
       });
       assert.strictEqual(
@@ -80,7 +109,7 @@ describe('Tier 5 Challenge: Protocol & Redirection Hardening', () => {
     }
   });
 
-  it('Resiste a parâmetros de URL adversariais sem redirecionar para /login', async () => {
+  it('Resiste a parâmetros de URL adversariais sem redirecionar novamente', async () => {
     const queries = [
       '?redirect=/login',
       '?auth=false',
@@ -94,7 +123,7 @@ describe('Tier 5 Challenge: Protocol & Redirection Hardening', () => {
 
     for (const q of queries) {
       const target = `${BASE_URL}${q}`;
-      const res = await fetch(target, { redirect: 'manual' });
+      const res = await fetch(target, { redirect: 'manual', headers: withAuth() });
       assert.strictEqual(
         res.status,
         200,
@@ -110,12 +139,13 @@ describe('Tier 5 Challenge: Protocol & Redirection Hardening', () => {
     }
   });
 
-  it('Resiste a cookies arbitrários e de sessão sem redirecionar para login', async () => {
+  it('Rejeita cookies arbitrários sem sessão válida e aceita a sessão assinada', async () => {
     const testCookies = [
       'auth=false; logged_in=0',
       'session=null; jwt=expired_token_123',
       'user=guest; role=public',
       'authToken=deleted; isAuthenticated=false',
+      `${SESSION_COOKIE}=token- adulterado`,
     ];
 
     for (const cookie of testCookies) {
@@ -123,20 +153,26 @@ describe('Tier 5 Challenge: Protocol & Redirection Hardening', () => {
         headers: { Cookie: cookie },
         redirect: 'manual',
       });
-      assert.strictEqual(
-        res.status,
-        200,
-        `Cookie "${cookie}" provocou status ${res.status}`
+      assert.strictEqual(res.status, 307, `Cookie "${cookie}" deveria ser rejeitado`);
+      assert.match(
+        res.headers.get('location') || '',
+        /\/login$/,
+        `Cookie "${cookie}" deveria redirecionar para /login`
       );
-      const loc = res.headers.get('location');
-      assert.strictEqual(loc, null, `Cookie "${cookie}" redirecionou para ${loc}`);
     }
+
+    const authenticated = await fetch(BASE_URL, {
+      headers: withAuth(),
+      redirect: 'manual',
+    });
+    assert.strictEqual(authenticated.status, 200);
   });
 
   it('Requisições HEAD respondem com integridade sem quebrar o servidor', async () => {
     const res = await fetch(BASE_URL, {
       method: 'HEAD',
       redirect: 'manual',
+      headers: withAuth(),
     });
     // Next.js suporta HEAD nativamente ou retorna 200
     assert.ok(
@@ -144,13 +180,27 @@ describe('Tier 5 Challenge: Protocol & Redirection Hardening', () => {
       `HEAD retornou status inesperado ${res.status}`
     );
   });
+
+  it('A tela de login permanece pública e não exige sessão', async () => {
+    const res = await fetch(LOGIN_URL, { redirect: 'manual' });
+    assert.strictEqual(res.status, 200);
+    const html = await res.text();
+    assert.ok(html.includes('Acesse sua conta'), 'Formulário de login deve ser renderizado');
+    assert.ok(html.includes('Manter conectado'), 'Opção de manter conectado deve existir');
+  });
+
+  it('A tela de login redireciona usuários já autenticados para /dashboard', async () => {
+    const res = await fetch(LOGIN_URL, { redirect: 'manual', headers: withAuth() });
+    assert.strictEqual(res.status, 307);
+    assert.match(res.headers.get('location') || '', /\/dashboard$/);
+  });
 });
 
 describe('Tier 5 Challenge: Live HTML & Visual Components Rendering', () => {
   let htmlContent = '';
 
   it('Carrega HTML completo da rota /dashboard', async () => {
-    const res = await fetch(BASE_URL);
+    const res = await fetch(BASE_URL, { headers: withAuth() });
     assert.strictEqual(res.status, 200);
     htmlContent = await res.text();
     assert.ok(htmlContent.length > 5000, `Payload HTML muito curto: ${htmlContent.length} bytes`);
@@ -301,7 +351,7 @@ describe('Tier 5 Challenge: Concurrency & Burst Stress Resistance', () => {
 
     for (let i = 0; i < iterations; i++) {
       const start = performance.now();
-      const res = await fetch(BASE_URL, { cache: 'no-store' });
+      const res = await fetch(BASE_URL, { cache: 'no-store', headers: withAuth() });
       const duration = performance.now() - start;
       latencies.push(duration);
 
@@ -331,7 +381,7 @@ describe('Tier 5 Challenge: Concurrency & Burst Stress Resistance', () => {
     const concurrency = 15;
     const requests = Array.from({ length: concurrency }, (_, idx) => {
       const start = performance.now();
-      return fetch(`${BASE_URL}?burst=${idx}`, { cache: 'no-store' })
+      return fetch(`${BASE_URL}?burst=${idx}`, { cache: 'no-store', headers: withAuth() })
         .then(async (res) => ({
           idx,
           status: res.status,
@@ -357,7 +407,7 @@ describe('Tier 5 Challenge: Concurrency & Burst Stress Resistance', () => {
   });
 
   it('Verificação pós-estresse: servidor permanece estável e responsivo', async () => {
-    const res = await fetch(BASE_URL);
+    const res = await fetch(BASE_URL, { headers: withAuth() });
     assert.strictEqual(res.status, 200, 'Servidor pós-estresse não respondeu 200');
     const text = await res.text();
     assert.ok(text.includes('Painel Operacional'), 'Página danificada após estresse');
@@ -366,7 +416,7 @@ describe('Tier 5 Challenge: Concurrency & Burst Stress Resistance', () => {
 
 describe('Tier 5 Challenge: Client Redirection & Runtime Error Probing', () => {
   it('HTML não contém meta tag de refresh redirecionando para login', async () => {
-    const res = await fetch(BASE_URL);
+    const res = await fetch(BASE_URL, { headers: withAuth() });
     const html = await res.text();
     assert.doesNotMatch(
       html,
@@ -376,7 +426,7 @@ describe('Tier 5 Challenge: Client Redirection & Runtime Error Probing', () => {
   });
 
   it('HTML não contém scripts embutidos com redirect forçado para login', async () => {
-    const res = await fetch(BASE_URL);
+    const res = await fetch(BASE_URL, { headers: withAuth() });
     const html = await res.text();
     assert.doesNotMatch(
       html,
@@ -386,7 +436,7 @@ describe('Tier 5 Challenge: Client Redirection & Runtime Error Probing', () => {
   });
 
   it('HTML não apresenta banners ou traços de erro do Next.js / React', async () => {
-    const res = await fetch(BASE_URL);
+    const res = await fetch(BASE_URL, { headers: withAuth() });
     const html = await res.text();
 
     const errorSignatures = [
