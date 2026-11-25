@@ -352,6 +352,29 @@ export function formatParserErrorMessage(rawErrorText) {
 // =========================================================================
 
 /**
+ * Extrai um grupo de endereço (enderEmit/enderDest/enderNac) preservando todos os campos.
+ * @param {Element|null} node
+ * @returns {Object|null}
+ */
+function readEnderecoNode(node) {
+  if (!node) return null;
+  return {
+    cMun: getTextContent(node, 'cMun'),
+    xMun: getTextContent(node, 'xMun'),
+    uf: getTextContent(node, 'UF'),
+    cep: getTextContent(node, 'CEP'),
+    logradouro: getTextContent(node, 'xLgr'),
+    numero: getTextContent(node, 'nro'),
+    complemento: getTextContent(node, 'xCpl'),
+    bairro: getTextContent(node, 'xBairro'),
+    cPais: getTextContent(node, 'cPais'),
+    xPais: getTextContent(node, 'xPais'),
+    fone: getTextContent(node, 'fone'),
+    email: getTextContent(node, 'email'),
+  };
+}
+
+/**
  * Realiza o parsing completo de uma string XML de NF-e modelo 55.
  *
  * @param {string} xmlString Conteúdo bruto do arquivo XML
@@ -485,9 +508,20 @@ export function parseNFeXml(xmlString, options = {}) {
   const serie = getTextContent(ide, 'serie', '1');
   const nNF = getTextContent(ide, 'nNF');
   const dhEmi = getTextContent(ide, 'dhEmi') || getTextContent(ide, 'dEmi');
+  const dhSaiEnt = getTextContent(ide, 'dhSaiEnt') || getTextContent(ide, 'dSaiEnt');
   const tpNF = parseInt(getTextContent(ide, 'tpNF', '1'), 10);
   const idDest = parseInt(getTextContent(ide, 'idDest', '1'), 10);
   const tpAmb = parseInt(getTextContent(ide, 'tpAmb', '1'), 10);
+  const cMunFG = getTextContent(ide, 'cMunFG');
+  const tpImp = getTextContent(ide, 'tpImp');
+  const tpEmis = getTextContent(ide, 'tpEmis');
+  const cDV = getTextContent(ide, 'cDV');
+  const finNFe = getTextContent(ide, 'finNFe');
+  const indFinal = getTextContent(ide, 'indFinal');
+  const indPres = getTextContent(ide, 'indPres');
+  const indIntermed = getTextContent(ide, 'indIntermed');
+  const procEmi = getTextContent(ide, 'procEmi');
+  const verProc = getTextContent(ide, 'verProc');
 
   // 5. Extração do nó <emit> (Emitente)
   const emit = findDirectChild(infNFe, 'emit') || findFirstElement(infNFe, 'emit');
@@ -498,6 +532,8 @@ export function parseNFeXml(xmlString, options = {}) {
   const enderEmit = emit ? (findDirectChild(emit, 'enderEmit') || findFirstElement(emit, 'enderEmit')) : null;
   const emitUf = enderEmit ? getTextContent(enderEmit, 'UF') : '';
   const emitMun = enderEmit ? getTextContent(enderEmit, 'xMun') : '';
+  const emitCrt = getTextContent(emit, 'CRT');
+  const emitEndereco = readEnderecoNode(enderEmit);
 
   // 6. Extração do nó <dest> (Destinatário)
   const dest = findDirectChild(infNFe, 'dest') || findFirstElement(infNFe, 'dest');
@@ -510,6 +546,9 @@ export function parseNFeXml(xmlString, options = {}) {
   const destMun = enderDest ? getTextContent(enderDest, 'xMun') : '';
   const destPais = enderDest ? getTextContent(enderDest, 'xPais', 'Brasil') : 'Brasil';
   const destPaisCod = enderDest ? getTextContent(enderDest, 'cPais', '1058') : '1058';
+  const destIndIeDest = getTextContent(dest, 'indIEDest');
+  const destEmail = getTextContent(dest, 'email');
+  const destEndereco = readEnderecoNode(enderDest);
 
   // 7. Extração dos nós <det> (Itens de Produtos)
   const detList = findDirectChildren(infNFe, 'det');
@@ -532,11 +571,17 @@ export function parseNFeXml(xmlString, options = {}) {
     const cEAN = getTextContent(prod, 'cEAN', 'SEM GTIN');
     const xProd = getTextContent(prod, 'xProd');
     const ncm = getTextContent(prod, 'NCM');
+    const cest = getTextContent(prod, 'CEST');
     const cfop = getTextContent(prod, 'CFOP');
     const uCom = getTextContent(prod, 'uCom');
     const qCom = cleanDecimal(getTextContent(prod, 'qCom', '0.0000'), '0.0000');
     const vUnCom = cleanDecimal(getTextContent(prod, 'vUnCom', '0.0000'), '0.0000');
     const vProd = cleanDecimal(getTextContent(prod, 'vProd', '0.00'), '0.00');
+    const indTot = getTextContent(prod, 'indTot', '1');
+    const xPed = getTextContent(prod, 'xPed');
+    const nItemPed = getTextContent(prod, 'nItemPed');
+    const infAdProd = getTextContent(detEl, 'infAdProd');
+    const vItem = cleanDecimal(getTextContent(detEl, 'vItem', '0.00'), '0.00');
 
     const cEANTrib = getTextContent(prod, 'cEANTrib', 'SEM GTIN');
     const uTrib = getTextContent(prod, 'uTrib', uCom);
@@ -550,20 +595,26 @@ export function parseNFeXml(xmlString, options = {}) {
 
     // Impostos do item
     const imposto = findDirectChild(detEl, 'imposto') || findFirstElement(detEl, 'imposto');
-    let icmsData = { cst: '', orig: '0', vBC: '0.00', pICMS: '0.00', vICMS: '0.00' };
-    let ipiData = { cst: '', vBC: '0.00', pIPI: '0.00', vIPI: '0.00' };
+    let icmsData = { cst: '', csosn: '', orig: '', modBC: '', vBC: '0.00', pRedBC: '0.00', pICMS: '0.00', vICMS: '0.00' };
+    let ipiData = { cst: '', cEnq: '', vBC: '0.00', pIPI: '0.00', vIPI: '0.00' };
     let pisData = { cst: '', vBC: '0.00', pPIS: '0.00', vPIS: '0.00' };
     let cofinsData = { cst: '', vBC: '0.00', pCOFINS: '0.00', vCOFINS: '0.00' };
+    let ibsCbsData = null;
 
     if (imposto) {
       const icms = findFirstElement(imposto, 'ICMS');
       if (icms) {
         const icmsChildren = icms.children || [];
         const icmsGroup = icmsChildren.length > 0 ? icmsChildren[0] : icms;
+        const cstRaw = getTextContent(icmsGroup, 'CST', '');
+        const csosnRaw = getTextContent(icmsGroup, 'CSOSN', '');
         icmsData = {
-          cst: getTextContent(icmsGroup, 'CST') || getTextContent(icmsGroup, 'CSOSN', ''),
-          orig: getTextContent(icmsGroup, 'orig', '0'),
+          cst: cstRaw || csosnRaw,
+          csosn: csosnRaw,
+          orig: getTextContent(icmsGroup, 'orig', ''),
+          modBC: getTextContent(icmsGroup, 'modBC', ''),
           vBC: cleanDecimal(getTextContent(icmsGroup, 'vBC', '0.00'), '0.00'),
+          pRedBC: cleanDecimal(getTextContent(icmsGroup, 'pRedBC', '0.00'), '0.00'),
           pICMS: cleanDecimal(getTextContent(icmsGroup, 'pICMS', '0.00'), '0.00'),
           vICMS: cleanDecimal(getTextContent(icmsGroup, 'vICMS', '0.00'), '0.00'),
         };
@@ -571,9 +622,10 @@ export function parseNFeXml(xmlString, options = {}) {
 
       const ipi = findFirstElement(imposto, 'IPI');
       if (ipi) {
-        const ipiTrib = findFirstElement(ipi, 'IPITrib') || findFirstElement(ipi, 'IPINT') || ipi;
+        const ipiTrib = findDirectChild(ipi, 'IPITrib') || findDirectChild(ipi, 'IPINT') || ipi;
         ipiData = {
           cst: getTextContent(ipiTrib, 'CST', ''),
+          cEnq: getTextContent(ipi, 'cEnq', ''),
           vBC: cleanDecimal(getTextContent(ipiTrib, 'vBC', '0.00'), '0.00'),
           pIPI: cleanDecimal(getTextContent(ipiTrib, 'pIPI', '0.00'), '0.00'),
           vIPI: cleanDecimal(getTextContent(ipiTrib, 'vIPI', '0.00'), '0.00'),
@@ -601,6 +653,26 @@ export function parseNFeXml(xmlString, options = {}) {
           vCOFINS: cleanDecimal(getTextContent(cofinsGroup, 'vCOFINS', '0.00'), '0.00'),
         };
       }
+
+      const ibsCbs = findDirectChild(imposto, 'IBSCBS') || findFirstElement(imposto, 'IBSCBS');
+      if (ibsCbs) {
+        const g = findDirectChild(ibsCbs, 'gIBSCBS') || findFirstElement(ibsCbs, 'gIBSCBS');
+        const gUf = findDirectChild(g, 'gIBSUF');
+        const gMun = findDirectChild(g, 'gIBSMun');
+        const gCbs = findDirectChild(g, 'gCBS');
+        ibsCbsData = {
+          cst: getTextContent(ibsCbs, 'CST', ''),
+          cClassTrib: getTextContent(ibsCbs, 'cClassTrib', ''),
+          vBC: cleanDecimal(getTextContent(g, 'vBC', '0.00'), '0.00'),
+          pIBSUF: cleanDecimal(getTextContent(gUf, 'pIBSUF', '0.00'), '0.00'),
+          vIBSUF: cleanDecimal(getTextContent(gUf, 'vIBSUF', '0.00'), '0.00'),
+          pIBSMun: cleanDecimal(getTextContent(gMun, 'pIBSMun', '0.00'), '0.00'),
+          vIBSMun: cleanDecimal(getTextContent(gMun, 'vIBSMun', '0.00'), '0.00'),
+          vIBS: cleanDecimal(getTextContent(g, 'vIBS', '0.00'), '0.00'),
+          pCBS: cleanDecimal(getTextContent(gCbs, 'pCBS', '0.00'), '0.00'),
+          vCBS: cleanDecimal(getTextContent(gCbs, 'vCBS', '0.00'), '0.00'),
+        };
+      }
     }
 
     return {
@@ -609,6 +681,7 @@ export function parseNFeXml(xmlString, options = {}) {
       cEAN,
       xProd,
       ncm,
+      cest,
       cfop,
       uCom,
       qCom,
@@ -618,6 +691,11 @@ export function parseNFeXml(xmlString, options = {}) {
       uTrib,
       qTrib,
       vUnTrib,
+      indTot,
+      xPed,
+      nItemPed,
+      infAdProd,
+      vItem,
       vFrete,
       vSeg,
       vDesc,
@@ -627,6 +705,7 @@ export function parseNFeXml(xmlString, options = {}) {
         ipi: ipiData,
         pis: pisData,
         cofins: cofinsData,
+        ibsCbs: ibsCbsData,
       },
     };
   });
@@ -634,6 +713,8 @@ export function parseNFeXml(xmlString, options = {}) {
   // 8. Extração do nó <total> / <ICMSTot> (Totais)
   const total = findDirectChild(infNFe, 'total') || findFirstElement(infNFe, 'total');
   const icmsTot = total ? (findDirectChild(total, 'ICMSTot') || findFirstElement(total, 'ICMSTot')) : null;
+
+  const ibcsTot = total ? (findDirectChild(total, 'IBSCBSTot') || findFirstElement(total, 'IBSCBSTot')) : null;
 
   const totais = {
     valorProdutos: cleanDecimal(getTextContent(icmsTot, 'vProd', '0.00'), '0.00'),
@@ -646,31 +727,113 @@ export function parseNFeXml(xmlString, options = {}) {
     valorIPI: cleanDecimal(getTextContent(icmsTot, 'vIPI', '0.00'), '0.00'),
     valorPIS: cleanDecimal(getTextContent(icmsTot, 'vPIS', '0.00'), '0.00'),
     valorCOFINS: cleanDecimal(getTextContent(icmsTot, 'vCOFINS', '0.00'), '0.00'),
+    valorII: cleanDecimal(getTextContent(icmsTot, 'vII', '0.00'), '0.00'),
+    valorTotTrib: cleanDecimal(getTextContent(icmsTot, 'vTotTrib', '0.00'), '0.00'),
     pesoLiquido: '0.000',
     pesoBruto: '0.000',
   };
 
-  // 9. Extração do nó <transp> e volumes
+  if (ibcsTot) {
+    const gIBS = findDirectChild(ibcsTot, 'gIBS');
+    const gCBS = findDirectChild(ibcsTot, 'gCBS');
+    totais.ibsCbs = {
+      vBCIBSCBS: cleanDecimal(getTextContent(ibcsTot, 'vBCIBSCBS', '0.00'), '0.00'),
+      vIBS: cleanDecimal(getTextContent(gIBS, 'vIBS', '0.00'), '0.00'),
+      vCBS: cleanDecimal(getTextContent(gCBS, 'vCBS', '0.00'), '0.00'),
+    };
+  }
+
+  // 9. Extração do nó <transp>, transportadora e todos os volumes
   const transp = findDirectChild(infNFe, 'transp') || findFirstElement(infNFe, 'transp');
-  let transporte = { modFrete: '9', transporta: null, volumes: null };
+  let transporte = { modFrete: '9', transporta: null, volumes: null, volumesList: [] };
 
   if (transp) {
     const modFrete = getTextContent(transp, 'modFrete', '9');
-    const vol = findFirstElement(transp, 'vol');
-    if (vol) {
-      const pesoL = cleanDecimal(getTextContent(vol, 'pesoL', '0.000'), '0.000');
-      const pesoB = cleanDecimal(getTextContent(vol, 'pesoB', '0.000'), '0.000');
-      totais.pesoLiquido = pesoL;
-      totais.pesoBruto = pesoB;
-      transporte.volumes = {
-        qVol: getTextContent(vol, 'qVol', '0'),
-        esp: getTextContent(vol, 'esp', ''),
-        pesoL,
-        pesoB,
-      };
+    const transporta = findDirectChild(transp, 'transporta');
+
+    const volList = findDirectChildren(transp, 'vol');
+    const safeVolList = volList.length > 0 ? volList : findElements(transp, 'vol');
+    const volumesList = safeVolList.map((vol) => ({
+      qVol: getTextContent(vol, 'qVol', '0'),
+      esp: getTextContent(vol, 'esp', ''),
+      marca: getTextContent(vol, 'marca', ''),
+      nVol: getTextContent(vol, 'nVol', ''),
+      pesoL: cleanDecimal(getTextContent(vol, 'pesoL', '0.000'), '0.000'),
+      pesoB: cleanDecimal(getTextContent(vol, 'pesoB', '0.000'), '0.000'),
+    }));
+
+    if (volumesList.length > 0) {
+      const first = volumesList[0];
+      totais.pesoLiquido = first.pesoL;
+      totais.pesoBruto = first.pesoB;
+      transporte.volumes = first;
+      transporte.volumesList = volumesList;
     }
+
     transporte.modFrete = modFrete;
+    transporte.transporta = transporta
+      ? {
+          cnpj: getTextContent(transporta, 'CNPJ'),
+          cpf: getTextContent(transporta, 'CPF'),
+          nome: getTextContent(transporta, 'xNome'),
+          ie: getTextContent(transporta, 'IE'),
+          endereco: getTextContent(transporta, 'xEnder'),
+          municipio: getTextContent(transporta, 'xMun'),
+          uf: getTextContent(transporta, 'UF'),
+        }
+      : null;
   }
+
+  // 9b. Cobrança (fatura e duplicatas)
+  const cobr = findDirectChild(infNFe, 'cobr');
+  let cobranca = null;
+  if (cobr) {
+    const fat = findDirectChild(cobr, 'fat');
+    const dupList = findDirectChildren(cobr, 'dup');
+    cobranca = {
+      fatura: fat
+        ? {
+            numero: getTextContent(fat, 'nFat'),
+            valorOriginal: cleanDecimal(getTextContent(fat, 'vOrig', '0.00'), '0.00'),
+            valorDesconto: cleanDecimal(getTextContent(fat, 'vDesc', '0.00'), '0.00'),
+            valorLiquido: cleanDecimal(getTextContent(fat, 'vLiq', '0.00'), '0.00'),
+          }
+        : null,
+      duplicatas: dupList.map((dup) => ({
+        numero: getTextContent(dup, 'nDup'),
+        vencimento: getTextContent(dup, 'dVenc'),
+        valor: cleanDecimal(getTextContent(dup, 'vDup', '0.00'), '0.00'),
+      })),
+    };
+  }
+
+  // 9c. Pagamento
+  const pag = findDirectChild(infNFe, 'pag');
+  let pagamento = null;
+  if (pag) {
+    const detPagList = findDirectChildren(pag, 'detPag');
+    pagamento = {
+      troco: cleanDecimal(getTextContent(pag, 'vTroco', '0.00'), '0.00'),
+      detalhes: detPagList.map((detPag) => ({
+        indicadorPagamento: getTextContent(detPag, 'indPag'),
+        tipo: getTextContent(detPag, 'tPag'),
+        descricao: getTextContent(detPag, 'xPag'),
+        valor: cleanDecimal(getTextContent(detPag, 'vPag', '0.00'), '0.00'),
+        cnpjCredenciadora: getTextContent(detPag, 'CNPJ'),
+        bandeira: getTextContent(detPag, 'tBand'),
+        autorizacao: getTextContent(detPag, 'cAut'),
+      })),
+    };
+  }
+
+  // 9d. Informações adicionais
+  const infAdic = findDirectChild(infNFe, 'infAdic');
+  const informacoesAdicionais = infAdic
+    ? {
+        complementares: getTextContent(infAdic, 'infCpl'),
+        fisco: getTextContent(infAdic, 'infAdFisco'),
+      }
+    : null;
 
   // 10. Extração do nó <protNFe> (Protocolo de Autorização)
   let protocolo = null;
@@ -694,6 +857,9 @@ export function parseNFeXml(xmlString, options = {}) {
     chaveAcesso = protocolo.chNFe;
   }
 
+  const signatures = findElements(xmlDoc, 'Signature');
+  const certificates = findElements(xmlDoc, 'X509Certificate');
+
   return {
     success: true,
     data: {
@@ -709,32 +875,55 @@ export function parseNFeXml(xmlString, options = {}) {
         serie,
         nNF,
         dhEmi,
+        dhSaiEnt,
         tpNF,
         idDest,
         tpAmb,
+        cMunFG,
+        tpImp,
+        tpEmis,
+        cDV,
+        finNFe,
+        indFinal,
+        indPres,
+        indIntermed,
+        procEmi,
+        verProc,
       },
       emit: {
         cnpj: emitCnpj,
         razaoSocial: emitRazao,
         nomeFantasia: emitFantasia,
         inscricaoEstadual: emitIe,
+        crt: emitCrt,
         uf: emitUf,
         municipio: emitMun,
+        endereco: emitEndereco,
       },
       dest: {
         cnpj: destCnpj,
         idEstrangeiro: destIdExt,
         nome: destNome,
         inscricaoEstadual: destIe,
+        indicadorIeDestinatario: destIndIeDest,
+        email: destEmail,
         uf: destUf,
         municipio: destMun,
         pais: destPais,
         paisCodigo: destPaisCod,
+        endereco: destEndereco,
       },
       itens,
       totais,
       transporte,
+      cobranca,
+      pagamento,
+      informacoesAdicionais,
       protocolo,
+      assinatura: {
+        presente: signatures.length > 0,
+        certificadoPresente: certificates.length > 0,
+      },
     },
   };
 }

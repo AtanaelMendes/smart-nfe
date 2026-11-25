@@ -77,12 +77,14 @@ function recalculateNFeTotals(doc) {
   const seguro = cleanDecimalString(doc.totais?.valorSeguro || '0.00');
   const outras = cleanDecimalString(doc.totais?.outrasDespesas || '0.00');
   const descGeral = cleanDecimalString(doc.totais?.valorDesconto || '0.00');
+  const ipi = cleanDecimalString(doc.totais?.valorIPI || '0.00');
 
   const totals = calculateInvoiceTotals(normalizedItems, {
     freight: frete,
     insurance: seguro,
     discount: descGeral,
     otherExpenses: outras,
+    ipi,
   });
 
   return {
@@ -94,6 +96,7 @@ function recalculateNFeTotals(doc) {
       valorSeguro: seguro,
       valorDesconto: totals.valorDesconto,
       outrasDespesas: outras,
+      valorIPI: totals.valorIPI,
       valorTotalNota: totals.valorTotalNota,
     },
   };

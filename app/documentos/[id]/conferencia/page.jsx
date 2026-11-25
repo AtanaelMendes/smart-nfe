@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, use } from 'react';
+import { useState, useEffect, useMemo, use, Fragment } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -20,10 +20,16 @@ import {
   faSort,
   faSortUp,
   faSortDown,
+  faChevronDown,
+  faChevronUp,
+  faLayerGroup,
+  faTruck,
+  faBarcode,
 } from '@fortawesome/free-solid-svg-icons';
 
 import AppLayout from '@/components/Layouts/AppLayout';
 import Button from '@/components/buttons/Button';
+import { FiscalGroup } from '@/components/notes/FiscalField';
 import { useAppContext } from '@/context/AppContext';
 
 import { formatBRL } from '@/lib/formatters/currency';
@@ -43,6 +49,18 @@ import {
   cleanDecimalString,
 } from '@/lib/calculations/decimal';
 
+function ReadField({ label, value, mono = false, className = '' }) {
+  const display = value === '' || value === null || value === undefined ? '—' : String(value);
+  return (
+    <div className={className}>
+      <span className="block text-[9px] font-semibold uppercase text-slate-400">{label}</span>
+      <span className={`block truncate text-slate-700 dark:text-slate-200 ${mono ? 'font-mono' : ''}`} title={display}>
+        {display}
+      </span>
+    </div>
+  );
+}
+
 export default function ConferenciaPage({ params }) {
   // Unwrap do params no Next.js App Router
   const resolvedParams = use(params);
@@ -58,6 +76,17 @@ export default function ConferenciaPage({ params }) {
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
   const [showPreview, setShowPreview] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  const [fiscalPanelOpen, setFiscalPanelOpen] = useState(false);
+  const [expandedItems, setExpandedItems] = useState(() => new Set());
+
+  const toggleItemDetails = (itemId) => {
+    setExpandedItems((prev) => {
+      const next = new Set(prev);
+      if (next.has(itemId)) next.delete(itemId);
+      else next.add(itemId);
+      return next;
+    });
+  };
 
   useEffect(() => {
     async function load() {
@@ -770,10 +799,16 @@ export default function ConferenciaPage({ params }) {
                 {filteredAndSortedItems.map((item, index) => {
                   const isModified = item.modificado;
                   const orig = item.valorOriginal;
+                  const trib = item.tributos || {};
+                  const icms = trib.icms || {};
+                  const ipi = trib.ipi || {};
+                  const pis = trib.pis || {};
+                  const cofins = trib.cofins || {};
+                  const ibsCbs = trib.ibsCbs || null;
 
                   return (
+                    <Fragment key={item.id}>
                     <tr
-                      key={item.id}
                       className={`hover:bg-blue-50/40 dark:hover:bg-slate-700/40 transition-colors ${
                         isModified ? 'bg-amber-50/30 dark:bg-amber-950/20' : ''
                       }`}
@@ -963,25 +998,121 @@ export default function ConferenciaPage({ params }) {
 
                       {/* Ações */}
                       <td className="px-2 py-1.5 text-center">
-                        {isModified ? (
-                          <div className="flex items-center justify-center gap-1">
-                            <span className="text-[10px] bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 font-semibold px-1.5 py-0.5 rounded">
-                              Editado
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => handleRestoreItem(item.id)}
-                              className="p-1 text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-                              title="Restaurar valor original deste item (Esc)"
-                            >
-                              <FontAwesomeIcon icon={faRotateLeft} className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        ) : (
-                          <span className="text-[10px] text-slate-400">Original</span>
-                        )}
+                        <div className="flex items-center justify-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => toggleItemDetails(item.id)}
+                            className="p-1 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                            title="Detalhes fiscais do item"
+                          >
+                            <FontAwesomeIcon icon={expandedItems.has(item.id) ? faChevronUp : faChevronDown} className="w-3.5 h-3.5" />
+                          </button>
+                          {isModified ? (
+                            <>
+                              <span className="text-[10px] bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 font-semibold px-1.5 py-0.5 rounded">
+                                Editado
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => handleRestoreItem(item.id)}
+                                className="p-1 text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                                title="Restaurar valor original deste item (Esc)"
+                              >
+                                <FontAwesomeIcon icon={faRotateLeft} className="w-3.5 h-3.5" />
+                              </button>
+                            </>
+                          ) : (
+                            <span className="text-[10px] text-slate-400">Original</span>
+                          )}
+                        </div>
                       </td>
                     </tr>
+
+                    {expandedItems.has(item.id) && (
+                      <tr className="bg-blue-50/20 dark:bg-slate-800/50">
+                        <td colSpan={10} className="px-3 py-3">
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2 text-[11px] font-bold uppercase text-blue-700 dark:text-blue-300">
+                              <FontAwesomeIcon icon={faLayerGroup} />
+                              Detalhes fiscais do item {item.item || index + 1}
+                            </div>
+
+                            <FiscalGroup title="Produto e Unidades" accent="slate">
+                              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2 text-[11px]">
+                                <ReadField label="CEST" value={item.cest} mono />
+                                <ReadField label="GTIN Comercial" value={item.cEAN} mono />
+                                <ReadField label="GTIN Tributável" value={item.cEANTrib} mono />
+                                <ReadField label="UN Tributável" value={item.unidadeTributavel} mono />
+                                <ReadField label="Qtd Tributável" value={item.quantidadeTributavel} mono />
+                                <ReadField label="Valor Unit. Trib." value={item.valorUnitarioTributavel} mono />
+                                <ReadField label="Compõe Total (indTot)" value={item.indicadorComposicaoTotal} mono />
+                                <ReadField label="Pedido" value={item.pedido} />
+                                <ReadField label="Item do Pedido" value={item.itemPedido} />
+                                <ReadField label="Info. Adicional" value={item.informacoesAdicionais} className="md:col-span-2" />
+                              </div>
+                            </FiscalGroup>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2">
+                              <FiscalGroup title="ICMS" accent="blue">
+                                <div className="grid grid-cols-2 gap-1.5 text-[11px]">
+                                  <ReadField label="CST" value={icms.cst} mono />
+                                  <ReadField label="CSOSN" value={icms.csosn} mono />
+                                  <ReadField label="Origem" value={icms.origem} mono />
+                                  <ReadField label="Mod. Base" value={icms.modalidadeBase} mono />
+                                  <ReadField label="Base ICMS" value={icms.vBC} mono />
+                                  <ReadField label="% Redução" value={icms.pRedBC} mono />
+                                  <ReadField label="Alíquota %" value={icms.pICMS} mono />
+                                  <ReadField label="Valor ICMS" value={icms.vICMS} mono />
+                                </div>
+                              </FiscalGroup>
+
+                              <FiscalGroup title="IPI" accent="blue">
+                                <div className="grid grid-cols-2 gap-1.5 text-[11px]">
+                                  <ReadField label="CST" value={ipi.cst} mono />
+                                  <ReadField label="Enquadramento" value={ipi.cEnq} mono />
+                                  <ReadField label="Base IPI" value={ipi.vBC} mono />
+                                  <ReadField label="Alíquota %" value={ipi.pIPI} mono />
+                                  <ReadField label="Valor IPI" value={ipi.vIPI} mono />
+                                </div>
+                              </FiscalGroup>
+
+                              <FiscalGroup title="PIS / COFINS" accent="blue">
+                                <div className="grid grid-cols-2 gap-1.5 text-[11px]">
+                                  <ReadField label="CST PIS" value={pis.cst} mono />
+                                  <ReadField label="Base PIS" value={pis.vBC} mono />
+                                  <ReadField label="Alíq. PIS %" value={pis.pPIS} mono />
+                                  <ReadField label="Valor PIS" value={pis.vPIS} mono />
+                                  <ReadField label="CST COFINS" value={cofins.cst} mono />
+                                  <ReadField label="Base COFINS" value={cofins.vBC} mono />
+                                  <ReadField label="Alíq. COFINS %" value={cofins.pCOFINS} mono />
+                                  <ReadField label="Valor COFINS" value={cofins.vCOFINS} mono />
+                                </div>
+                              </FiscalGroup>
+
+                              <FiscalGroup title="IBS / CBS" accent="emerald">
+                                {ibsCbs ? (
+                                  <div className="grid grid-cols-2 gap-1.5 text-[11px]">
+                                    <ReadField label="CST" value={ibsCbs.cst} mono />
+                                    <ReadField label="Class. Trib." value={ibsCbs.cClassTrib} mono />
+                                    <ReadField label="Base IBS/CBS" value={ibsCbs.vBC} mono />
+                                    <ReadField label="% IBS UF" value={ibsCbs.pIBSUF} mono />
+                                    <ReadField label="Valor IBS UF" value={ibsCbs.vIBSUF} mono />
+                                    <ReadField label="% IBS Mun" value={ibsCbs.pIBSMun} mono />
+                                    <ReadField label="Valor IBS Mun" value={ibsCbs.vIBSMun} mono />
+                                    <ReadField label="Valor IBS" value={ibsCbs.vIBS} mono />
+                                    <ReadField label="% CBS" value={ibsCbs.pCBS} mono />
+                                    <ReadField label="Valor CBS" value={ibsCbs.vCBS} mono />
+                                  </div>
+                                ) : (
+                                  <p className="text-[11px] text-slate-400 italic">Grupo IBS/CBS não informado neste item.</p>
+                                )}
+                              </FiscalGroup>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                    </Fragment>
                   );
                 })}
               </tbody>
@@ -997,7 +1128,8 @@ export default function ConferenciaPage({ params }) {
                 {(recalculatedTotals?.valorFrete !== '0.00' ||
                   recalculatedTotals?.valorSeguro !== '0.00' ||
                   recalculatedTotals?.outrasDespesas !== '0.00' ||
-                  recalculatedTotals?.valorDesconto !== '0.00') && (
+                  recalculatedTotals?.valorDesconto !== '0.00' ||
+                  recalculatedTotals?.valorIPI !== '0.00') && (
                   <tr className="text-[11px] text-slate-500 dark:text-slate-400 bg-slate-100/50 dark:bg-slate-800/40 font-normal">
                     <td colSpan={6} className="px-4 py-1.5">
                       Composição: Produtos ({formatBRL(recalculatedTotals?.valorProdutos)})
@@ -1005,6 +1137,7 @@ export default function ConferenciaPage({ params }) {
                       {recalculatedTotals?.valorFrete !== '0.00' && ` + Frete (${formatBRL(recalculatedTotals?.valorFrete)})`}
                       {recalculatedTotals?.valorSeguro !== '0.00' && ` + Seguro (${formatBRL(recalculatedTotals?.valorSeguro)})`}
                       {recalculatedTotals?.outrasDespesas !== '0.00' && ` + Outras (${formatBRL(recalculatedTotals?.outrasDespesas)})`}
+                      {recalculatedTotals?.valorIPI !== '0.00' && ` + IPI (${formatBRL(recalculatedTotals?.valorIPI)})`}
                     </td>
                     <td colSpan={4} className="px-4 py-1.5 text-right font-mono font-bold text-slate-800 dark:text-slate-200">
                       Total NF-e: {formatBRL(recalculatedTotals?.valorTotalNota)}
@@ -1014,6 +1147,177 @@ export default function ConferenciaPage({ params }) {
               </tfoot>
             </table>
           </div>
+        </div>
+
+        {/* Painel fiscal completo do documento importado (somente consulta) */}
+        <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-xs">
+          <button
+            type="button"
+            onClick={() => setFiscalPanelOpen((v) => !v)}
+            className="w-full flex items-center justify-between px-4 py-3 text-sm font-bold text-slate-900 dark:text-slate-100"
+          >
+            <span className="flex items-center gap-2">
+              <FontAwesomeIcon icon={faBarcode} className="text-blue-600" />
+              Detalhes fiscais completos do XML (identificação, participantes, transporte, cobrança e tributos)
+            </span>
+            <FontAwesomeIcon icon={fiscalPanelOpen ? faChevronUp : faChevronDown} className="text-slate-400" />
+          </button>
+
+          {fiscalPanelOpen && (
+            <div className="p-4 pt-0 space-y-2">
+              <FiscalGroup title="Identificação" accent="blue">
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2 text-[11px]">
+                  <ReadField label="Número" value={invoice.numero} mono />
+                  <ReadField label="Série" value={invoice.serie} mono />
+                  <ReadField label="Modelo" value={invoice.modelo || invoice.ide?.mod || '55'} mono />
+                  <ReadField label="Chave de Acesso" value={invoice.chaveAcesso} mono className="col-span-2" />
+                  <ReadField label="Emissão" value={invoice.dataEmissao ? formatDateBR(invoice.dataEmissao) : invoice.emissao} />
+                  <ReadField label="Saída" value={invoice.dataSaida ? formatDateBR(invoice.dataSaida) : invoice.ide?.dhSaiEnt} />
+                  <ReadField label="Natureza da Operação" value={invoice.naturezaOperacao} className="col-span-2" />
+                  <ReadField label="Tipo NF (tpNF)" value={invoice.ide?.tpNF} mono />
+                  <ReadField label="Destino (idDest)" value={invoice.ide?.idDest} mono />
+                  <ReadField label="Finalidade (finNFe)" value={invoice.ide?.finNFe} mono />
+                  <ReadField label="Consumidor Final (indFinal)" value={invoice.ide?.indFinal} mono />
+                  <ReadField label="Presença (indPres)" value={invoice.ide?.indPres} mono />
+                  <ReadField label="Intermediação (indIntermed)" value={invoice.ide?.indIntermed} mono />
+                  <ReadField label="Ambiente (tpAmb)" value={invoice.ide?.tpAmb} mono />
+                  <ReadField label="Tipo de Emissão (tpEmis)" value={invoice.ide?.tpEmis} mono />
+                  <ReadField label="Processo (procEmi)" value={invoice.ide?.procEmi} mono />
+                  <ReadField label="Versão Processo" value={invoice.ide?.verProc} mono />
+                </div>
+              </FiscalGroup>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <FiscalGroup title="Emitente" accent="slate">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-[11px]">
+                    <ReadField label="CNPJ/CPF" value={invoice.emitente?.cnpj || invoice.emitente?.cpf} mono />
+                    <ReadField label="IE" value={invoice.emitente?.inscricaoEstadual} mono />
+                    <ReadField label="CRT" value={invoice.emitente?.crt} mono />
+                    <ReadField label="Razão Social" value={invoice.emitente?.razaoSocial} className="col-span-2" />
+                    <ReadField label="Município" value={invoice.emitente?.municipio} />
+                    <ReadField label="Logradouro" value={invoice.emitente?.endereco?.logradouro} className="col-span-2" />
+                    <ReadField label="Número" value={invoice.emitente?.endereco?.numero} />
+                    <ReadField label="Bairro" value={invoice.emitente?.endereco?.bairro} />
+                    <ReadField label="CEP" value={invoice.emitente?.endereco?.cep} mono />
+                    <ReadField label="Cód. IBGE" value={invoice.emitente?.endereco?.cMun} mono />
+                    <ReadField label="Telefone" value={invoice.emitente?.endereco?.fone} />
+                    <ReadField label="E-mail" value={invoice.emitente?.endereco?.email} />
+                  </div>
+                </FiscalGroup>
+
+                <FiscalGroup title="Destinatário" accent="slate">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-[11px]">
+                    <ReadField label="Documento" value={invoice.destinatario?.cnpj || invoice.destinatario?.idEstrangeiro} mono />
+                    <ReadField label="IE" value={invoice.destinatario?.inscricaoEstadual} mono />
+                    <ReadField label="indIEDest" value={invoice.destinatario?.indicadorIeDestinatario} mono />
+                    <ReadField label="Nome" value={invoice.destinatario?.nome} className="col-span-2" />
+                    <ReadField label="País" value={invoice.destinatario?.pais} />
+                    <ReadField label="Logradouro" value={invoice.destinatario?.endereco?.logradouro} className="col-span-2" />
+                    <ReadField label="Número" value={invoice.destinatario?.endereco?.numero} />
+                    <ReadField label="Bairro" value={invoice.destinatario?.endereco?.bairro} />
+                    <ReadField label="CEP" value={invoice.destinatario?.endereco?.cep} mono />
+                    <ReadField label="Cód. IBGE" value={invoice.destinatario?.endereco?.cMun} mono />
+                    <ReadField label="E-mail" value={invoice.destinatario?.email || invoice.destinatario?.endereco?.email} />
+                  </div>
+                </FiscalGroup>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                <FiscalGroup title="Transporte" accent="blue">
+                  <div className="grid grid-cols-2 gap-2 text-[11px]">
+                    <ReadField label="Modalidade Frete" value={invoice.transporte?.modalidadeFrete} mono />
+                    <ReadField label="Transportador" value={invoice.transporte?.transportador?.nome} />
+                    <ReadField label="CNPJ Transp." value={invoice.transporte?.transportador?.cnpj} mono />
+                    <ReadField label="UF Transp." value={invoice.transporte?.transportador?.uf} mono />
+                  </div>
+                  {(invoice.transporte?.volumes || []).length > 0 && (
+                    <div className="pt-1 space-y-0.5">
+                      <span className="text-[9px] font-semibold uppercase text-slate-400">Volumes</span>
+                      {(invoice.transporte.volumes || []).map((vol, i) => (
+                        <p key={i} className="text-[11px] text-slate-600 dark:text-slate-300">
+                          #{i + 1} {vol.qVol || '—'} {vol.esp || ''} — Peso L: {vol.pesoL || '0.000'} / B: {vol.pesoB || '0.000'}
+                        </p>
+                      ))}
+                    </div>
+                  )}
+                </FiscalGroup>
+
+                <FiscalGroup title="Cobrança" accent="blue">
+                  {invoice.cobranca?.fatura ? (
+                    <div className="grid grid-cols-2 gap-2 text-[11px]">
+                      <ReadField label="Fatura" value={invoice.cobranca.fatura.numero} mono />
+                      <ReadField label="Valor Original" value={invoice.cobranca.fatura.valorOriginal ? formatBRL(invoice.cobranca.fatura.valorOriginal) : ''} mono />
+                      <ReadField label="Desconto" value={invoice.cobranca.fatura.valorDesconto ? formatBRL(invoice.cobranca.fatura.valorDesconto) : ''} mono />
+                      <ReadField label="Líquido" value={invoice.cobranca.fatura.valorLiquido ? formatBRL(invoice.cobranca.fatura.valorLiquido) : ''} mono />
+                    </div>
+                  ) : (
+                    <p className="text-[11px] text-slate-400 italic">Sem grupo de cobrança.</p>
+                  )}
+                  {(invoice.cobranca?.duplicatas || []).length > 0 && (
+                    <div className="pt-1 space-y-0.5">
+                      <span className="text-[9px] font-semibold uppercase text-slate-400">Duplicatas</span>
+                      {invoice.cobranca.duplicatas.map((dup, i) => (
+                        <p key={i} className="text-[11px] text-slate-600 dark:text-slate-300 font-mono">
+                          {dup.numero || '—'} • Venc. {dup.vencimento || '—'} • {formatBRL(dup.valor)}
+                        </p>
+                      ))}
+                    </div>
+                  )}
+                </FiscalGroup>
+
+                <FiscalGroup title="Pagamento" accent="blue">
+                  {(invoice.pagamento?.detalhes || []).length > 0 ? (
+                    <div className="space-y-0.5">
+                      {invoice.pagamento.detalhes.map((pag, i) => (
+                        <p key={i} className="text-[11px] text-slate-600 dark:text-slate-300">
+                          Forma {pag.tipo || '—'}{pag.descricao ? ` (${pag.descricao})` : ''} • {formatBRL(pag.valor)}
+                        </p>
+                      ))}
+                      {invoice.pagamento.troco && invoice.pagamento.troco !== '0.00' && (
+                        <p className="text-[11px] text-slate-500">Troco: {formatBRL(invoice.pagamento.troco)}</p>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-[11px] text-slate-400 italic">Sem grupo de pagamento.</p>
+                  )}
+                </FiscalGroup>
+              </div>
+
+              <FiscalGroup title="Totais e Tributos da Nota" accent="emerald">
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2 text-[11px]">
+                  <ReadField label="Produtos" value={formatBRL(invoice.totais?.valorProdutos)} mono />
+                  <ReadField label="Frete" value={formatBRL(invoice.totais?.valorFrete)} mono />
+                  <ReadField label="Seguro" value={formatBRL(invoice.totais?.valorSeguro)} mono />
+                  <ReadField label="Desconto" value={formatBRL(invoice.totais?.valorDesconto)} mono />
+                  <ReadField label="Outras Despesas" value={formatBRL(invoice.totais?.outrasDespesas)} mono />
+                  <ReadField label="IPI" value={formatBRL(invoice.totais?.valorIPI)} mono />
+                  <ReadField label="II" value={formatBRL(invoice.totais?.valorII)} mono />
+                  <ReadField label="Total Tributos (vTotTrib)" value={formatBRL(invoice.totais?.valorTotTrib)} mono />
+                  <ReadField label="Total da Nota" value={formatBRL(invoice.totais?.valorTotalNota)} mono />
+                  <ReadField label="Peso Líquido" value={invoice.totais?.pesoLiquido} mono />
+                  <ReadField label="Peso Bruto" value={invoice.totais?.pesoBruto} mono />
+                  {invoice.totais?.ibsCbs && (
+                    <>
+                      <ReadField label="Base IBS/CBS" value={formatBRL(invoice.totais.ibsCbs.vBCIBSCBS)} mono />
+                      <ReadField label="Total IBS" value={formatBRL(invoice.totais.ibsCbs.vIBS)} mono />
+                      <ReadField label="Total CBS" value={formatBRL(invoice.totais.ibsCbs.vCBS)} mono />
+                    </>
+                  )}
+                </div>
+              </FiscalGroup>
+
+              {(invoice.protocolo || invoice.assinatura) && (
+                <FiscalGroup title="Autorização e Assinatura" accent="slate">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-[11px]">
+                    <ReadField label="Protocolo" value={invoice.protocolo?.nProt || invoice.protocolo?.numero} mono />
+                    <ReadField label="Status (cStat)" value={invoice.protocolo?.cStat || invoice.protocolo?.status} mono />
+                    <ReadField label="Recebido em" value={invoice.protocolo?.dhRecbto ? formatDateBR(invoice.protocolo.dhRecbto) : ''} />
+                    <ReadField label="Assinatura presente" value={invoice.assinatura?.presente ? 'Sim' : invoice.assinatura ? 'Não' : '—'} />
+                  </div>
+                </FiscalGroup>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </AppLayout>
