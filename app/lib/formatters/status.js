@@ -92,3 +92,23 @@ export function getStatusBadge(status) {
 export function getStatusDot(status) {
   return STATUS_CONFIG[status]?.dot || 'bg-gray-400';
 }
+
+/**
+ * Mapeia o status para uma variante do componente PillsBadge.
+ * Centraliza as cores de badge sem alterar os consumers legados de getStatusColor.
+ * @param {string} status
+ * @returns {string}
+ */
+const STATUS_PILL_TYPE = {
+  pendente: 'default',
+  importado: 'primary',
+  em_conferencia: 'warning',
+  conferido: 'success',
+  dividido: 'purple',
+  com_inconsistencias: 'danger',
+  preparado: 'teal',
+};
+
+export function getStatusBadgeType(status) {
+  return STATUS_PILL_TYPE[status] || 'default';
+}

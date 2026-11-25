@@ -28,6 +28,7 @@ import {
 
 import AppLayout from '@/components/Layouts/AppLayout';
 import Button from '@/components/buttons/Button';
+import PillsBadge from '@/components/buttons/PillsBadge';
 import InputText from '@/components/inputs/InputText';
 import InputNumber from '@/components/inputs/InputNumber';
 import Select from '@/components/inputs/Select';
@@ -660,9 +661,7 @@ function NovaPreparacaoInner() {
       render: (origin) => (
         <>
           <span className="font-mono text-[11px] block">{origin.item.ncm}</span>
-          <span className="text-[10px] px-1 py-0.2 rounded bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold">
-            {origin.item.unidade}
-          </span>
+          <PillsBadge type="default" small>{origin.item.unidade}</PillsBadge>
         </>
       ),
     },
@@ -783,9 +782,9 @@ function NovaPreparacaoInner() {
                 <FontAwesomeIcon icon={faBoxesStacked} className="text-blue-600" />
                 {preparation.titulo}
               </h1>
-              <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
+              <PillsBadge type="primary" small>
                 {operationMode === 'agrupamento' ? 'Agrupamento (N → 1)' : operationMode === 'divisao' ? 'Divisão (1 → M)' : 'Mista (N → M)'}
-              </span>
+              </PillsBadge>
             </div>
             <p className="text-xs text-slate-500 mt-1">
               Origens: {preparation.sourceInvoiceIds.length} NF-e • Destinos: {preparation.destinos.length} • Total Geral: {formatBRL(grandTotal)}
@@ -939,15 +938,9 @@ function NovaPreparacaoInner() {
                           <span className="font-bold text-xs text-slate-900 dark:text-slate-100">
                             NF-e {inv.numero} (Série {inv.serie})
                           </span>
-                          <span
-                            className={`px-1.5 py-0.5 text-[10px] font-bold rounded ${
-                              isSelected
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
-                            }`}
-                          >
+                          <PillsBadge type={isSelected ? 'primary-dark' : 'default'} small>
                             {isSelected ? 'Selecionada' : 'Adicionar'}
-                          </span>
+                          </PillsBadge>
                         </div>
                         <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 truncate" title={inv.emitente?.razaoSocial}>
                           {inv.emitente?.razaoSocial || 'Fornecedor'}

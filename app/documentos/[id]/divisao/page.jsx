@@ -25,11 +25,13 @@ import {
 
 import AppLayout from '@/components/Layouts/AppLayout';
 import Button from '@/components/buttons/Button';
+import PillsBadge from '@/components/buttons/PillsBadge';
 import InputText from '@/components/inputs/InputText';
 import DataTable from '@/components/table/DataTable';
 import { useAppContext } from '@/context/AppContext';
 
 import { formatBRL } from '@/lib/formatters/currency';
+import { getStatusBadgeType } from '@/lib/formatters/status';
 import { formatQuantity } from '@/lib/formatters/numbers';
 import { invoiceRepository } from '@/features/invoiceRepository';
 import { preparedInvoiceRepository } from '@/features/preparedInvoiceRepository';
@@ -716,28 +718,28 @@ export default function DivisaoNotasPage({ params }) {
 
         if (status === 'ok') {
           return (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+            <PillsBadge type="success" small>
               <FontAwesomeIcon icon={faCircleCheck} className="w-2.5 h-2.5" />
               OK (100%)
-            </span>
+            </PillsBadge>
           );
         }
 
         if (status === 'remaining') {
           return (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+            <PillsBadge type="warning" small>
               <FontAwesomeIcon icon={faTriangleExclamation} className="w-2.5 h-2.5" />
               Restante
-            </span>
+            </PillsBadge>
           );
         }
 
         if (status === 'excess') {
           return (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-800 dark:bg-red-950/40 dark:text-red-300 border border-red-300 dark:border-red-800">
+            <PillsBadge type="danger" small>
               <FontAwesomeIcon icon={faCircleExclamation} className="w-2.5 h-2.5" />
               Excesso
-            </span>
+            </PillsBadge>
           );
         }
 
@@ -792,13 +794,14 @@ export default function DivisaoNotasPage({ params }) {
             </Link>
             <div>
               <div className="flex items-center gap-2">
-                <span className="px-2 py-0.5 text-[10px] font-bold rounded uppercase tracking-wider bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+                <PillsBadge type="warning" small>
                   Desmembramento de Exportação
-                </span>
+                </PillsBadge>
                 {invoice.status === 'dividida' && (
-                  <span className="px-2 py-0.5 text-[10px] font-bold rounded uppercase tracking-wider bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
+                  // 'dividida' é o valor persistido da nota pai; a central de status usa a chave 'dividido'
+                  <PillsBadge type={getStatusBadgeType('dividido')} small>
                     Status: Dividida
-                  </span>
+                  </PillsBadge>
                 )}
               </div>
               <h1 className="text-lg font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2 mt-1">

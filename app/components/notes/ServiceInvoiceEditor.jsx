@@ -31,6 +31,7 @@ import InputText from '@/components/inputs/InputText';
 import InputTextArea from '@/components/inputs/InputTextArea';
 import Checkbox from '@/components/inputs/Checkbox';
 import Button from '@/components/buttons/Button';
+import PillsBadge from '@/components/buttons/PillsBadge';
 import { formatBRL } from '@/lib/formatters';
 import { cleanDecimalString, decimalAdd, decimalSubtract, decimalCompare } from '@/lib/calculations/decimal';
 import { useAppContext } from '@/context/AppContext';
@@ -518,18 +519,18 @@ export default function ServiceInvoiceEditor({
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-gray-200 dark:border-slate-800">
         <div>
           <div className="flex items-center gap-2">
-            <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300">
+            <PillsBadge type="primary" small>
               Padrão Nacional • LC 116/2003
-            </span>
+            </PillsBadge>
             {prestador?.isMei && (
-              <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-100 text-amber-900 dark:bg-amber-900/60 dark:text-amber-200 flex items-center gap-1">
-                <FontAwesomeIcon icon={faBolt} className="text-amber-500" />
+              <PillsBadge type="success" small>
+                <FontAwesomeIcon icon={faBolt} className="text-emerald-500 dark:text-emerald-400" />
                 <span>Optante MEI</span>
-              </span>
+              </PillsBadge>
             )}
-            <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-slate-300">
+            <PillsBadge type="warning" small>
               {mode === 'edit' ? 'Editando Rascunho' : 'Novo Rascunho'}
-            </span>
+            </PillsBadge>
           </div>
 
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight mt-1 flex items-center gap-2">

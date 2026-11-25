@@ -14,6 +14,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 
 import Button from '@/components/buttons/Button';
+import PillsBadge from '@/components/buttons/PillsBadge';
 import {
   SCREEN_TOURS,
   getScreenTourByPath,
@@ -280,9 +281,9 @@ export default function ScreenTourTip({
               <h2 className="text-sm font-bold text-slate-900 dark:text-white truncate">
                 {tourTitle}
               </h2>
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/40 border border-blue-200 dark:border-blue-800 px-1.5 py-0.5 rounded">
+              <PillsBadge type="info" small>
                 Guia da Tela
-              </span>
+              </PillsBadge>
             </div>
             <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
               {activeTour.route}

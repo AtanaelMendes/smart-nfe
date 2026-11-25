@@ -26,6 +26,7 @@ import {
 import AppLayout from '@/components/Layouts/AppLayout';
 import DataTable from '@/components/table/DataTable';
 import Button from '@/components/buttons/Button';
+import PillsBadge from '@/components/buttons/PillsBadge';
 import Dialog from '@/components/Layouts/Dialog';
 import { useAppContext } from '@/context/AppContext';
 
@@ -316,9 +317,9 @@ ${detXml}
       render: (item) => {
         const count = item.quantidadeItens || (Array.isArray(item.itens) ? item.itens.length : 0);
         return (
-          <span className="px-2.5 py-1 text-xs font-bold rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
+          <PillsBadge type="primary" small title={`${count} ${count === 1 ? 'item' : 'itens'}`}>
             {count} {count === 1 ? 'item' : 'itens'}
-          </span>
+          </PillsBadge>
         );
       },
     },
@@ -466,9 +467,9 @@ ${detXml}
                   <span className="font-bold text-sm">
                     Espelho DANFE — Nota Fiscal Preparada
                   </span>
-                  <span className="text-[10px] bg-blue-500/30 text-blue-200 px-2 py-0.5 rounded font-mono">
+                  <PillsBadge type="primary" small title="MODO DEMONSTRAÇÃO">
                     MODO DEMONSTRAÇÃO
-                  </span>
+                  </PillsBadge>
                 </div>
                 <Button
                   buttonType="ghost"

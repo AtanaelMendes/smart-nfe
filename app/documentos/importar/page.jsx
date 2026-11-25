@@ -25,6 +25,7 @@ import {
 
 import AppLayout from '@/components/Layouts/AppLayout';
 import Button from '@/components/buttons/Button';
+import PillsBadge from '@/components/buttons/PillsBadge';
 import { useAppContext } from '@/context/AppContext';
 import { invoiceRepository } from '@/features/invoiceRepository';
 import { documentRepository } from '@/features/documentRepository';
@@ -42,7 +43,7 @@ const DEMO_SCENARIOS = [
     nome: 'Cenário 1 — NF-e XML Agro',
     tipo: 'XML',
     badge: '8 ITENS',
-    badgeColor: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300',
+    badgeType: 'primary',
     emitente: 'Agroexport Brasil S.A.',
     destinatario: 'Global Trading Logistics B.V. (Holanda)',
     valor: 'R$ 291.200,00',
@@ -53,7 +54,7 @@ const DEMO_SCENARIOS = [
     nome: 'Cenário 2 — NF-e PDF Metalmecânica',
     tipo: 'PDF',
     badge: '25 ITENS',
-    badgeColor: 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300',
+    badgeType: 'warning',
     emitente: 'Metalúrgica Sul Americana Ltda',
     destinatario: 'Industrial Supply Corp. (EUA)',
     valor: 'R$ 148.750,00',
@@ -64,7 +65,7 @@ const DEMO_SCENARIOS = [
     nome: 'Cenário 3 — Stress Test em Volume',
     tipo: 'XML',
     badge: '50 ITENS',
-    badgeColor: 'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300',
+    badgeType: 'purple',
     emitente: 'Eletroparts do Brasil Componentes S.A.',
     destinatario: 'Auto Assembly Europe GmbH (Alemanha)',
     valor: 'R$ 625.800,00',
@@ -75,7 +76,7 @@ const DEMO_SCENARIOS = [
     nome: 'Cenário 4 — Inconsistências Fiscais',
     tipo: 'XML',
     badge: 'ALERTA (12 ITENS)',
-    badgeColor: 'bg-rose-100 text-rose-800 dark:bg-rose-900/50 dark:text-rose-200 border border-rose-300',
+    badgeType: 'danger',
     emitente: 'Calçados Vale do Rio Doce Ltda',
     destinatario: 'Fashion Footwear Group S.L. (Espanha)',
     valor: 'R$ 89.300,00',
@@ -87,7 +88,7 @@ const DEMO_SCENARIOS = [
     nome: 'Cenário 5 — Desmembramento & Lotes',
     tipo: 'XML',
     badge: '15 ITENS',
-    badgeColor: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300',
+    badgeType: 'success',
     emitente: 'Cooperativa Agroindustrial Centro-Oeste',
     destinatario: 'Asian Grain Corporation (China)',
     valor: 'R$ 342.000,00',
@@ -553,33 +554,33 @@ export default function ImportarDocumentoPage() {
 
                   <div className="flex items-center gap-3 shrink-0">
                     {item.status === 'pending' && (
-                      <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+                      <PillsBadge type="default" small>
                         Pendente
-                      </span>
+                      </PillsBadge>
                     )}
                     {item.status === 'processing' && (
-                      <span className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                      <PillsBadge type="primary" small>
                         <FontAwesomeIcon icon={faCircleNotch} className="animate-spin w-3 h-3" />
                         Lendo...
-                      </span>
+                      </PillsBadge>
                     )}
                     {item.status === 'success' && (
-                      <span className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300">
+                      <PillsBadge type="success" small>
                         <FontAwesomeIcon icon={faCircleCheck} className="w-3 h-3" />
                         {item.fiscalType === 'NFSE' ? 'NFS-e' : 'NF-e'} {item.invoice?.numero || 'OK'} ({item.invoice?.itens?.length || 0} itens)
-                      </span>
+                      </PillsBadge>
                     )}
                     {item.status === 'duplicate' && (
-                      <span className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-300" title={item.error}>
+                      <PillsBadge type="warning" small title={item.error}>
                         <FontAwesomeIcon icon={faTriangleExclamation} className="w-3 h-3" />
                         Duplicada
-                      </span>
+                      </PillsBadge>
                     )}
                     {item.status === 'error' && (
-                      <span className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/40 dark:text-rose-300" title={item.error}>
-                        <FontAwesomeIcon icon={faCircleExclamation} className="w-3 h-3" />
+                      <PillsBadge type="danger" small wrap className="max-w-xs" title={item.error}>
+                        <FontAwesomeIcon icon={faCircleExclamation} className="w-3 h-3 shrink-0" />
                         Falha: {item.error?.substring(0, 30)}...
-                      </span>
+                      </PillsBadge>
                     )}
 
                     {!isProcessing && (
@@ -632,9 +633,9 @@ export default function ImportarDocumentoPage() {
                 Clique em qualquer cenário abaixo para carregar instantaneamente o documento estruturado na tela de conferência.
               </p>
             </div>
-            <span className="text-[11px] font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded border border-blue-200 dark:border-blue-800 self-start sm:self-auto">
+            <PillsBadge type="primary" small className="self-start sm:self-auto">
               5 Cenários Disponíveis
-            </span>
+            </PillsBadge>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
@@ -654,9 +655,9 @@ export default function ImportarDocumentoPage() {
                       <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
                         {sc.nome}
                       </span>
-                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${sc.badgeColor}`}>
+                      <PillsBadge type={sc.badgeType} small>
                         {sc.badge}
-                      </span>
+                      </PillsBadge>
                     </div>
                     <span className="text-[11px] font-mono text-slate-500">
                       {sc.valor}

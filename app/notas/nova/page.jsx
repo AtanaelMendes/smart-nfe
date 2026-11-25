@@ -15,6 +15,7 @@ import {
   faLaptopCode,
 } from '@fortawesome/free-solid-svg-icons';
 import AppLayout from '@/components/Layouts/AppLayout';
+import PillsBadge from '@/components/buttons/PillsBadge';
 
 export default function NovaNotaChoicePage() {
   const breadcrumbs = [
@@ -65,10 +66,10 @@ export default function NovaNotaChoicePage() {
                 <div className="w-14 h-14 rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center text-2xl group-hover:scale-105 transition-transform">
                   <FontAwesomeIcon icon={faBoxesStacked} />
                 </div>
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-300">
+                <PillsBadge type="primary" small className="gap-1.5">
                   <FontAwesomeIcon icon={faTruckFast} className="w-3.5 h-3.5" />
                   Modelo 55 • Mercadorias
-                </span>
+                </PillsBadge>
               </div>
 
               <div>
@@ -119,10 +120,10 @@ export default function NovaNotaChoicePage() {
                 <div className="w-14 h-14 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-2xl group-hover:scale-105 transition-transform">
                   <FontAwesomeIcon icon={faReceipt} />
                 </div>
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300">
+                <PillsBadge type="success" small className="gap-1.5">
                   <FontAwesomeIcon icon={faCoins} className="w-3.5 h-3.5" />
                   Padrão Nacional • MEI & Serviços
-                </span>
+                </PillsBadge>
               </div>
 
               <div>

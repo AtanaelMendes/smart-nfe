@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faChevronDown, faExternalLink } from '@fortawesome/free-solid-svg-icons';
 import Button from '../buttons/Button';
+import PillsBadge from '../buttons/PillsBadge';
 import Fieldset, { fieldInputClass } from './Fieldset';
 
 const CustomDropdown = ({ id: providedId, label, options = [], onSelect, placeholder, showIconLink, hint }) => {
@@ -24,7 +25,7 @@ const CustomDropdown = ({ id: providedId, label, options = [], onSelect, placeho
         </Fieldset>
         {isOpen && <div role="menu" className="absolute z-30 mt-1.5 max-h-64 w-full overflow-y-auto rounded-lg border border-slate-200 bg-white py-1 shadow-lg dark:border-slate-700 dark:bg-slate-900">
             {options.map((option) => <Button role="menuitem" key={option.value} buttonType="ghost" block onClick={() => { onSelect?.(option.value); setIsOpen(false); }} className="justify-between rounded-none px-4 py-2.5 text-left font-normal tracking-normal">
-                <span>{option.label}</span><span className="ml-3 rounded-full bg-blue-50 px-2 text-xs text-blue-700 dark:bg-blue-400/15 dark:text-blue-300">{option.count}</span>
+                <span>{option.label}</span><PillsBadge type="default" small className="ml-3">{option.count}</PillsBadge>
             </Button>)}
         </div>}
     </div>;

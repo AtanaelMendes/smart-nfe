@@ -27,6 +27,7 @@ import {
 
 import AppLayout from '@/components/Layouts/AppLayout';
 import Button from '@/components/buttons/Button';
+import PillsBadge from '@/components/buttons/PillsBadge';
 import Checkbox from '@/components/inputs/Checkbox';
 import { useAppContext } from '@/context/AppContext';
 import { invoiceRepository } from '@/features/invoiceRepository';
@@ -175,17 +176,27 @@ function FiscalFixConfirmationModal({
               <span className="text-[10px] font-bold text-slate-500 uppercase block mb-1">
                 Valor Atual no Documento
               </span>
-              <div className="p-2.5 rounded font-mono text-xs font-bold bg-red-100 text-red-800 border border-red-200 dark:bg-red-950/50 dark:text-red-300 dark:border-red-800 break-all">
+              <PillsBadge
+                type="danger"
+                wrap
+                title={String(payload.valorAtual || '(vazio)')}
+                className="w-full"
+              >
                 {String(payload.valorAtual || '(vazio)')}
-              </div>
+              </PillsBadge>
             </div>
             <div>
               <span className="text-[10px] font-bold text-slate-500 uppercase block mb-1">
                 Valor Proposto pelo Assistente
               </span>
-              <div className="p-2.5 rounded font-mono text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-700 break-all">
+              <PillsBadge
+                type="success"
+                wrap
+                title={String(payload.valorProposto)}
+                className="w-full"
+              >
                 {String(payload.valorProposto)}
-              </div>
+              </PillsBadge>
             </div>
           </div>
 
@@ -195,9 +206,9 @@ function FiscalFixConfirmationModal({
               <span className="font-semibold text-blue-900 dark:text-blue-200">
                 Origem da Regra / Justificativa:
               </span>
-              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider bg-blue-200 text-blue-900 dark:bg-blue-900 dark:text-blue-200">
+              <PillsBadge type="info" small>
                 Sugestão Fiscal Demonstrativa (R2)
-              </span>
+              </PillsBadge>
             </div>
             <p className="text-blue-800 dark:text-blue-300 text-[11px] leading-relaxed">
               {payload.origemRegra}
@@ -358,9 +369,9 @@ function SafeBulkReviewModal({
                           <span className="font-bold text-slate-900 dark:text-slate-100">
                             Item #{issue.itemNumero} — {issue.itemDescricao}
                           </span>
-                          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
+                          <PillsBadge type="default" small>
                             {issue.campo}
-                          </span>
+                          </PillsBadge>
                         </div>
                         <div className="flex items-center gap-2 text-[11px]">
                           <span className="font-mono text-red-600 dark:text-red-400 font-semibold">
@@ -427,9 +438,9 @@ function SafeBulkReviewModal({
                           <span className="font-bold text-slate-900 dark:text-slate-100">
                             Item #{issue.itemNumero} — {issue.itemDescricao}
                           </span>
-                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-200 border border-amber-300 dark:border-amber-700">
+                          <PillsBadge type="warning" small>
                             🔒 Sensível
-                          </span>
+                          </PillsBadge>
                         </div>
                         <div className="flex items-center gap-2 text-[11px]">
                           <span className="text-slate-500 font-medium">{issue.campo}:</span>
@@ -819,9 +830,9 @@ export default function ValidacaoPage({ params }) {
             </Link>
             <div>
               <div className="flex items-center gap-2">
-                <span className="px-2 py-0.5 text-[10px] font-bold rounded uppercase tracking-wider bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
+                <PillsBadge type="primary" small>
                   {invoice.tipoDocumento || 'NF-e'} • Série {invoice.serie || '1'}
-                </span>
+                </PillsBadge>
                 <span className="text-xs text-slate-500 flex items-center gap-1 font-mono">
                   <FontAwesomeIcon icon={faGlobe} className="w-3 h-3 text-slate-400" />
                   Destino: {invoice.destinatario?.pais || 'Exportação'} ({invoice.destinatario?.nome || 'Cliente'})
@@ -1115,24 +1126,18 @@ export default function ValidacaoPage({ params }) {
                             <span className="font-bold text-slate-900 dark:text-slate-100 text-sm">
                               Item #{issue.itemNumero} — {issue.itemDescricao}
                             </span>
-                            <span
-                              className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider ${
-                                isError
-                                  ? 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-200 border border-red-300 dark:border-red-700'
-                                  : 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200 border border-amber-300 dark:border-amber-700'
-                              }`}
-                            >
+                            <PillsBadge type={isError ? 'danger' : 'warning'} small>
                               {isError ? 'Erro Bloqueante' : 'Alerta Aduaneiro'}
-                            </span>
+                            </PillsBadge>
                             {isSensivel ? (
-                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200 border border-amber-300 dark:border-amber-700 flex items-center gap-1">
+                              <PillsBadge type="warning" small>
                                 <FontAwesomeIcon icon={faLock} className="w-2.5 h-2.5 text-amber-600" />
                                 Fiscal Sensível
-                              </span>
+                              </PillsBadge>
                             ) : (
-                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700">
+                              <PillsBadge type="success" small>
                                 Ajuste Mecânico
-                              </span>
+                              </PillsBadge>
                             )}
                             {issue.regra && (
                               <span className="text-[10px] text-slate-500 font-medium">
@@ -1150,18 +1155,26 @@ export default function ValidacaoPage({ params }) {
                           <div className="flex flex-wrap items-center gap-3 pt-1 text-[11px]">
                             <div className="flex items-center gap-1.5">
                               <span className="text-slate-500">Valor Atual ({issue.campo}):</span>
-                              <span className="font-mono font-bold px-1.5 py-0.5 rounded bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-300 border border-red-200 dark:border-red-800">
+                              <PillsBadge
+                                type="danger"
+                                wrap
+                                title={String(issue.encontrado || 'vazio')}
+                              >
                                 {String(issue.encontrado || 'vazio')}
-                              </span>
+                              </PillsBadge>
                             </div>
 
                             <FontAwesomeIcon icon={faArrowRight} className="w-2.5 h-2.5 text-slate-400" />
 
                             <div className="flex items-center gap-1.5">
                               <span className="text-slate-500">Solução Sugerida:</span>
-                              <span className="font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
+                              <PillsBadge
+                                type="success"
+                                wrap
+                                title={String(issue.esperado || 'Conforme')}
+                              >
                                 {String(issue.esperado || 'Conforme')}
-                              </span>
+                              </PillsBadge>
                             </div>
                           </div>
 

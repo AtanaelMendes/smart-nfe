@@ -25,6 +25,7 @@ import {
 import AppLayout from '@/components/Layouts/AppLayout';
 import DataTable from '@/components/table/DataTable';
 import Button from '@/components/buttons/Button';
+import PillsBadge from '@/components/buttons/PillsBadge';
 import Select from '@/components/inputs/Select';
 import InputText from '@/components/inputs/InputText';
 import Checkbox from '@/components/inputs/Checkbox';
@@ -33,7 +34,7 @@ import { useAppContext } from '@/context/AppContext';
 
 import { formatBRL } from '@/lib/formatters/currency';
 import { formatDateBR } from '@/lib/formatters/dates';
-import { getStatusLabel, getStatusColor } from '@/lib/formatters/status';
+import { getStatusLabel, getStatusBadgeType } from '@/lib/formatters/status';
 import { invoiceRepository } from '@/features/invoiceRepository';
 
 export const EXPORT_CUSTOMERS = [
@@ -314,15 +315,9 @@ export default function DocumentosPage() {
             <span className="font-semibold text-slate-900 dark:text-slate-100">
               NF-e {item.numero}
             </span>
-            <span
-              className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded ${
-                item.tipoDocumento === 'XML'
-                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'
-                  : 'bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-300'
-              }`}
-            >
+            <PillsBadge type={item.tipoDocumento === 'XML' ? 'primary' : 'danger'} small title={item.tipoDocumento}>
               {item.tipoDocumento}
-            </span>
+            </PillsBadge>
           </div>
           <span className="text-[11px] text-slate-500 font-mono truncate max-w-[190px]" title={item.chaveAcesso}>
             {item.chaveAcesso}
@@ -398,9 +393,9 @@ export default function DocumentosPage() {
       label: 'Itens',
       align: 'center',
       render: (item) => (
-        <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
+        <PillsBadge type="default" small title={`${item.itens?.length || 0} itens`}>
           {item.itens?.length || 0}
-        </span>
+        </PillsBadge>
       ),
     },
     {
@@ -417,14 +412,11 @@ export default function DocumentosPage() {
       key: 'status',
       label: 'Situação',
       align: 'center',
-      render: (item) => {
-        const color = getStatusColor(item.status);
-        return (
-          <span className={`inline-flex items-center px-2 py-0.5 text-[11px] font-semibold rounded-full border ${color.bg} ${color.text} ${color.border}`}>
-            {getStatusLabel(item.status)}
-          </span>
-        );
-      },
+      render: (item) => (
+        <PillsBadge type={getStatusBadgeType(item.status)} small title={getStatusLabel(item.status)}>
+          {getStatusLabel(item.status)}
+        </PillsBadge>
+      ),
     },
     {
       key: 'acoes',
@@ -533,9 +525,9 @@ export default function DocumentosPage() {
                 • {selectedMetrics.suppliersCount} fornecedores
               </span>
               {selectedMetrics.hasMultipleCustomers && (
-                <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300 font-semibold text-[11px]">
+                <PillsBadge type="warning" small title="Clientes de exportação divergentes">
                   ⚠️ Clientes de exportação divergentes
-                </span>
+                </PillsBadge>
               )}
             </div>
 

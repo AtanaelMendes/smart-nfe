@@ -26,6 +26,7 @@ import {
 
 import AppLayout from '@/components/Layouts/AppLayout';
 import Button from '@/components/buttons/Button';
+import PillsBadge from '@/components/buttons/PillsBadge';
 import InputText from '@/components/inputs/InputText';
 import DataTable from '@/components/table/DataTable';
 import { cn } from '@/assets/utils';
@@ -34,7 +35,7 @@ import { useAppContext } from '@/context/AppContext';
 
 import { formatBRL } from '@/lib/formatters/currency';
 import { formatDateBR } from '@/lib/formatters/dates';
-import { getStatusLabel, getStatusColor } from '@/lib/formatters/status';
+import { getStatusLabel, getStatusBadgeType } from '@/lib/formatters/status';
 import { invoiceRepository } from '@/features/invoiceRepository';
 
 import {
@@ -728,9 +729,9 @@ export default function ConferenciaPage({ params }) {
           </Button>
           {row.modificado ? (
             <>
-              <span className="text-[10px] bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 font-semibold px-1.5 py-0.5 rounded">
+              <PillsBadge type="warning" small>
                 Editado
-              </span>
+              </PillsBadge>
               <Button
                 buttonType="warning"
                 size="small"
@@ -905,31 +906,31 @@ export default function ConferenciaPage({ params }) {
                 <h1 className="text-lg font-bold text-slate-900 dark:text-slate-100">
                   Conferência da NF-e {invoice.numero}
                 </h1>
-                <span className="text-xs bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded font-mono">
+                <PillsBadge type="default" small className="font-mono">
                   Série {invoice.serie}
-                </span>
-                <span className="text-xs bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 font-bold px-2 py-0.5 rounded font-mono shadow-xs">
+                </PillsBadge>
+                <PillsBadge type="primary-dark" small className="font-mono shadow-xs">
                   NF-e Mod. 55
-                </span>
-                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${getStatusColor(invoice.status)}`}>
+                </PillsBadge>
+                <PillsBadge type={getStatusBadgeType(invoice.status)} small>
                   {getStatusLabel(invoice.status)}
-                </span>
+                </PillsBadge>
                 {invoice.isRealImport || invoice.isDemo === false ? (
-                  <span
-                    className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700"
+                  <PillsBadge
+                    type="success"
                     title="Documento mantido exclusivamente na memória volátil de sessão. Não persistido em disco."
                   >
                     <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                     <span>Importação Local (Memória Temporária de Sessão)</span>
-                  </span>
+                  </PillsBadge>
                 ) : (
-                  <span
-                    className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-950/80 dark:text-blue-300 border border-blue-300 dark:border-blue-700"
+                  <PillsBadge
+                    type="primary"
                     title="Cenário de demonstração pré-carregado no navegador."
                   >
                     <span className="w-2 h-2 rounded-full bg-blue-500" />
                     <span>Modo Demonstração</span>
-                  </span>
+                  </PillsBadge>
                 )}
               </div>
               <p className="text-xs text-slate-500 truncate max-w-lg mt-0.5">
@@ -1000,9 +1001,9 @@ export default function ConferenciaPage({ params }) {
                 <FontAwesomeIcon icon={invoice.tipoDocumento === 'XML' ? faFileCode : faFilePdf} />
                 Visualização do Documento de Origem ({invoice.tipoDocumento})
               </span>
-              <span className="text-[10px] bg-slate-800 px-2 py-0.5 rounded text-amber-300">
+              <PillsBadge type="dark" small>
                 Visualização Demonstrativa
-              </span>
+              </PillsBadge>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
               <div>
@@ -1052,16 +1053,16 @@ export default function ConferenciaPage({ params }) {
             </p>
             <div className="flex flex-wrap items-center gap-1.5 mt-1">
               {modifiedItemsCount > 0 ? (
-                <span className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold bg-amber-50 dark:bg-amber-950/60 px-1.5 py-0.5 rounded">
+                <PillsBadge type="warning" small>
                   {modifiedItemsCount} alterado(s)
-                </span>
+                </PillsBadge>
               ) : (
                 <span className="text-[10px] text-slate-400">Todos originais</span>
               )}
               {itemsWithIssues.length > 0 && (
-                <span className="text-[10px] text-rose-600 dark:text-rose-400 font-semibold bg-rose-50 dark:bg-rose-950/60 px-1.5 py-0.5 rounded">
+                <PillsBadge type="danger" small>
                   {itemsWithIssues.length} pendente(s)
-                </span>
+                </PillsBadge>
               )}
             </div>
           </div>
@@ -1070,9 +1071,9 @@ export default function ConferenciaPage({ params }) {
             <div className="flex items-center justify-between">
               <span className="text-[11px] text-slate-500 uppercase font-semibold">Total da NF-e</span>
               {hasTotalsDiff && (
-                <span className="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                <PillsBadge type="warning" small className="font-mono">
                   {isDecimalNegative(totalsDiff) ? '' : '+'}{formatBRL(totalsDiff)}
-                </span>
+                </PillsBadge>
               )}
             </div>
             <p className="text-sm font-bold text-blue-600 dark:text-blue-400 mt-0.5 font-mono">
@@ -1096,9 +1097,9 @@ export default function ConferenciaPage({ params }) {
                 <strong>Alerta de Inconsistências Fiscais:</strong> {itemsWithIssues.length} {itemsWithIssues.length === 1 ? 'produto apresenta' : 'produtos apresentam'} dados ausentes ou divergentes (NCM incompleto, CFOP ausente ou divergência no cálculo).
               </span>
             </div>
-            <span className="text-[11px] font-semibold bg-amber-200 dark:bg-amber-900/60 px-2.5 py-0.5 rounded-full text-amber-900 dark:text-amber-200 self-start sm:self-auto">
+            <PillsBadge type="warning" small className="self-start sm:self-auto">
               {itemsWithIssues.length} {itemsWithIssues.length === 1 ? 'pendência' : 'pendências'}
-            </span>
+            </PillsBadge>
           </div>
         )}
 

@@ -6,6 +6,7 @@ import { faSun, faMoon, faChevronRight, faBars, faLightbulb } from '@fortawesome
 import { useAppContext } from '@/context/AppContext';
 import { getScreenTourByPath } from '@/config/screenTours';
 import Button from '@/components/buttons/Button';
+import PillsBadge from '@/components/buttons/PillsBadge';
 
 export default function SmartNFeHeader({ breadcrumbs = [], onMenuToggle, onOpenTour }) {
   const pathname = usePathname();
@@ -93,9 +94,9 @@ export default function SmartNFeHeader({ breadcrumbs = [], onMenuToggle, onOpenT
       {/* Right side actions */}
       <div className="flex items-center gap-2 flex-shrink-0">
         {/* Demo mode label */}
-        <span className="hidden sm:inline-flex items-center text-xs text-amber-700 bg-amber-50 dark:text-amber-300 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 rounded px-2 py-0.5 font-medium">
+        <PillsBadge type="default" small className="hidden sm:inline-flex" title="Ambiente de demonstração">
           Modo Demo
-        </span>
+        </PillsBadge>
 
         {/* Guia explicativo da tela */}
         <Button

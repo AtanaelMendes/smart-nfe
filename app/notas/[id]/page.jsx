@@ -26,10 +26,20 @@ import {
 import AppLayout from '@/components/Layouts/AppLayout';
 import Dialog from '@/components/Layouts/Dialog';
 import Button from '@/components/buttons/Button';
+import PillsBadge from '@/components/buttons/PillsBadge';
 import DataTable from '@/components/table/DataTable';
 import { documentRepository } from '@/features/documentRepository';
 import { formatBRL, formatDateBR } from '@/lib/formatters';
+import { getStatusBadgeType } from '@/lib/formatters/status';
 import { useAppContext } from '@/context/AppContext';
+
+// Status de documento (DRAFT / READY_TO_EMIT) não fazem parte do ciclo de vida
+// mapeado em @/lib/formatters/status; os conhecidos são traduzidos aqui e os
+// demais caem no mapeamento central (getStatusBadgeType → default).
+const DOC_STATUS_PILL_TYPE = {
+  READY_TO_EMIT: 'success',
+  DRAFT: 'warning',
+};
 
 export default function DocumentoDetalhesPage({ params: paramsProp }) {
   const router = useRouter();
@@ -121,6 +131,8 @@ export default function DocumentoDetalhesPage({ params: paramsProp }) {
 
   const isNFe = document?.documentType === 'NFE';
   const isNFSe = document?.documentType === 'NFSE';
+  const statusBadgeType =
+    DOC_STATUS_PILL_TYPE[document?.status] || getStatusBadgeType(document?.status);
 
   const breadcrumbs = [
     { label: 'Notas', href: '/notas' },
@@ -193,26 +205,20 @@ export default function DocumentoDetalhesPage({ params: paramsProp }) {
         <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-xl p-5 shadow-xs flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <span
-                className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                  isNFe
-                    ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-300'
-                    : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300'
-                }`}
-              >
+              <PillsBadge type={isNFe ? 'primary' : 'success'} small>
                 <FontAwesomeIcon icon={isNFe ? faBoxesStacked : faReceipt} className="w-3.5 h-3.5" />
                 {isNFe ? 'NF-e Modelo 55 • Mercadorias' : 'NFS-e • Padrão Nacional'}
-              </span>
+              </PillsBadge>
 
               {document.isMei && (
-                <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-800 dark:bg-purple-900/60 dark:text-purple-300">
+                <PillsBadge type="purple" small>
                   MEI Simplificado
-                </span>
+                </PillsBadge>
               )}
 
-              <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-slate-300">
+              <PillsBadge type={statusBadgeType} small>
                 Status: {document.status}
-              </span>
+              </PillsBadge>
             </div>
 
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">
@@ -284,21 +290,16 @@ export default function DocumentoDetalhesPage({ params: paramsProp }) {
               />
               <span>Resultado da Validação Fiscal Prévia</span>
             </h3>
-            <span
-              className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${
-                errors.length > 0
-                  ? 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300'
-                  : warnings.length > 0
-                  ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300'
-                  : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300'
-              }`}
+            <PillsBadge
+              type={errors.length > 0 ? 'danger' : warnings.length > 0 ? 'warning' : 'success'}
+              small
             >
               {errors.length > 0
                 ? `${errors.length} inconsistência(s)`
                 : warnings.length > 0
                 ? `${warnings.length} alerta(s)`
                 : '100% Válido para Rascunho'}
-            </span>
+            </PillsBadge>
           </div>
 
           {errors.length === 0 && warnings.length === 0 ? (

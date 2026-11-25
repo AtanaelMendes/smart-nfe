@@ -20,6 +20,7 @@ import {
 import AppLayout from '@/components/Layouts/AppLayout';
 import DataTable from '@/components/table/DataTable';
 import Button from '@/components/buttons/Button';
+import PillsBadge from '@/components/buttons/PillsBadge';
 import InputText from '@/components/inputs/InputText';
 import Select from '@/components/inputs/Select';
 import Dialog from '@/components/Layouts/Dialog';
@@ -128,19 +129,19 @@ export default function PreparacoesPage() {
       label: 'Tipo Operação',
       align: 'center',
       render: (item) => {
-        let badgeClass = 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300';
+        let badgeType = 'primary';
         let label = 'Mista (N → M)';
         if (item.tipo === 'agrupamento') {
-          badgeClass = 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/50 dark:text-cyan-300';
+          badgeType = 'teal';
           label = 'Agrupamento (N → 1)';
         } else if (item.tipo === 'divisao') {
-          badgeClass = 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300';
+          badgeType = 'purple';
           label = 'Divisão (1 → M)';
         }
         return (
-          <span className={`inline-flex px-2 py-0.5 text-[11px] font-bold rounded-full ${badgeClass}`}>
+          <PillsBadge type={badgeType} small title={label}>
             {label}
-          </span>
+          </PillsBadge>
         );
       },
     },
@@ -189,22 +190,22 @@ export default function PreparacoesPage() {
       label: 'Situação',
       align: 'center',
       render: (item) => {
-        let badge = 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300';
+        let badgeType = 'default';
         let label = 'Rascunho';
         if (item.status === 'active' || item.status === 'ativa') {
-          badge = 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300';
+          badgeType = 'success';
           label = 'Ativa';
         } else if (item.status === 'completed' || item.status === 'concluida') {
-          badge = 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300';
+          badgeType = 'primary';
           label = 'Concluída';
         } else if (item.status === 'cancelled') {
-          badge = 'bg-rose-100 text-rose-800 dark:bg-rose-900/50 dark:text-rose-300';
+          badgeType = 'danger';
           label = 'Cancelada';
         }
         return (
-          <span className={`inline-flex px-2 py-0.5 text-[11px] font-semibold rounded-full ${badge}`}>
+          <PillsBadge type={badgeType} small title={label}>
             {label}
-          </span>
+          </PillsBadge>
         );
       },
     },

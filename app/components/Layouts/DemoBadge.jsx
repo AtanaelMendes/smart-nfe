@@ -1,5 +1,7 @@
 'use client';
 
+import PillsBadge from '@/components/buttons/PillsBadge';
+
 export default function DemoBadge() {
   return (
     <div
@@ -7,10 +9,10 @@ export default function DemoBadge() {
       data-testid="demo-badge"
       aria-hidden="true"
     >
-      <span className="inline-flex items-center gap-1.5 bg-slate-900/85 backdrop-blur-sm text-slate-100 text-xs font-medium px-3.5 py-1 rounded-full shadow-md border border-slate-700/60">
+      <PillsBadge type="dark" small className="gap-1.5 px-3.5 py-1 shadow-md">
         <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
         <span>Modo Demonstração</span>
-      </span>
+      </PillsBadge>
     </div>
   );
 }

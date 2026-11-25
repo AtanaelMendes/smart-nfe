@@ -35,6 +35,7 @@ import InputDate from '@/components/inputs/InputDate';
 import InputTextArea from '@/components/inputs/InputTextArea';
 import Checkbox from '@/components/inputs/Checkbox';
 import Button from '@/components/buttons/Button';
+import PillsBadge from '@/components/buttons/PillsBadge';
 import DataTable from '@/components/table/DataTable';
 import { formatBRL } from '@/lib/formatters';
 import { cleanDecimalString, decimalAdd, decimalSubtract, decimalCompare } from '@/lib/calculations/decimal';
@@ -863,12 +864,12 @@ export default function ProductInvoiceEditor({
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-gray-200 dark:border-slate-800">
         <div>
           <div className="flex items-center gap-2">
-            <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-300">
+            <PillsBadge type="primary" small>
               Modelo 55 • Mercadorias
-            </span>
-            <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
+            </PillsBadge>
+            <PillsBadge type="warning" small>
               {mode === 'edit' ? 'Editando Rascunho' : 'Novo Rascunho'}
-            </span>
+            </PillsBadge>
           </div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight mt-1 flex items-center gap-2">
             <FontAwesomeIcon icon={faBoxesStacked} className="text-blue-600" />

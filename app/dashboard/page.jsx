@@ -19,11 +19,12 @@ import {
 import AppLayout from '@/components/Layouts/AppLayout';
 import DataTable from '@/components/table/DataTable';
 import Button from '@/components/buttons/Button';
+import PillsBadge from '@/components/buttons/PillsBadge';
 import { useAppContext } from '@/context/AppContext';
 
 import { formatBRL } from '@/lib/formatters/currency';
 import { formatDateBR } from '@/lib/formatters/dates';
-import { getStatusLabel, getStatusColor, STATUS_CONFIG } from '@/lib/formatters/status';
+import { getStatusLabel, getStatusBadgeType, STATUS_CONFIG } from '@/lib/formatters/status';
 import { getMockInvoices, getDashboardKPIs } from '@/lib/data/mockInvoices';
 
 export default function DashboardPage() {
@@ -52,15 +53,9 @@ export default function DashboardPage() {
             <span className="font-semibold text-slate-900 dark:text-slate-100 text-sm">
               NF-e {item.numero}
             </span>
-            <span
-              className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded ${
-                item.tipoDocumento === 'XML'
-                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'
-                  : 'bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-300'
-              }`}
-            >
+            <PillsBadge type={item.tipoDocumento === 'XML' ? 'primary' : 'danger'} small title={item.tipoDocumento}>
               {item.tipoDocumento}
-            </span>
+            </PillsBadge>
           </div>
           <span className="text-xs text-slate-500 dark:text-slate-400">
             Série {item.serie} &bull; {formatDateBR(item.dataEmissao || item.emissao)}
@@ -95,9 +90,9 @@ export default function DashboardPage() {
           <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
             <span>🌐 {item.destinatario?.pais}</span>
             {item.destinatario?.paisCodigo && (
-              <span className="text-[10px] bg-slate-200 dark:bg-slate-700 px-1 rounded font-mono">
+              <PillsBadge type="default" small title={item.destinatario?.paisCodigo}>
                 {item.destinatario?.paisCodigo}
-              </span>
+              </PillsBadge>
             )}
           </div>
         </div>
@@ -109,9 +104,9 @@ export default function DashboardPage() {
       align: 'center',
       render: (item) => (
         <div className="text-center">
-          <span className="inline-flex items-center justify-center px-2.5 py-0.5 text-xs font-semibold rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+          <PillsBadge type="default" small title={`${item.itens?.length || 0} itens`}>
             {item.itens?.length || 0} itens
-          </span>
+          </PillsBadge>
         </div>
       ),
     },
@@ -140,10 +135,10 @@ export default function DashboardPage() {
         const dotColor = STATUS_CONFIG[item.status]?.dot || 'bg-slate-400';
         return (
           <div className="flex justify-center">
-            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${getStatusColor(item.status)}`}>
+            <PillsBadge type={getStatusBadgeType(item.status)} small className="gap-1.5">
               <span className={`w-1.5 h-1.5 rounded-full ${dotColor}`} />
               {getStatusLabel(item.status)}
-            </span>
+            </PillsBadge>
           </div>
         );
       },
@@ -317,9 +312,9 @@ export default function DashboardPage() {
                 Clique em qualquer cenário para abrir diretamente a tela de conferência detalhada:
               </p>
             </div>
-            <span className="text-[11px] bg-blue-800 text-blue-200 px-2 py-0.5 rounded font-mono">
+            <PillsBadge type="primary" small title="Ambiente de Avaliação Contábil">
               Ambiente de Avaliação Contábil
-            </span>
+            </PillsBadge>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
@@ -368,7 +363,9 @@ export default function DashboardPage() {
             >
               <span className="text-xs font-bold text-red-200 flex items-center justify-between w-full">
                 <span>Demo 04 — Erros</span>
-                <span className="text-[9px] bg-red-800 text-white px-1 rounded">Atenção</span>
+                <PillsBadge type="danger-solid" small title="Atenção">
+                  Atenção
+                </PillsBadge>
               </span>
               <span className="text-[11px] text-red-300">12 itens com alertas</span>
               <span className="text-[10px] text-red-400 mt-1">CFOP / NCM / Matemática</span>
