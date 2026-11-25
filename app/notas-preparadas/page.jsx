@@ -568,51 +568,87 @@ ${detXml}
                     </span>
                   </div>
                   <div className="max-h-60 overflow-y-auto">
-                    <table className="w-full text-xs text-left text-slate-600 dark:text-slate-300">
-                      <thead className="text-[10px] uppercase bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700">
-                        <tr>
-                          <th className="px-2 py-1.5 text-center w-8">#</th>
-                          <th className="px-2 py-1.5">Código / Descrição</th>
-                          <th className="px-2 py-1.5 w-20">NCM</th>
-                          <th className="px-2 py-1.5 w-16 text-center">CFOP</th>
-                          <th className="px-2 py-1.5 w-14 text-center">Unid</th>
-                          <th className="px-2 py-1.5 w-20 text-right">Qtd</th>
-                          <th className="px-2 py-1.5 w-24 text-right">Unitário</th>
-                          <th className="px-2 py-1.5 w-24 text-right">Total</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
-                        {(selectedDanfe.itens && selectedDanfe.itens.length > 0) ? (
-                          selectedDanfe.itens.map((it, idx) => (
-                            <tr key={it.id || idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                              <td className="px-2 py-1 text-center font-mono text-slate-400">{it.item || idx + 1}</td>
-                              <td className="px-2 py-1">
-                                <span className="font-semibold text-slate-800 dark:text-slate-200 block truncate max-w-[200px]">
-                                  {it.descricao}
-                                </span>
-                                <span className="text-[10px] text-slate-400 font-mono">Cód: {it.codigo}</span>
-                              </td>
-                              <td className="px-2 py-1 font-mono text-[11px]">{it.ncm}</td>
-                              <td className="px-2 py-1 text-center font-mono text-[11px]">{it.cfop}</td>
-                              <td className="px-2 py-1 text-center font-mono uppercase">{it.unidade}</td>
-                              <td className="px-2 py-1 text-right font-mono font-bold text-slate-800 dark:text-slate-200">
-                                {it.quantidade}
-                              </td>
-                              <td className="px-2 py-1 text-right font-mono">{formatBRL(it.valorUnitario)}</td>
-                              <td className="px-2 py-1 text-right font-mono font-bold text-slate-900 dark:text-slate-100">
-                                {formatBRL(it.valorTotal)}
-                              </td>
-                            </tr>
-                          ))
-                        ) : (
-                          <tr>
-                            <td colSpan={8} className="px-3 py-3 text-center text-slate-400 italic">
-                              Itens demonstrativos consolidados no valor do lote.
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
+                    <DataTable
+                      data={selectedDanfe.itens || []}
+                      searchable={false}
+                      showFooter={false}
+                      showCount={false}
+                      dense
+                      getRowKey={(it, idx) => it.id || `item_${idx}`}
+                      emptyText="Itens demonstrativos consolidados no valor do lote."
+                      containerClassName="border-0 rounded-none shadow-none"
+                      tableClassName="text-xs"
+                      headerClassName="bg-slate-50 dark:bg-slate-900"
+                      columns={[
+                        {
+                          key: 'item',
+                          label: '#',
+                          align: 'center',
+                          width: 'w-8',
+                          className: 'font-mono text-slate-400',
+                          render: (it, idx) => it.item || idx + 1,
+                        },
+                        {
+                          key: 'descricao',
+                          label: 'Código / Descrição',
+                          render: (it) => (
+                            <>
+                              <span className="font-semibold text-slate-800 dark:text-slate-200 block truncate max-w-[200px]">
+                                {it.descricao}
+                              </span>
+                              <span className="text-[10px] text-slate-400 font-mono">Cód: {it.codigo}</span>
+                            </>
+                          ),
+                        },
+                        {
+                          key: 'ncm',
+                          label: 'NCM',
+                          width: 'w-20',
+                          className: 'font-mono text-[11px]',
+                          render: (it) => it.ncm,
+                        },
+                        {
+                          key: 'cfop',
+                          label: 'CFOP',
+                          align: 'center',
+                          width: 'w-16',
+                          className: 'font-mono text-[11px]',
+                          render: (it) => it.cfop,
+                        },
+                        {
+                          key: 'unidade',
+                          label: 'Unid',
+                          align: 'center',
+                          width: 'w-14',
+                          className: 'font-mono uppercase',
+                          render: (it) => it.unidade,
+                        },
+                        {
+                          key: 'quantidade',
+                          label: 'Qtd',
+                          align: 'right',
+                          width: 'w-20',
+                          className: 'font-mono font-bold text-slate-800 dark:text-slate-200',
+                          render: (it) => it.quantidade,
+                        },
+                        {
+                          key: 'valorUnitario',
+                          label: 'Unitário',
+                          align: 'right',
+                          width: 'w-24',
+                          className: 'font-mono',
+                          render: (it) => formatBRL(it.valorUnitario),
+                        },
+                        {
+                          key: 'valorTotal',
+                          label: 'Total',
+                          align: 'right',
+                          width: 'w-24',
+                          className: 'font-mono font-bold text-slate-900 dark:text-slate-100',
+                          render: (it) => formatBRL(it.valorTotal),
+                        },
+                      ]}
+                    />
                   </div>
                 </div>
 

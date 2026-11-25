@@ -31,6 +31,7 @@ import Button from '@/components/buttons/Button';
 import InputText from '@/components/inputs/InputText';
 import InputNumber from '@/components/inputs/InputNumber';
 import Select from '@/components/inputs/Select';
+import DataTable from '@/components/table/DataTable';
 import Dialog from '@/components/Layouts/Dialog';
 import { useAppContext } from '@/context/AppContext';
 import { invoiceRepository } from '@/features/invoiceRepository';
@@ -550,6 +551,153 @@ function NovaPreparacaoInner() {
     }
   };
 
+  // ---- Step 4: Matriz de Alocação (tabela de alta densidade) ----
+  // Filtro por origem aplicado fora da DataTable (a tabela não faz busca própria aqui)
+  const allocationTableData = flattenedOriginItems.filter(
+    (origin) => filterOriginInTable === 'ALL' || origin.sourceInvoiceId === filterOriginInTable
+  );
+
+  const allocationTableColumns = [
+    {
+      key: 'sourceInvoice',
+      label: 'NF-e Origem',
+      className: 'whitespace-nowrap',
+      render: (origin) => (
+        <>
+          <span className="font-bold text-slate-900 dark:text-slate-100">
+            {origin.sourceInvoiceNumero}
+          </span>
+          <span
+            className="block text-[10px] text-slate-400 truncate max-w-[120px]"
+            title={origin.sourceSupplier}
+          >
+            {origin.sourceSupplier}
+          </span>
+        </>
+      ),
+    },
+    {
+      key: 'itemNumber',
+      label: 'Item',
+      align: 'center',
+      className: 'text-slate-500 font-mono',
+      render: (origin) => origin.item.item || 1,
+    },
+    {
+      key: 'descricao',
+      label: 'Produto / Descrição',
+      className: 'max-w-[200px]',
+      render: (origin) => (
+        <>
+          <span className="font-medium truncate block" title={origin.item.descricao}>
+            {origin.item.descricao}
+          </span>
+          <span className="text-[10px] text-slate-400 font-mono">
+            Cód: {origin.item.codigo || '—'}
+          </span>
+        </>
+      ),
+    },
+    {
+      key: 'ncmUnidade',
+      label: 'NCM / UN',
+      align: 'center',
+      className: 'whitespace-nowrap',
+      render: (origin) => (
+        <>
+          <span className="font-mono text-[11px] block">{origin.item.ncm}</span>
+          <span className="text-[10px] px-1 py-0.2 rounded bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold">
+            {origin.item.unidade}
+          </span>
+        </>
+      ),
+    },
+    {
+      key: 'originalQty',
+      label: 'Qtd Orig.',
+      align: 'right',
+      className: 'font-mono font-medium',
+      render: (origin) => origin.originalQty,
+    },
+    {
+      key: 'finalAvailable',
+      label: 'Saldo Disp.',
+      align: 'right',
+      className: 'font-mono font-bold text-emerald-600 dark:text-emerald-400',
+      render: (origin) => origin.finalAvailable,
+    },
+    ...preparation.destinos.map((dest) => ({
+      key: `dest_${dest.id}`,
+      label: dest.nome,
+      align: 'center',
+      headerRender: () => (
+        <span
+          className="font-bold text-blue-900 dark:text-blue-200 truncate block max-w-[130px]"
+          title={dest.nome}
+        >
+          {dest.nome}
+        </span>
+      ),
+      headerClassName:
+        'bg-blue-50/60 dark:bg-blue-950/40 border-l border-slate-200 dark:border-slate-700 min-w-[140px]',
+      className:
+        'bg-blue-50/20 dark:bg-blue-950/20 border-l border-slate-200 dark:border-slate-700',
+      render: (origin) => {
+        const key = `${origin.sourceInvoiceId}__${origin.item.id}__${dest.id}`;
+        const alloc = preparation.allocations[key];
+        const currentQty = alloc?.quantity || '';
+
+        return (
+          <div className="space-y-1">
+            <div className="flex items-center gap-1">
+              <InputNumber
+                id={`qty-${origin.sourceInvoiceId}-${origin.item.id}-${dest.id}`}
+                value={currentQty}
+                placeholder="0.0000"
+                min="0"
+                small
+                onChange={(id, value) =>
+                  setAllocationQuantity(
+                    origin.sourceInvoiceId,
+                    origin.item.id,
+                    dest.id,
+                    value,
+                    origin.unitPriceOrigin
+                  )
+                }
+                className="text-right font-mono"
+              />
+              <Button
+                buttonType="primary"
+                size="small"
+                outline
+                onClick={() =>
+                  allocateAllAvailableToDest(
+                    origin.sourceInvoiceId,
+                    origin.item.id,
+                    dest.id,
+                    origin.unitPriceOrigin
+                  )
+                }
+                title="Alocar todo o saldo disponível neste destino"
+                className="px-1 py-1 text-[10px] shrink-0"
+              >
+                Max
+              </Button>
+            </div>
+          </div>
+        );
+      },
+    })),
+    {
+      key: 'unitPriceOrigin',
+      label: 'Preço Orig.',
+      align: 'right',
+      className: 'font-mono text-slate-500 whitespace-nowrap',
+      render: (origin) => formatBRL(origin.unitPriceOrigin),
+    },
+  ];
+
   return (
     <AppLayout
       breadcrumbs={[
@@ -990,139 +1138,19 @@ function NovaPreparacaoInner() {
             </div>
 
             {/* High-Density Compact Allocation Table */}
-            <div className="overflow-x-auto border border-slate-200 dark:border-slate-700 rounded-lg">
-              <table className="w-full text-left border-collapse text-xs">
-                <thead className="bg-slate-100 dark:bg-slate-900/80 text-slate-700 dark:text-slate-300 font-semibold border-b border-slate-200 dark:border-slate-700 sticky top-0 z-10">
-                  <tr>
-                    <th className="py-2 px-2.5">NF-e Origem</th>
-                    <th className="py-2 px-2">Item</th>
-                    <th className="py-2 px-2.5">Produto / Descrição</th>
-                    <th className="py-2 px-2 text-center">NCM / UN</th>
-                    <th className="py-2 px-2 text-right">Qtd Orig.</th>
-                    <th className="py-2 px-2 text-right">Saldo Disp.</th>
-                    {preparation.destinos.map((dest) => (
-                      <th key={dest.id} className="py-2 px-2.5 text-center bg-blue-50/60 dark:bg-blue-950/40 border-l border-slate-200 dark:border-slate-700 min-w-[140px]">
-                        <span className="font-bold text-blue-900 dark:text-blue-200 truncate block max-w-[130px]" title={dest.nome}>
-                          {dest.nome}
-                        </span>
-                      </th>
-                    ))}
-                    <th className="py-2 px-2 text-right">Preço Orig.</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-800 dark:text-slate-200">
-                  {flattenedOriginItems
-                    .filter((origin) => filterOriginInTable === 'ALL' || origin.sourceInvoiceId === filterOriginInTable)
-                    .map((origin) => {
-                      return (
-                        <tr key={origin.compositeKey} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/60">
-                          {/* Origem */}
-                          <td className="py-2 px-2.5 whitespace-nowrap">
-                            <span className="font-bold text-slate-900 dark:text-slate-100">
-                              {origin.sourceInvoiceNumero}
-                            </span>
-                            <span className="block text-[10px] text-slate-400 truncate max-w-[120px]" title={origin.sourceSupplier}>
-                              {origin.sourceSupplier}
-                            </span>
-                          </td>
-
-                          {/* Item num */}
-                          <td className="py-2 px-2 text-center text-slate-500 font-mono">
-                            {origin.item.item || 1}
-                          </td>
-
-                          {/* Descrição */}
-                          <td className="py-2 px-2.5 max-w-[200px]">
-                            <span className="font-medium truncate block" title={origin.item.descricao}>
-                              {origin.item.descricao}
-                            </span>
-                            <span className="text-[10px] text-slate-400 font-mono">
-                              Cód: {origin.item.codigo || '—'}
-                            </span>
-                          </td>
-
-                          {/* NCM & Unidade */}
-                          <td className="py-2 px-2 text-center whitespace-nowrap">
-                            <span className="font-mono text-[11px] block">{origin.item.ncm}</span>
-                            <span className="text-[10px] px-1 py-0.2 rounded bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold">
-                              {origin.item.unidade}
-                            </span>
-                          </td>
-
-                          {/* Qtd Original */}
-                          <td className="py-2 px-2 text-right font-mono font-medium">
-                            {origin.originalQty}
-                          </td>
-
-                          {/* Saldo Disponível */}
-                          <td className="py-2 px-2 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                            {origin.finalAvailable}
-                          </td>
-
-                          {/* Destinos Columns */}
-                          {preparation.destinos.map((dest) => {
-                            const key = `${origin.sourceInvoiceId}__${origin.item.id}__${dest.id}`;
-                            const alloc = preparation.allocations[key];
-                            const currentQty = alloc?.quantity || '';
-                            const unitPrice = alloc?.destinationUnitPrice || origin.unitPriceOrigin;
-
-                            return (
-                              <td
-                                key={dest.id}
-                                className="py-1.5 px-2 bg-blue-50/20 dark:bg-blue-950/20 border-l border-slate-200 dark:border-slate-700"
-                              >
-                                <div className="space-y-1">
-                                  <div className="flex items-center gap-1">
-                                    <InputNumber
-                                      id={`qty-${origin.sourceInvoiceId}-${origin.item.id}-${dest.id}`}
-                                      value={currentQty}
-                                      placeholder="0.0000"
-                                      min="0"
-                                      small
-                                      onChange={(id, value) =>
-                                        setAllocationQuantity(
-                                          origin.sourceInvoiceId,
-                                          origin.item.id,
-                                          dest.id,
-                                          value,
-                                          origin.unitPriceOrigin
-                                        )
-                                      }
-                                      className="text-right font-mono"
-                                    />
-                                    <Button
-                                      buttonType="primary"
-                                      size="small"
-                                      outline
-                                      onClick={() =>
-                                        allocateAllAvailableToDest(
-                                          origin.sourceInvoiceId,
-                                          origin.item.id,
-                                          dest.id,
-                                          origin.unitPriceOrigin
-                                        )
-                                      }
-                                      title="Alocar todo o saldo disponível neste destino"
-                                      className="px-1 py-1 text-[10px] shrink-0"
-                                    >
-                                      Max
-                                    </Button>
-                                  </div>
-                                </div>
-                              </td>
-                            );
-                          })}
-
-                          {/* Preço de Origem */}
-                          <td className="py-2 px-2 text-right font-mono text-slate-500 whitespace-nowrap">
-                            {formatBRL(origin.unitPriceOrigin)}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                </tbody>
-              </table>
-            </div>
+            <DataTable
+              data={allocationTableData}
+              columns={allocationTableColumns}
+              dense
+              searchable={false}
+              showFooter={false}
+              showCount={false}
+              getRowKey={(row) => row.compositeKey}
+              emptyText="Nenhum item de origem para exibir."
+              containerClassName="border border-slate-200 dark:border-slate-700 rounded-lg shadow-none"
+              tableClassName="border-collapse text-xs"
+              cellClassName="align-middle"
+            />
 
             <div className="flex justify-between pt-3">
               <Button buttonType="secondary" size="small" outline onClick={() => setActiveStep('destinos')}>

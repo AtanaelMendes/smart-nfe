@@ -15,7 +15,11 @@
       "Shell({:*)",
       "Shell(npx eslint \"app/components/notes/ProductInvoiceEditor.jsx\" \"app/components/notes/ServiceInvoiceEditor.jsx\")",
       "Shell(npx eslint app/components/buttons/Button.jsx app/components/Layouts/SmartNFeHeader.jsx app/components/Layouts/SmartNFeSidebar.jsx app/components/feedback/ScreenTourTip.jsx)",
-      "Shell(npx eslint app/components/inputs/InputNumber.jsx)"
+      "Shell(npx eslint app/components/inputs/InputNumber.jsx)",
+      "Shell(npx eslint --no-ignore app/components/table/DataTable.jsx app/components/inputs/InputText.jsx)",
+      "Shell(node -e \"const t=require('tailwind-merge'); console.log(typeof t.twMerge)\")",
+      "Shell(node \"C:\\Users\\AFRENTE\\AppData\\Local\\Temp\\commandcode\\C--www-smart-nfe\\c203fcd7-365a-4a74-b1a1-183e6c9434c1\\scratchpad\\fix-conferencia.js\")",
+      "Shell(npx eslint \"app/documentos/[id]/conferencia/page.jsx\" app/components/table/DataTable.jsx)"
     ],
     "deny": [],
     "defaultMode": "default"

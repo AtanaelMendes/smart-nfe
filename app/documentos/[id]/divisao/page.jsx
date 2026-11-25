@@ -26,6 +26,7 @@ import {
 import AppLayout from '@/components/Layouts/AppLayout';
 import Button from '@/components/buttons/Button';
 import InputText from '@/components/inputs/InputText';
+import DataTable from '@/components/table/DataTable';
 import { useAppContext } from '@/context/AppContext';
 
 import { formatBRL } from '@/lib/formatters/currency';
@@ -529,6 +530,222 @@ export default function DivisaoNotasPage({ params }) {
     }
   };
 
+  // Relatório de conciliação do item (com fallback idêntico ao usado na grade)
+  const getItemReport = (item) =>
+    itemReportsMap.get(item.id) || {
+      status: 'remaining',
+      balanceStr: item.quantidade,
+      totalAllocated: '0',
+    };
+
+  // Colunas da grade de distribuição — inclui colunas dinâmicas por nota de destino
+  const divisionColumns = [
+    {
+      key: 'seq',
+      label: '#',
+      align: 'center',
+      width: 'w-10',
+      className: 'text-slate-400 font-mono',
+      render: (_row, rowIndex) => rowIndex + 1,
+    },
+    {
+      key: 'produto',
+      label: 'Produto / NCM',
+      align: 'left',
+      width: 'min-w-[220px]',
+      render: (it) => (
+        <>
+          <span className="font-semibold text-slate-900 dark:text-slate-100 block truncate max-w-[260px]">
+            {it.descricao}
+          </span>
+          <div className="text-[10px] text-slate-500 font-mono flex items-center gap-2 mt-0.5">
+            <span>Cód: {it.codigo}</span>
+            <span>•</span>
+            <span>NCM: {it.ncm}</span>
+          </div>
+        </>
+      ),
+    },
+    {
+      key: 'unidade',
+      label: 'Unid',
+      align: 'center',
+      width: 'w-16',
+      className: 'font-mono uppercase text-slate-500',
+      render: (it) => it.unidade,
+    },
+    {
+      key: 'valorUnitario',
+      label: 'Unitário',
+      align: 'right',
+      width: 'w-24',
+      className: 'font-mono text-slate-600 dark:text-slate-400',
+      render: (it) => formatBRL(it.valorUnitario),
+    },
+    {
+      key: 'quantidadeOriginal',
+      label: 'Qtd Original',
+      align: 'right',
+      width: 'w-24',
+      className: 'font-bold font-mono text-slate-900 dark:text-slate-100',
+      headerClassName: 'font-bold text-slate-900 dark:text-slate-100',
+      render: (it) => formatQuantity(it.quantidade),
+    },
+
+    // Colunas dinâmicas: uma por nota de destino (quantidade editável + total da nota no cabeçalho)
+    ...targetNotes.map((note) => ({
+      key: `nota_${note.id}`,
+      label: note.nome,
+      align: 'center',
+      width: 'min-w-[130px]',
+      className:
+        'bg-blue-50/20 dark:bg-blue-900/10 border-l border-slate-200 dark:border-slate-700',
+      headerClassName:
+        'bg-blue-50/60 dark:bg-blue-900/20 border-l border-slate-200 dark:border-slate-700',
+      headerRender: () => (
+        <div className="flex flex-col items-center">
+          <span className="font-bold text-blue-900 dark:text-blue-200 truncate max-w-[120px]">
+            {note.nome}
+          </span>
+          <span className="text-[9px] text-blue-600 dark:text-blue-400 font-mono">
+            {formatBRL(noteTotals[note.id] || 0)}
+          </span>
+        </div>
+      ),
+      render: (it) => {
+        const report = getItemReport(it);
+        const isRemaining = report.status === 'remaining';
+        const isExcess = report.status === 'excess';
+        const cellVal = note.itens[it.id] || '';
+
+        return (
+          <div className="flex items-center justify-center gap-1">
+            <div className="w-20 flex-shrink-0">
+              <InputText
+                id={`qty-${note.id}-${it.id}`}
+                placeholder="0"
+                value={cellVal}
+                onChange={(_id, value) => handleQuantityChange(note.id, it.id, value)}
+                className={`w-full px-2 py-1 text-xs text-right font-mono rounded ${
+                  isExcess
+                    ? 'border-red-400 dark:border-red-600 focus:border-red-500'
+                    : 'border-slate-300 dark:border-slate-600 focus:border-blue-500'
+                } bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100`}
+              />
+            </div>
+            {isRemaining && (
+              <Button
+                buttonType="warning"
+                size="small"
+                square
+                onClick={() => handleAllocateRemaining(note.id, it)}
+                title={`Distribuir 100% do saldo restante (${formatQuantity(
+                  report.balanceStr
+                )}) para ${note.nome}`}
+                className="w-5 h-5 p-0 text-[10px] font-bold flex items-center justify-center bg-amber-100 hover:bg-amber-200 text-amber-800 dark:bg-amber-900/50 dark:hover:bg-amber-800 dark:text-amber-200"
+              >
+                +
+              </Button>
+            )}
+          </div>
+        );
+      },
+    })),
+
+    {
+      key: 'totalAlocado',
+      label: 'Total Alocado',
+      align: 'right',
+      width: 'w-24',
+      className:
+        'font-mono border-l border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300',
+      headerClassName: 'border-l border-slate-200 dark:border-slate-700',
+      render: (it) => formatQuantity(getItemReport(it).totalAllocated),
+    },
+    {
+      key: 'saldoRestante',
+      label: 'Saldo Restante',
+      align: 'right',
+      width: 'w-24',
+      className: 'font-mono font-bold',
+      render: (it) => {
+        const report = getItemReport(it);
+        const isOk = report.status === 'ok';
+        const isRemaining = report.status === 'remaining';
+        const isExcess = report.status === 'excess';
+
+        return (
+          <div className="flex items-center justify-end gap-1.5">
+            <span
+              className={
+                isExcess
+                  ? 'text-red-600 dark:text-red-400'
+                  : isOk
+                    ? 'text-emerald-600 dark:text-emerald-400'
+                    : 'text-amber-600 dark:text-amber-400'
+              }
+            >
+              {formatQuantity(report.balanceStr)}
+            </span>
+            {isRemaining && (
+              <Button
+                buttonType="warning"
+                size="small"
+                outline
+                onClick={() => handleDistributeItemEqually(it)}
+                title={`Dividir saldo deste item (${formatQuantity(
+                  report.balanceStr
+                )}) igualmente entre as ${targetNotes.length} notas`}
+                className="px-1.5 py-0.5 text-[10px] font-semibold bg-amber-100 hover:bg-amber-200 text-amber-800 dark:bg-amber-900/50 dark:hover:bg-amber-800 dark:text-amber-200 inline-flex items-center gap-1"
+              >
+                <FontAwesomeIcon icon={faScaleBalanced} className="w-2.5 h-2.5" />
+                <span>÷ Dividir</span>
+              </Button>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      align: 'center',
+      width: 'w-36',
+      render: (it) => {
+        const { status } = getItemReport(it);
+
+        if (status === 'ok') {
+          return (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+              <FontAwesomeIcon icon={faCircleCheck} className="w-2.5 h-2.5" />
+              OK (100%)
+            </span>
+          );
+        }
+
+        if (status === 'remaining') {
+          return (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+              <FontAwesomeIcon icon={faTriangleExclamation} className="w-2.5 h-2.5" />
+              Restante
+            </span>
+          );
+        }
+
+        if (status === 'excess') {
+          return (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-800 dark:bg-red-950/40 dark:text-red-300 border border-red-300 dark:border-red-800">
+              <FontAwesomeIcon icon={faCircleExclamation} className="w-2.5 h-2.5" />
+              Excesso
+            </span>
+          );
+        }
+
+        return null;
+      },
+    },
+  ];
+
   if (loading) {
     return (
       <AppLayout breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Divisão' }]}>
@@ -893,201 +1110,33 @@ export default function DivisaoNotasPage({ params }) {
 
         {/* Grade Principal de Itens e Distribuição de Quantidades */}
         <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-xs overflow-hidden">
-          <div className="p-3 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-              <FontAwesomeIcon icon={faScaleBalanced} className="text-blue-500" />
-              Grade de Distribuição por Produto
-            </span>
-            <span className="text-[11px] text-slate-500">
-              Digite a quantidade destinada a cada nota. Status em tempo real: OK (verde), Restante (amarelo), Excesso (vermelho).
-            </span>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs text-left text-slate-600 dark:text-slate-300 border-collapse">
-              <thead className="text-[11px] uppercase bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 border-b border-slate-200 dark:border-slate-600">
-                <tr>
-                  <th className="px-3 py-2 w-10 text-center">#</th>
-                  <th className="px-3 py-2 min-w-[220px]">Produto / NCM</th>
-                  <th className="px-3 py-2 w-16 text-center">Unid</th>
-                  <th className="px-3 py-2 w-24 text-right">Unitário</th>
-                  <th className="px-3 py-2 w-24 text-right font-bold text-slate-900 dark:text-slate-100">
-                    Qtd Original
-                  </th>
-                  {targetNotes.map((note, idx) => (
-                    <th
-                      key={note.id}
-                      className="px-3 py-2 min-w-[130px] text-center bg-blue-50/60 dark:bg-blue-900/20 border-l border-slate-200 dark:border-slate-700"
-                    >
-                      <div className="flex flex-col items-center">
-                        <span className="font-bold text-blue-900 dark:text-blue-200 truncate max-w-[120px]">
-                          {note.nome}
-                        </span>
-                        <span className="text-[9px] text-blue-600 dark:text-blue-400 font-mono">
-                          {formatBRL(noteTotals[note.id] || 0)}
-                        </span>
-                      </div>
-                    </th>
-                  ))}
-                  <th className="px-3 py-2 w-24 text-right border-l border-slate-200 dark:border-slate-700">
-                    Total Alocado
-                  </th>
-                  <th className="px-3 py-2 w-24 text-right">Saldo Restante</th>
-                  <th className="px-3 py-2 w-36 text-center">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
-                {invoice.itens?.map((it, idx) => {
-                  const report = itemReportsMap.get(it.id) || {
-                    status: 'remaining',
-                    balanceStr: it.quantidade,
-                    totalAllocated: '0',
-                  };
-
-                  const isOk = report.status === 'ok';
-                  const isRemaining = report.status === 'remaining';
-                  const isExcess = report.status === 'excess';
-
-                  return (
-                    <tr
-                      key={it.id || idx}
-                      className={`hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors ${
-                        isExcess ? 'bg-red-50/30 dark:bg-red-950/20' : ''
-                      }`}
-                    >
-                      {/* Sequencial # */}
-                      <td className="px-3 py-2 text-center text-slate-400 font-mono">{idx + 1}</td>
-
-                      {/* Descrição e Códigos */}
-                      <td className="px-3 py-2">
-                        <span className="font-semibold text-slate-900 dark:text-slate-100 block truncate max-w-[260px]">
-                          {it.descricao}
-                        </span>
-                        <div className="text-[10px] text-slate-500 font-mono flex items-center gap-2 mt-0.5">
-                          <span>Cód: {it.codigo}</span>
-                          <span>•</span>
-                          <span>NCM: {it.ncm}</span>
-                        </div>
-                      </td>
-
-                      {/* Unidade */}
-                      <td className="px-3 py-2 text-center font-mono uppercase text-slate-500">
-                        {it.unidade}
-                      </td>
-
-                      {/* Valor Unitário */}
-                      <td className="px-3 py-2 text-right font-mono text-slate-600 dark:text-slate-400">
-                        {formatBRL(it.valorUnitario)}
-                      </td>
-
-                      {/* Quantidade Original */}
-                      <td className="px-3 py-2 text-right font-bold font-mono text-slate-900 dark:text-slate-100">
-                        {formatQuantity(it.quantidade)}
-                      </td>
-
-                      {/* Inputs das Notas de Destino */}
-                      {targetNotes.map((note) => {
-                        const cellVal = note.itens[it.id] || '';
-                        return (
-                          <td
-                            key={note.id}
-                            className="px-2 py-1.5 text-center bg-blue-50/20 dark:bg-blue-900/10 border-l border-slate-200 dark:border-slate-700"
-                          >
-                            <div className="flex items-center justify-center gap-1">
-                              <div className="w-20 flex-shrink-0">
-                                <InputText
-                                  id={`qty-${note.id}-${it.id}`}
-                                  placeholder="0"
-                                  value={cellVal}
-                                  onChange={(_id, value) =>
-                                    handleQuantityChange(note.id, it.id, value)
-                                  }
-                                  className={`w-full px-2 py-1 text-xs text-right font-mono rounded ${
-                                    isExcess
-                                      ? 'border-red-400 dark:border-red-600 focus:border-red-500'
-                                      : 'border-slate-300 dark:border-slate-600 focus:border-blue-500'
-                                  } bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100`}
-                                />
-                              </div>
-                              {isRemaining && (
-                                <Button
-                                  buttonType="warning"
-                                  size="small"
-                                  square
-                                  onClick={() => handleAllocateRemaining(note.id, it)}
-                                  title={`Distribuir 100% do saldo restante (${formatQuantity(report.balanceStr)}) para ${note.nome}`}
-                                  className="w-5 h-5 p-0 text-[10px] font-bold flex items-center justify-center bg-amber-100 hover:bg-amber-200 text-amber-800 dark:bg-amber-900/50 dark:hover:bg-amber-800 dark:text-amber-200"
-                                >
-                                  +
-                                </Button>
-                              )}
-                            </div>
-                          </td>
-                        );
-                      })}
-
-                      {/* Total Alocado */}
-                      <td className="px-3 py-2 text-right font-mono border-l border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300">
-                        {formatQuantity(report.totalAllocated)}
-                      </td>
-
-                      {/* Saldo Restante */}
-                      <td className="px-3 py-2 text-right font-mono font-bold">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <span
-                            className={
-                              isExcess
-                                ? 'text-red-600 dark:text-red-400'
-                                : isOk
-                                ? 'text-emerald-600 dark:text-emerald-400'
-                                : 'text-amber-600 dark:text-amber-400'
-                            }
-                          >
-                            {formatQuantity(report.balanceStr)}
-                          </span>
-                          {isRemaining && (
-                            <Button
-                              buttonType="warning"
-                              size="small"
-                              outline
-                              onClick={() => handleDistributeItemEqually(it)}
-                              title={`Dividir saldo deste item (${formatQuantity(report.balanceStr)}) igualmente entre as ${targetNotes.length} notas`}
-                              className="px-1.5 py-0.5 text-[10px] font-semibold bg-amber-100 hover:bg-amber-200 text-amber-800 dark:bg-amber-900/50 dark:hover:bg-amber-800 dark:text-amber-200 inline-flex items-center gap-1"
-                            >
-                              <FontAwesomeIcon icon={faScaleBalanced} className="w-2.5 h-2.5" />
-                              <span>÷ Dividir</span>
-                            </Button>
-                          )}
-                        </div>
-                      </td>
-
-                      {/* Status Badges: OK verde (100%), Restante amarelo, Excesso vermelho */}
-                      <td className="px-3 py-2 text-center">
-                        {isOk && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
-                            <FontAwesomeIcon icon={faCircleCheck} className="w-2.5 h-2.5" />
-                            OK (100%)
-                          </span>
-                        )}
-                        {isRemaining && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
-                            <FontAwesomeIcon icon={faTriangleExclamation} className="w-2.5 h-2.5" />
-                            Restante
-                          </span>
-                        )}
-                        {isExcess && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-800 dark:bg-red-950/40 dark:text-red-300 border border-red-300 dark:border-red-800">
-                            <FontAwesomeIcon icon={faCircleExclamation} className="w-2.5 h-2.5" />
-                            Excesso
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+          <DataTable
+            data={invoice.itens || []}
+            columns={divisionColumns}
+            dense
+            searchable={false}
+            showFooter={false}
+            showCount={false}
+            getRowKey={(row, index) => row.id || `item_${index}`}
+            mainText={
+              <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                <FontAwesomeIcon icon={faScaleBalanced} className="text-blue-500" />
+                Grade de Distribuição por Produto
+              </span>
+            }
+            action={
+              <span className="text-[11px] text-slate-500">
+                Digite a quantidade destinada a cada nota. Status em tempo real: OK (verde), Restante (amarelo), Excesso (vermelho).
+              </span>
+            }
+            rowClassName={(row) =>
+              getItemReport(row).status === 'excess' ? 'bg-red-50/30 dark:bg-red-950/20' : ''
+            }
+            containerClassName="border-0 rounded-none shadow-none bg-transparent dark:bg-transparent"
+            tableClassName="text-xs border-collapse"
+            cellClassName="align-middle"
+            emptyText="Nenhum produto nesta nota fiscal."
+          />
 
           {/* Rodapé da Grade com Ação de Finalização */}
           <div className="p-4 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3">

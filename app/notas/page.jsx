@@ -22,6 +22,7 @@ import {
 import AppLayout from '@/components/Layouts/AppLayout';
 import Dialog from '@/components/Layouts/Dialog';
 import Button from '@/components/buttons/Button';
+import DataTable from '@/components/table/DataTable';
 import Select from '@/components/inputs/Select';
 import InputText from '@/components/inputs/InputText';
 import { documentRepository } from '@/features/documentRepository';
@@ -267,178 +268,181 @@ export default function NotasListPage() {
         </div>
 
         {/* Tabela de Documentos */}
-        <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-xs">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
-              <thead>
-                <tr className="bg-slate-100 dark:bg-slate-800/80 border-b border-gray-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-semibold uppercase tracking-wider">
-                  <th className="px-4 py-3">Documento / Título</th>
-                  <th className="px-3 py-3">Tipo</th>
-                  <th className="px-3 py-3">Emitente / Prestador</th>
-                  <th className="px-3 py-3">Cliente / Tomador</th>
-                  <th className="px-3 py-3">Data Prevista</th>
-                  <th className="px-3 py-3 text-right">Valor Total</th>
-                  <th className="px-3 py-3 text-center">Status</th>
-                  <th className="px-4 py-3 text-center">Ações</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-slate-800 text-gray-800 dark:text-slate-200">
-                {loading ? (
-                  <tr>
-                    <td colSpan={8} className="px-4 py-12 text-center text-gray-500 dark:text-slate-400">
-                      <div className="flex flex-col items-center justify-center gap-2">
-                        <FontAwesomeIcon icon={faRotateRight} className="w-6 h-6 animate-spin text-blue-600" />
-                        <span>Carregando notas e rascunhos...</span>
-                      </div>
-                    </td>
-                  </tr>
-                ) : documents.length === 0 ? (
-                  <tr>
-                    <td colSpan={8} className="px-4 py-12 text-center text-gray-500 dark:text-slate-400">
-                      <div className="flex flex-col items-center justify-center gap-3">
-                        <FontAwesomeIcon icon={faFileInvoice} className="w-10 h-10 text-gray-300 dark:text-slate-700" />
-                        <p className="font-semibold text-gray-700 dark:text-slate-300">Nenhum documento encontrado.</p>
-                        <p className="text-xs text-gray-500 max-w-sm">
-                          Tente ajustar seus filtros ou crie sua primeira nota fiscal manual agora.
-                        </p>
-                        <Link
-                          href="/notas/nova"
-                          className="mt-2 inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
-                        >
-                          <FontAwesomeIcon icon={faPlus} className="w-3 h-3" />
-                          <span>Criar Nota Manual</span>
-                        </Link>
-                      </div>
-                    </td>
-                  </tr>
+        <DataTable
+          data={documents}
+          loading={loading}
+          loadingText="Carregando notas e rascunhos..."
+          searchable={false}
+          showFooter={false}
+          dense
+          getRowKey={(doc) => doc.id}
+          tableClassName="border-collapse text-xs"
+          emptyRender={
+            <div className="flex flex-col items-center justify-center gap-3 py-8">
+              <FontAwesomeIcon icon={faFileInvoice} className="w-10 h-10 text-gray-300 dark:text-slate-700" />
+              <p className="font-semibold text-gray-700 dark:text-slate-300">Nenhum documento encontrado.</p>
+              <p className="text-xs text-gray-500 max-w-sm">
+                Tente ajustar seus filtros ou crie sua primeira nota fiscal manual agora.
+              </p>
+              <Link
+                href="/notas/nova"
+                className="mt-2 inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+              >
+                <FontAwesomeIcon icon={faPlus} className="w-3 h-3" />
+                <span>Criar Nota Manual</span>
+              </Link>
+            </div>
+          }
+          columns={[
+            {
+              key: 'titulo',
+              label: 'Documento / Título',
+              render: (doc) => {
+                const isNfe = doc.documentType === 'NFE';
+                return (
+                  <>
+                    <div className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                      <span>{doc.titulo || (isNfe ? 'NF-e de Produtos' : 'NFS-e de Serviços')}</span>
+                    </div>
+                    <div className="text-[11px] text-gray-500 dark:text-slate-400 mt-0.5 flex items-center gap-2 font-mono">
+                      <span>Nº: {doc.numeroPrevisto || 'Previsto no envio'}</span>
+                      <span>•</span>
+                      <span>Série: {doc.seriePrevista || '1'}</span>
+                    </div>
+                  </>
+                );
+              },
+            },
+            {
+              key: 'documentType',
+              label: 'Tipo',
+              render: (doc) =>
+                doc.documentType === 'NFE' ? (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300">
+                    <FontAwesomeIcon icon={faBoxesStacked} className="w-3 h-3" />
+                    <span>NF-e (Mod 55)</span>
+                  </span>
                 ) : (
-                  documents.map((doc) => {
-                    const isNfe = doc.documentType === 'NFE';
-                    const valorTotal = isNfe
-                      ? doc.totais?.valorTotalNota || '0.00'
-                      : doc.valores?.valorBruto || '0.00';
-                    const emitenteNome = doc.emitente?.nomeFantasia || doc.emitente?.razaoSocial || doc.prestador?.nomeFantasia || doc.prestador?.razaoSocial || '—';
-                    const clienteNome = doc.destinatario?.nomeOuRazao || doc.tomador?.nomeOuRazao || 'Consumidor / Tomador Não Informado';
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300">
+                    <FontAwesomeIcon icon={faReceipt} className="w-3 h-3" />
+                    <span>{doc.isMei ? 'NFS-e (MEI)' : 'NFS-e Nacional'}</span>
+                  </span>
+                ),
+            },
+            {
+              key: 'emitente',
+              label: 'Emitente / Prestador',
+              render: (doc) => (
+                <>
+                  <p className="font-medium text-gray-900 dark:text-slate-200 truncate max-w-[180px]">
+                    {doc.emitente?.nomeFantasia ||
+                      doc.emitente?.razaoSocial ||
+                      doc.prestador?.nomeFantasia ||
+                      doc.prestador?.razaoSocial ||
+                      '—'}
+                  </p>
+                  <p className="text-[11px] text-gray-500 font-mono">{doc.emitente?.cnpj || doc.prestador?.cnpj || ''}</p>
+                </>
+              ),
+            },
+            {
+              key: 'cliente',
+              label: 'Cliente / Tomador',
+              render: (doc) => (
+                <>
+                  <p className="font-medium text-gray-900 dark:text-slate-200 truncate max-w-[180px]">
+                    {doc.destinatario?.nomeOuRazao || doc.tomador?.nomeOuRazao || 'Consumidor / Tomador Não Informado'}
+                  </p>
+                  <p className="text-[11px] text-gray-500 font-mono">
+                    {doc.destinatario?.documento || doc.tomador?.documento || ''}
+                  </p>
+                </>
+              ),
+            },
+            {
+              key: 'dataPrevista',
+              label: 'Data Prevista',
+              className: 'whitespace-nowrap text-gray-600 dark:text-slate-400',
+              render: (doc) => formatDateBR(doc.dataPrevistaEmissao || doc.createdAt),
+            },
+            {
+              key: 'valorTotal',
+              label: 'Valor Total',
+              align: 'right',
+              className: 'font-semibold text-gray-900 dark:text-white font-mono',
+              render: (doc) =>
+                formatBRL(
+                  doc.documentType === 'NFE'
+                    ? doc.totais?.valorTotalNota || '0.00'
+                    : doc.valores?.valorBruto || '0.00'
+                ),
+            },
+            {
+              key: 'status',
+              label: 'Status',
+              align: 'center',
+              render: (doc) =>
+                doc.status === 'READY_TO_EMIT' ? (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                    <FontAwesomeIcon icon={faCircleCheck} className="w-3 h-3" />
+                    <span>Pronto</span>
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                    <FontAwesomeIcon icon={faClock} className="w-3 h-3" />
+                    <span>Rascunho</span>
+                  </span>
+                ),
+            },
+            {
+              key: 'acoes',
+              label: 'Ações',
+              align: 'center',
+              className: 'whitespace-nowrap',
+              render: (doc) => (
+                <div className="flex items-center justify-center gap-1">
+                  <Link
+                    href={`/notas/${doc.id}`}
+                    title="Visualizar e Revisar"
+                    className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-600 dark:text-slate-300 transition-colors"
+                  >
+                    <FontAwesomeIcon icon={faEye} className="w-3.5 h-3.5" />
+                  </Link>
 
-                    return (
-                      <tr
-                        key={doc.id}
-                        className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors"
-                      >
-                        {/* Título e Número */}
-                        <td className="px-4 py-3">
-                          <div className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                            <span>{doc.titulo || (isNfe ? 'NF-e de Produtos' : 'NFS-e de Serviços')}</span>
-                          </div>
-                          <div className="text-[11px] text-gray-500 dark:text-slate-400 mt-0.5 flex items-center gap-2 font-mono">
-                            <span>Nº: {doc.numeroPrevisto || 'Previsto no envio'}</span>
-                            <span>•</span>
-                            <span>Série: {doc.seriePrevista || '1'}</span>
-                          </div>
-                        </td>
+                  <Link
+                    href={`/notas/${doc.id}/editar`}
+                    title="Editar Rascunho"
+                    className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-slate-700 text-blue-600 dark:text-blue-400 transition-colors"
+                  >
+                    <FontAwesomeIcon icon={faPenToSquare} className="w-3.5 h-3.5" />
+                  </Link>
 
-                        {/* Tipo */}
-                        <td className="px-3 py-3">
-                          {isNfe ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300">
-                              <FontAwesomeIcon icon={faBoxesStacked} className="w-3 h-3" />
-                              <span>NF-e (Mod 55)</span>
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300">
-                              <FontAwesomeIcon icon={faReceipt} className="w-3 h-3" />
-                              <span>{doc.isMei ? 'NFS-e (MEI)' : 'NFS-e Nacional'}</span>
-                            </span>
-                          )}
-                        </td>
+                  <Button
+                    buttonType="ghost"
+                    size="small"
+                    onClick={() => handleDuplicate(doc.id, doc.titulo)}
+                    disabled={actionLoading}
+                    title="Duplicar Rascunho"
+                    className="!p-1.5 rounded bg-transparent dark:bg-transparent hover:bg-gray-200 dark:hover:bg-slate-700 text-indigo-600 dark:text-indigo-400"
+                  >
+                    <FontAwesomeIcon icon={faCopy} className="w-3.5 h-3.5" />
+                  </Button>
 
-                        {/* Emitente / Prestador */}
-                        <td className="px-3 py-3">
-                          <p className="font-medium text-gray-900 dark:text-slate-200 truncate max-w-[180px]">{emitenteNome}</p>
-                          <p className="text-[11px] text-gray-500 font-mono">{doc.emitente?.cnpj || doc.prestador?.cnpj || ''}</p>
-                        </td>
-
-                        {/* Cliente / Tomador */}
-                        <td className="px-3 py-3">
-                          <p className="font-medium text-gray-900 dark:text-slate-200 truncate max-w-[180px]">{clienteNome}</p>
-                          <p className="text-[11px] text-gray-500 font-mono">{doc.destinatario?.documento || doc.tomador?.documento || ''}</p>
-                        </td>
-
-                        {/* Data */}
-                        <td className="px-3 py-3 whitespace-nowrap text-gray-600 dark:text-slate-400">
-                          {formatDateBR(doc.dataPrevistaEmissao || doc.createdAt)}
-                        </td>
-
-                        {/* Valor Total */}
-                        <td className="px-3 py-3 text-right font-semibold text-gray-900 dark:text-white font-mono">
-                          {formatBRL(valorTotal)}
-                        </td>
-
-                        {/* Status */}
-                        <td className="px-3 py-3 text-center">
-                          {doc.status === 'READY_TO_EMIT' ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                              <FontAwesomeIcon icon={faCircleCheck} className="w-3 h-3" />
-                              <span>Pronto</span>
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
-                              <FontAwesomeIcon icon={faClock} className="w-3 h-3" />
-                              <span>Rascunho</span>
-                            </span>
-                          )}
-                        </td>
-
-                        {/* Ações */}
-                        <td className="px-4 py-3 text-center whitespace-nowrap">
-                          <div className="flex items-center justify-center gap-1">
-                            <Link
-                              href={`/notas/${doc.id}`}
-                              title="Visualizar e Revisar"
-                              className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-600 dark:text-slate-300 transition-colors"
-                            >
-                              <FontAwesomeIcon icon={faEye} className="w-3.5 h-3.5" />
-                            </Link>
-
-                            <Link
-                              href={`/notas/${doc.id}/editar`}
-                              title="Editar Rascunho"
-                              className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-slate-700 text-blue-600 dark:text-blue-400 transition-colors"
-                            >
-                              <FontAwesomeIcon icon={faPenToSquare} className="w-3.5 h-3.5" />
-                            </Link>
-
-                            <Button
-                              buttonType="ghost"
-                              size="small"
-                              onClick={() => handleDuplicate(doc.id, doc.titulo)}
-                              disabled={actionLoading}
-                              title="Duplicar Rascunho"
-                              className="!p-1.5 rounded bg-transparent dark:bg-transparent hover:bg-gray-200 dark:hover:bg-slate-700 text-indigo-600 dark:text-indigo-400"
-                            >
-                              <FontAwesomeIcon icon={faCopy} className="w-3.5 h-3.5" />
-                            </Button>
-
-                            <Button
-                              buttonType="ghost"
-                              size="small"
-                              onClick={() => confirmDelete(doc)}
-                              disabled={actionLoading}
-                              title="Excluir Rascunho"
-                              className="!p-1.5 rounded bg-transparent dark:bg-transparent hover:bg-red-100 dark:hover:bg-red-950/40 text-red-600 dark:text-red-400"
-                            >
-                              <FontAwesomeIcon icon={faTrashCan} className="w-3.5 h-3.5" />
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+                  <Button
+                    buttonType="ghost"
+                    size="small"
+                    onClick={() => confirmDelete(doc)}
+                    disabled={actionLoading}
+                    title="Excluir Rascunho"
+                    className="!p-1.5 rounded bg-transparent dark:bg-transparent hover:bg-red-100 dark:hover:bg-red-950/40 text-red-600 dark:text-red-400"
+                  >
+                    <FontAwesomeIcon icon={faTrashCan} className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+              ),
+            },
+          ]}
+        />
 
         {/* Modal de Exclusão de Documento */}
         <Dialog

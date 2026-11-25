@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo, Fragment } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -35,6 +35,7 @@ import InputDate from '@/components/inputs/InputDate';
 import InputTextArea from '@/components/inputs/InputTextArea';
 import Checkbox from '@/components/inputs/Checkbox';
 import Button from '@/components/buttons/Button';
+import DataTable from '@/components/table/DataTable';
 import { formatBRL } from '@/lib/formatters';
 import { cleanDecimalString, decimalAdd, decimalSubtract, decimalCompare } from '@/lib/calculations/decimal';
 import { calculateInvoiceTotals, calculateItemTotal } from '@/lib/calculations/invoiceTotals';
@@ -570,6 +571,293 @@ export default function ProductInvoiceEditor({
     );
   }, [productCatalog, catalogSearch]);
 
+  /* Colunas da grade editável de produtos (11 colunas do layout original). */
+  const productColumns = [
+    {
+      key: 'item',
+      label: '#',
+      align: 'center',
+      width: 'w-10',
+      className: 'px-2 py-1 text-center text-gray-500 font-mono text-[11px]',
+      render: (_row, rowIndex) => rowIndex + 1,
+    },
+    {
+      key: 'codigo',
+      label: 'Código',
+      width: 'w-28',
+      className: 'px-1.5 py-1',
+      render: (it) => (
+        <InputText
+          id={`nfe-item-${it.itemId}-codigo`}
+          value={it.codigo || ''}
+          onChange={(_id, value) => handleItemChange(it.itemId, 'codigo', value)}
+          placeholder="SKU-001"
+          className={`${INPUT_CLS} font-mono`}
+        />
+      ),
+    },
+    {
+      key: 'descricao',
+      label: 'Descrição do Produto *',
+      className: 'px-1.5 py-1',
+      headerClassName: 'min-w-[200px]',
+      render: (it) => (
+        <InputText
+          id={`nfe-item-${it.itemId}-descricao`}
+          value={it.descricao || ''}
+          onChange={(_id, value) => handleItemChange(it.itemId, 'descricao', value)}
+          placeholder="Descrição clara da mercadoria..."
+          className={INPUT_CLS}
+        />
+      ),
+    },
+    {
+      key: 'ncm',
+      label: 'NCM *',
+      width: 'w-24',
+      className: 'px-1.5 py-1',
+      render: (it) => (
+        <InputText
+          id={`nfe-item-${it.itemId}-ncm`}
+          maxLength={8}
+          value={it.ncm || ''}
+          onChange={(_id, value) => handleItemChange(it.itemId, 'ncm', value.replace(/\D/g, ''))}
+          placeholder="84089090"
+          className={`${INPUT_CLS} font-mono text-center`}
+        />
+      ),
+    },
+    {
+      key: 'cfop',
+      label: 'CFOP *',
+      width: 'w-20',
+      className: 'px-1.5 py-1',
+      render: (it) => (
+        <InputText
+          id={`nfe-item-${it.itemId}-cfop`}
+          maxLength={4}
+          value={it.cfop || ''}
+          onChange={(_id, value) => handleItemChange(it.itemId, 'cfop', value.replace(/\D/g, ''))}
+          placeholder={destinoOperacao === '3' ? '7101' : '5101'}
+          className={`${INPUT_CLS} font-mono text-center`}
+        />
+      ),
+    },
+    {
+      key: 'unidade',
+      label: 'UN',
+      align: 'center',
+      width: 'w-16',
+      className: 'px-1.5 py-1',
+      render: (it) => (
+        <InputText
+          id={`nfe-item-${it.itemId}-unidade`}
+          maxLength={6}
+          value={it.unidade || ''}
+          onChange={(_id, value) => handleItemChange(it.itemId, 'unidade', value.toUpperCase())}
+          placeholder="UN"
+          className={`${INPUT_CLS} text-center font-mono uppercase`}
+        />
+      ),
+    },
+    {
+      key: 'quantidade',
+      label: 'Qtd *',
+      align: 'right',
+      width: 'w-24',
+      className: 'px-1.5 py-1',
+      render: (it) => (
+        <InputText
+          id={`nfe-item-${it.itemId}-quantidade`}
+          value={it.quantidade || ''}
+          onChange={(_id, value) => handleItemChange(it.itemId, 'quantidade', value)}
+          placeholder="1.0000"
+          className={`${INPUT_CLS} text-right font-mono`}
+        />
+      ),
+    },
+    {
+      key: 'valorUnitario',
+      label: 'Valor Unit. *',
+      align: 'right',
+      width: 'w-28',
+      className: 'px-1.5 py-1',
+      render: (it) => (
+        <InputText
+          id={`nfe-item-${it.itemId}-valorUnitario`}
+          value={it.valorUnitario || ''}
+          onChange={(_id, value) => handleItemChange(it.itemId, 'valorUnitario', value)}
+          placeholder="0.0000"
+          className={`${INPUT_CLS} text-right font-mono`}
+        />
+      ),
+    },
+    {
+      key: 'desconto',
+      label: 'Desconto',
+      align: 'right',
+      width: 'w-24',
+      className: 'px-1.5 py-1',
+      render: (it) => (
+        <InputText
+          id={`nfe-item-${it.itemId}-desconto`}
+          value={it.desconto || ''}
+          onChange={(_id, value) => handleItemChange(it.itemId, 'desconto', value)}
+          placeholder="0.00"
+          className={`${INPUT_CLS} text-right font-mono text-gray-500 dark:text-slate-400`}
+        />
+      ),
+    },
+    {
+      key: 'valorTotal',
+      label: 'Total Linha',
+      align: 'right',
+      width: 'w-28',
+      className: 'px-2.5 py-1 text-right font-semibold text-gray-900 dark:text-white font-mono text-xs',
+      render: (it) => formatBRL(it.valorTotal || '0.00'),
+    },
+    {
+      key: 'acoes',
+      label: 'Ações',
+      align: 'center',
+      width: 'w-20',
+      className: 'px-2 py-1 text-center whitespace-nowrap',
+      render: (it) => (
+        <div className="flex items-center justify-center gap-1">
+          <Button
+            type="button"
+            buttonType="ghost"
+            outline
+            size="small"
+            square
+            onClick={() => toggleItemDetails(it.itemId)}
+            title="Detalhes fiscais do item"
+            className="!p-1 text-gray-500 dark:text-slate-400"
+          >
+            <FontAwesomeIcon icon={expandedItems.has(it.itemId) ? faChevronUp : faChevronDown} className="w-3.5 h-3.5" />
+          </Button>
+
+          <Button
+            type="button"
+            buttonType="ghost"
+            outline
+            size="small"
+            square
+            onClick={() => handleSaveProductToCatalog(it)}
+            title="Salvar produto no catálogo reutilizável"
+            className="!p-1 text-gray-500 dark:text-slate-400"
+          >
+            <FontAwesomeIcon icon={faFloppyDisk} className="w-3.5 h-3.5" />
+          </Button>
+
+          <Button
+            type="button"
+            buttonType="ghost"
+            outline
+            size="small"
+            square
+            onClick={() => handleDuplicateItem(it.itemId)}
+            title="Duplicar linha"
+            className="!p-1 text-gray-500 dark:text-slate-400"
+          >
+            <FontAwesomeIcon icon={faCopy} className="w-3.5 h-3.5" />
+          </Button>
+
+          <Button
+            type="button"
+            buttonType="danger"
+            outline
+            size="small"
+            square
+            onClick={() => handleRemoveItem(it.itemId)}
+            title="Remover produto"
+            className="!p-1 text-gray-500 dark:text-slate-400"
+          >
+            <FontAwesomeIcon icon={faTrashCan} className="w-3.5 h-3.5" />
+          </Button>
+        </div>
+      ),
+    },
+  ];
+
+  /* Detalhes fiscais exibidos na linha expansível (sem <tr>/<td>: o DataTable é dono da estrutura). */
+  const renderItemDetails = (it, rowIndex) => (
+    <div className="px-3 py-3 space-y-2 bg-blue-50/20 dark:bg-slate-800/40">
+      <div className="flex items-center gap-2 text-[11px] font-bold uppercase text-blue-700 dark:text-blue-300">
+        <FontAwesomeIcon icon={faLayerGroup} />
+        Detalhes fiscais do item {rowIndex + 1}
+      </div>
+
+      <FiscalGroup title="Produto e Unidades" accent="slate">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
+          <FiscalField label="CEST" value={it.cest} onChange={(v) => handleItemDetailChange(it.itemId, 'cest', v)} mono />
+          <FiscalField label="GTIN Comercial" value={it.cEAN} onChange={(v) => handleItemDetailChange(it.itemId, 'cEAN', v)} mono />
+          <FiscalField label="GTIN Tributável" value={it.cEANTrib} onChange={(v) => handleItemDetailChange(it.itemId, 'cEANTrib', v)} mono />
+          <FiscalField label="UN Tributável" value={it.unidadeTributavel} onChange={(v) => handleItemDetailChange(it.itemId, 'unidadeTributavel', v)} mono />
+          <FiscalField label="Qtd Tributável" value={it.quantidadeTributavel} onChange={(v) => handleItemDetailChange(it.itemId, 'quantidadeTributavel', v)} mono />
+          <FiscalField label="Valor Unit. Trib." value={it.valorUnitarioTributavel} onChange={(v) => handleItemDetailChange(it.itemId, 'valorUnitarioTributavel', v)} mono />
+          <FiscalField label="Compõe Total (indTot)" value={it.indicadorComposicaoTotal} onChange={(v) => handleItemDetailChange(it.itemId, 'indicadorComposicaoTotal', v)} mono />
+          <FiscalField label="Pedido" value={it.pedido} onChange={(v) => handleItemDetailChange(it.itemId, 'pedido', v)} />
+          <FiscalField label="Item do Pedido" value={it.itemPedido} onChange={(v) => handleItemDetailChange(it.itemId, 'itemPedido', v)} />
+          <FiscalField label="Info. Adicional" value={it.informacoesAdicionais} onChange={(v) => handleItemDetailChange(it.itemId, 'informacoesAdicionais', v)} className="md:col-span-2" />
+        </div>
+      </FiscalGroup>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2">
+        <FiscalGroup title="ICMS" accent="blue">
+          <div className="grid grid-cols-2 gap-1.5">
+            <FiscalField label="CST" value={it.tributos.icms.cst} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.icms.cst', v)} mono />
+            <FiscalField label="CSOSN" value={it.tributos.icms.csosn} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.icms.csosn', v)} mono />
+            <FiscalField label="Origem" value={it.tributos.icms.origem} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.icms.origem', v)} mono />
+            <FiscalField label="Mod. Base" value={it.tributos.icms.modalidadeBase} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.icms.modalidadeBase', v)} mono />
+            <FiscalField label="Base ICMS" value={it.tributos.icms.vBC} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.icms.vBC', v)} mono />
+            <FiscalField label="% Redução" value={it.tributos.icms.pRedBC} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.icms.pRedBC', v)} mono />
+            <FiscalField label="Alíquota %" value={it.tributos.icms.pICMS} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.icms.pICMS', v)} mono />
+            <FiscalField label="Valor ICMS" value={it.tributos.icms.vICMS} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.icms.vICMS', v)} mono />
+          </div>
+        </FiscalGroup>
+
+        <FiscalGroup title="IPI" accent="blue">
+          <div className="grid grid-cols-2 gap-1.5">
+            <FiscalField label="CST" value={it.tributos.ipi.cst} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.ipi.cst', v)} mono />
+            <FiscalField label="Enquadramento" value={it.tributos.ipi.cEnq} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.ipi.cEnq', v)} mono />
+            <FiscalField label="Base IPI" value={it.tributos.ipi.vBC} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.ipi.vBC', v)} mono />
+            <FiscalField label="Alíquota %" value={it.tributos.ipi.pIPI} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.ipi.pIPI', v)} mono />
+            <FiscalField label="Valor IPI" value={it.tributos.ipi.vIPI} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.ipi.vIPI', v)} mono />
+          </div>
+        </FiscalGroup>
+
+        <FiscalGroup title="PIS / COFINS" accent="blue">
+          <div className="grid grid-cols-2 gap-1.5">
+            <FiscalField label="CST PIS" value={it.tributos.pis.cst} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.pis.cst', v)} mono />
+            <FiscalField label="Base PIS" value={it.tributos.pis.vBC} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.pis.vBC', v)} mono />
+            <FiscalField label="Alíq. PIS %" value={it.tributos.pis.pPIS} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.pis.pPIS', v)} mono />
+            <FiscalField label="Valor PIS" value={it.tributos.pis.vPIS} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.pis.vPIS', v)} mono />
+            <FiscalField label="CST COFINS" value={it.tributos.cofins.cst} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.cofins.cst', v)} mono />
+            <FiscalField label="Base COFINS" value={it.tributos.cofins.vBC} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.cofins.vBC', v)} mono />
+            <FiscalField label="Alíq. COFINS %" value={it.tributos.cofins.pCOFINS} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.cofins.pCOFINS', v)} mono />
+            <FiscalField label="Valor COFINS" value={it.tributos.cofins.vCOFINS} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.cofins.vCOFINS', v)} mono />
+          </div>
+        </FiscalGroup>
+
+        <FiscalGroup title="IBS / CBS" accent="emerald">
+          <div className="grid grid-cols-2 gap-1.5">
+            <FiscalField label="CST" value={it.tributos.ibsCbs.cst} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.ibsCbs.cst', v)} mono />
+            <FiscalField label="Class. Trib." value={it.tributos.ibsCbs.cClassTrib} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.ibsCbs.cClassTrib', v)} mono />
+            <FiscalField label="Base IBS/CBS" value={it.tributos.ibsCbs.vBC} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.ibsCbs.vBC', v)} mono />
+            <FiscalField label="% IBS UF" value={it.tributos.ibsCbs.pIBSUF} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.ibsCbs.pIBSUF', v)} mono />
+            <FiscalField label="Valor IBS UF" value={it.tributos.ibsCbs.vIBSUF} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.ibsCbs.vIBSUF', v)} mono />
+            <FiscalField label="% IBS Mun" value={it.tributos.ibsCbs.pIBSMun} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.ibsCbs.pIBSMun', v)} mono />
+            <FiscalField label="Valor IBS Mun" value={it.tributos.ibsCbs.vIBSMun} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.ibsCbs.vIBSMun', v)} mono />
+            <FiscalField label="Valor IBS" value={it.tributos.ibsCbs.vIBS} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.ibsCbs.vIBS', v)} mono />
+            <FiscalField label="% CBS" value={it.tributos.ibsCbs.pCBS} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.ibsCbs.pCBS', v)} mono />
+            <FiscalField label="Valor CBS" value={it.tributos.ibsCbs.vCBS} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.ibsCbs.vCBS', v)} mono />
+          </div>
+        </FiscalGroup>
+      </div>
+    </div>
+  );
+
   return (
     <div className="max-w-7xl mx-auto space-y-6 pb-24">
       {/* Cabeçalho da Página */}
@@ -1016,272 +1304,21 @@ export default function ProductInvoiceEditor({
         </div>
 
         {/* Grade Editável de Produtos */}
-        <div className="overflow-x-auto border border-gray-200 dark:border-slate-800 rounded-lg">
-          <table className="w-full text-left border-collapse text-xs">
-            <thead>
-              <tr className="bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 font-semibold uppercase tracking-wider text-[11px]">
-                <th className="px-2.5 py-2.5 w-10 text-center">#</th>
-                <th className="px-2 py-2.5 w-28">Código</th>
-                <th className="px-3 py-2.5 min-w-[200px]">Descrição do Produto *</th>
-                <th className="px-2 py-2.5 w-24">NCM *</th>
-                <th className="px-2 py-2.5 w-20">CFOP *</th>
-                <th className="px-2 py-2.5 w-16 text-center">UN</th>
-                <th className="px-2 py-2.5 w-24 text-right">Qtd *</th>
-                <th className="px-2 py-2.5 w-28 text-right">Valor Unit. *</th>
-                <th className="px-2 py-2.5 w-24 text-right">Desconto</th>
-                <th className="px-3 py-2.5 w-28 text-right">Total Linha</th>
-                <th className="px-2 py-2.5 w-20 text-center">Ações</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-slate-800">
-              {itens.map((it, idx) => (
-                <Fragment key={it.itemId}>
-                <tr
-                  className="hover:bg-blue-50/40 dark:hover:bg-slate-800/40 transition-colors"
-                >
-                  <td className="px-2 py-2 text-center text-gray-500 font-mono text-[11px]">
-                    {idx + 1}
-                  </td>
-
-                  {/* Código */}
-                  <td className="px-1.5 py-2">
-                    <InputText
-                      id={`nfe-item-${it.itemId}-codigo`}
-                      value={it.codigo || ''}
-                      onChange={(_id, value) => handleItemChange(it.itemId, 'codigo', value)}
-                      placeholder="SKU-001"
-                      className={`${INPUT_CLS} font-mono`}
-                    />
-                  </td>
-
-                  {/* Descrição */}
-                  <td className="px-1.5 py-2">
-                    <InputText
-                      id={`nfe-item-${it.itemId}-descricao`}
-                      value={it.descricao || ''}
-                      onChange={(_id, value) => handleItemChange(it.itemId, 'descricao', value)}
-                      placeholder="Descrição clara da mercadoria..."
-                      className={INPUT_CLS}
-                    />
-                  </td>
-
-                  {/* NCM */}
-                  <td className="px-1.5 py-2">
-                    <InputText
-                      id={`nfe-item-${it.itemId}-ncm`}
-                      maxLength={8}
-                      value={it.ncm || ''}
-                      onChange={(_id, value) => handleItemChange(it.itemId, 'ncm', value.replace(/\D/g, ''))}
-                      placeholder="84089090"
-                      className={`${INPUT_CLS} font-mono text-center`}
-                    />
-                  </td>
-
-                  {/* CFOP */}
-                  <td className="px-1.5 py-2">
-                    <InputText
-                      id={`nfe-item-${it.itemId}-cfop`}
-                      maxLength={4}
-                      value={it.cfop || ''}
-                      onChange={(_id, value) => handleItemChange(it.itemId, 'cfop', value.replace(/\D/g, ''))}
-                      placeholder={destinoOperacao === '3' ? '7101' : '5101'}
-                      className={`${INPUT_CLS} font-mono text-center`}
-                    />
-                  </td>
-
-                  {/* Unidade */}
-                  <td className="px-1.5 py-2">
-                    <InputText
-                      id={`nfe-item-${it.itemId}-unidade`}
-                      maxLength={6}
-                      value={it.unidade || ''}
-                      onChange={(_id, value) => handleItemChange(it.itemId, 'unidade', value.toUpperCase())}
-                      placeholder="UN"
-                      className={`${INPUT_CLS} text-center font-mono uppercase`}
-                    />
-                  </td>
-
-                  {/* Quantidade */}
-                  <td className="px-1.5 py-2">
-                    <InputText
-                      id={`nfe-item-${it.itemId}-quantidade`}
-                      value={it.quantidade || ''}
-                      onChange={(_id, value) => handleItemChange(it.itemId, 'quantidade', value)}
-                      placeholder="1.0000"
-                      className={`${INPUT_CLS} text-right font-mono`}
-                    />
-                  </td>
-
-                  {/* Valor Unitário */}
-                  <td className="px-1.5 py-2">
-                    <InputText
-                      id={`nfe-item-${it.itemId}-valorUnitario`}
-                      value={it.valorUnitario || ''}
-                      onChange={(_id, value) => handleItemChange(it.itemId, 'valorUnitario', value)}
-                      placeholder="0.0000"
-                      className={`${INPUT_CLS} text-right font-mono`}
-                    />
-                  </td>
-
-                  {/* Desconto */}
-                  <td className="px-1.5 py-2">
-                    <InputText
-                      id={`nfe-item-${it.itemId}-desconto`}
-                      value={it.desconto || ''}
-                      onChange={(_id, value) => handleItemChange(it.itemId, 'desconto', value)}
-                      placeholder="0.00"
-                      className={`${INPUT_CLS} text-right font-mono text-gray-500 dark:text-slate-400`}
-                    />
-                  </td>
-
-                  {/* Total Linha */}
-                  <td className="px-2.5 py-2 text-right font-semibold text-gray-900 dark:text-white font-mono text-xs">
-                    {formatBRL(it.valorTotal || '0.00')}
-                  </td>
-
-                  {/* Ações da Linha */}
-                  <td className="px-2 py-2 text-center whitespace-nowrap">
-                    <div className="flex items-center justify-center gap-1">
-                      <Button
-                        type="button"
-                        buttonType="ghost"
-                        outline
-                        size="small"
-                        square
-                        onClick={() => toggleItemDetails(it.itemId)}
-                        title="Detalhes fiscais do item"
-                        className="!p-1 text-gray-500 dark:text-slate-400"
-                      >
-                        <FontAwesomeIcon icon={expandedItems.has(it.itemId) ? faChevronUp : faChevronDown} className="w-3.5 h-3.5" />
-                      </Button>
-
-                      <Button
-                        type="button"
-                        buttonType="ghost"
-                        outline
-                        size="small"
-                        square
-                        onClick={() => handleSaveProductToCatalog(it)}
-                        title="Salvar produto no catálogo reutilizável"
-                        className="!p-1 text-gray-500 dark:text-slate-400"
-                      >
-                        <FontAwesomeIcon icon={faFloppyDisk} className="w-3.5 h-3.5" />
-                      </Button>
-
-                      <Button
-                        type="button"
-                        buttonType="ghost"
-                        outline
-                        size="small"
-                        square
-                        onClick={() => handleDuplicateItem(it.itemId)}
-                        title="Duplicar linha"
-                        className="!p-1 text-gray-500 dark:text-slate-400"
-                      >
-                        <FontAwesomeIcon icon={faCopy} className="w-3.5 h-3.5" />
-                      </Button>
-
-                      <Button
-                        type="button"
-                        buttonType="danger"
-                        outline
-                        size="small"
-                        square
-                        onClick={() => handleRemoveItem(it.itemId)}
-                        title="Remover produto"
-                        className="!p-1 text-gray-500 dark:text-slate-400"
-                      >
-                        <FontAwesomeIcon icon={faTrashCan} className="w-3.5 h-3.5" />
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-
-                {expandedItems.has(it.itemId) && (
-                  <tr className="bg-blue-50/20 dark:bg-slate-800/40">
-                    <td colSpan={11} className="px-3 py-3">
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-[11px] font-bold uppercase text-blue-700 dark:text-blue-300">
-                          <FontAwesomeIcon icon={faLayerGroup} />
-                          Detalhes fiscais do item {idx + 1}
-                        </div>
-
-                        <FiscalGroup title="Produto e Unidades" accent="slate">
-                          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
-                            <FiscalField label="CEST" value={it.cest} onChange={(v) => handleItemDetailChange(it.itemId, 'cest', v)} mono />
-                            <FiscalField label="GTIN Comercial" value={it.cEAN} onChange={(v) => handleItemDetailChange(it.itemId, 'cEAN', v)} mono />
-                            <FiscalField label="GTIN Tributável" value={it.cEANTrib} onChange={(v) => handleItemDetailChange(it.itemId, 'cEANTrib', v)} mono />
-                            <FiscalField label="UN Tributável" value={it.unidadeTributavel} onChange={(v) => handleItemDetailChange(it.itemId, 'unidadeTributavel', v)} mono />
-                            <FiscalField label="Qtd Tributável" value={it.quantidadeTributavel} onChange={(v) => handleItemDetailChange(it.itemId, 'quantidadeTributavel', v)} mono />
-                            <FiscalField label="Valor Unit. Trib." value={it.valorUnitarioTributavel} onChange={(v) => handleItemDetailChange(it.itemId, 'valorUnitarioTributavel', v)} mono />
-                            <FiscalField label="Compõe Total (indTot)" value={it.indicadorComposicaoTotal} onChange={(v) => handleItemDetailChange(it.itemId, 'indicadorComposicaoTotal', v)} mono />
-                            <FiscalField label="Pedido" value={it.pedido} onChange={(v) => handleItemDetailChange(it.itemId, 'pedido', v)} />
-                            <FiscalField label="Item do Pedido" value={it.itemPedido} onChange={(v) => handleItemDetailChange(it.itemId, 'itemPedido', v)} />
-                            <FiscalField label="Info. Adicional" value={it.informacoesAdicionais} onChange={(v) => handleItemDetailChange(it.itemId, 'informacoesAdicionais', v)} className="md:col-span-2" />
-                          </div>
-                        </FiscalGroup>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2">
-                          <FiscalGroup title="ICMS" accent="blue">
-                            <div className="grid grid-cols-2 gap-1.5">
-                              <FiscalField label="CST" value={it.tributos.icms.cst} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.icms.cst', v)} mono />
-                              <FiscalField label="CSOSN" value={it.tributos.icms.csosn} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.icms.csosn', v)} mono />
-                              <FiscalField label="Origem" value={it.tributos.icms.origem} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.icms.origem', v)} mono />
-                              <FiscalField label="Mod. Base" value={it.tributos.icms.modalidadeBase} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.icms.modalidadeBase', v)} mono />
-                              <FiscalField label="Base ICMS" value={it.tributos.icms.vBC} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.icms.vBC', v)} mono />
-                              <FiscalField label="% Redução" value={it.tributos.icms.pRedBC} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.icms.pRedBC', v)} mono />
-                              <FiscalField label="Alíquota %" value={it.tributos.icms.pICMS} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.icms.pICMS', v)} mono />
-                              <FiscalField label="Valor ICMS" value={it.tributos.icms.vICMS} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.icms.vICMS', v)} mono />
-                            </div>
-                          </FiscalGroup>
-
-                          <FiscalGroup title="IPI" accent="blue">
-                            <div className="grid grid-cols-2 gap-1.5">
-                              <FiscalField label="CST" value={it.tributos.ipi.cst} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.ipi.cst', v)} mono />
-                              <FiscalField label="Enquadramento" value={it.tributos.ipi.cEnq} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.ipi.cEnq', v)} mono />
-                              <FiscalField label="Base IPI" value={it.tributos.ipi.vBC} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.ipi.vBC', v)} mono />
-                              <FiscalField label="Alíquota %" value={it.tributos.ipi.pIPI} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.ipi.pIPI', v)} mono />
-                              <FiscalField label="Valor IPI" value={it.tributos.ipi.vIPI} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.ipi.vIPI', v)} mono />
-                            </div>
-                          </FiscalGroup>
-
-                          <FiscalGroup title="PIS / COFINS" accent="blue">
-                            <div className="grid grid-cols-2 gap-1.5">
-                              <FiscalField label="CST PIS" value={it.tributos.pis.cst} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.pis.cst', v)} mono />
-                              <FiscalField label="Base PIS" value={it.tributos.pis.vBC} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.pis.vBC', v)} mono />
-                              <FiscalField label="Alíq. PIS %" value={it.tributos.pis.pPIS} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.pis.pPIS', v)} mono />
-                              <FiscalField label="Valor PIS" value={it.tributos.pis.vPIS} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.pis.vPIS', v)} mono />
-                              <FiscalField label="CST COFINS" value={it.tributos.cofins.cst} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.cofins.cst', v)} mono />
-                              <FiscalField label="Base COFINS" value={it.tributos.cofins.vBC} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.cofins.vBC', v)} mono />
-                              <FiscalField label="Alíq. COFINS %" value={it.tributos.cofins.pCOFINS} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.cofins.pCOFINS', v)} mono />
-                              <FiscalField label="Valor COFINS" value={it.tributos.cofins.vCOFINS} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.cofins.vCOFINS', v)} mono />
-                            </div>
-                          </FiscalGroup>
-
-                          <FiscalGroup title="IBS / CBS" accent="emerald">
-                            <div className="grid grid-cols-2 gap-1.5">
-                              <FiscalField label="CST" value={it.tributos.ibsCbs.cst} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.ibsCbs.cst', v)} mono />
-                              <FiscalField label="Class. Trib." value={it.tributos.ibsCbs.cClassTrib} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.ibsCbs.cClassTrib', v)} mono />
-                              <FiscalField label="Base IBS/CBS" value={it.tributos.ibsCbs.vBC} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.ibsCbs.vBC', v)} mono />
-                              <FiscalField label="% IBS UF" value={it.tributos.ibsCbs.pIBSUF} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.ibsCbs.pIBSUF', v)} mono />
-                              <FiscalField label="Valor IBS UF" value={it.tributos.ibsCbs.vIBSUF} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.ibsCbs.vIBSUF', v)} mono />
-                              <FiscalField label="% IBS Mun" value={it.tributos.ibsCbs.pIBSMun} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.ibsCbs.pIBSMun', v)} mono />
-                              <FiscalField label="Valor IBS Mun" value={it.tributos.ibsCbs.vIBSMun} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.ibsCbs.vIBSMun', v)} mono />
-                              <FiscalField label="Valor IBS" value={it.tributos.ibsCbs.vIBS} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.ibsCbs.vIBS', v)} mono />
-                              <FiscalField label="% CBS" value={it.tributos.ibsCbs.pCBS} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.ibsCbs.pCBS', v)} mono />
-                              <FiscalField label="Valor CBS" value={it.tributos.ibsCbs.vCBS} onChange={(v) => handleItemDetailChange(it.itemId, 'tributos.ibsCbs.vCBS', v)} mono />
-                            </div>
-                          </FiscalGroup>
-                        </div>
-                      </div>
-                    </td>
-                  </tr>
-                )}
-                </Fragment>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <DataTable
+          data={itens}
+          columns={productColumns}
+          dense
+          searchable={false}
+          showFooter={false}
+          getRowKey={(row) => row.itemId}
+          emptyText="Nenhum produto adicionado."
+          isRowExpanded={(row) => expandedItems.has(row.itemId)}
+          renderExpandedRow={(row, rowIndex) => renderItemDetails(row, rowIndex)}
+          containerClassName="border border-gray-200 dark:border-slate-800 rounded-lg"
+          tableClassName="text-xs border-collapse"
+          headerClassName="bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 font-semibold uppercase tracking-wider text-[11px]"
+          rowClassName="hover:bg-blue-50/40 dark:hover:bg-slate-800/40 transition-colors"
+        />
       </div>
 
       {/* SEÇÃO D: Totais e Despesas Acessórias */}

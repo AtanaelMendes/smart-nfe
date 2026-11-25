@@ -26,7 +26,9 @@ const InputText = ({
     loading,
     clearable,
     className,
-    type
+    type,
+    onKeyDown,
+    ...rest
 }) => {
     const [inputVal, setInputVal] = useState(value || "");
 
@@ -144,10 +146,9 @@ const InputText = ({
             if (typeof onChange == "function") {
                 onChange(evt.target.id, getMaskedValue(evt.target.value));
             }
-            onChange(evt.target.id, getMaskedValue(evt.target.value));
-            if (typeof onKeyDown === "function") {
-                onKeyDown(evt);
-            }
+        }
+        if (typeof onKeyDown === "function") {
+            onKeyDown(evt);
         }
     };
 
@@ -236,14 +237,15 @@ const InputText = ({
                     value={getMaskedValue(inputVal)}
                     placeholder={placeholder || ""}
                     className={cn(
-                        `block w-full p-2 rounded-lg border text-gray-900 text-sm focus:ring-blue-500 focus:border-blue-500`,
-                        hasError() ? "border-red-500" : "border-gray-300",
+                        `block w-full p-2 rounded-lg border text-gray-900 dark:text-slate-100 text-sm bg-white dark:bg-slate-800 dark:placeholder-slate-400 focus:ring-blue-500 focus:border-blue-500`,
+                        hasError() ? "border-red-500" : "border-gray-300 dark:border-slate-600",
                         mask === "currency" ? "pl-6" : "",
                         small ? " py-1.5 pr-1.5 text-xs " : "",
                         large ? " py-3 pr-3 text-base " : "",
-                        disabled ? "bg-gray-100 cursor-not-allowed" : "",
+                        disabled ? "bg-gray-100 dark:bg-slate-900 cursor-not-allowed" : "",
                         className
                     )}
+                    {...rest}
                 />
                  {clearable && inputVal && (
                     <div

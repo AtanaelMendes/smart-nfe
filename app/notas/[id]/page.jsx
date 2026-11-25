@@ -26,6 +26,7 @@ import {
 import AppLayout from '@/components/Layouts/AppLayout';
 import Dialog from '@/components/Layouts/Dialog';
 import Button from '@/components/buttons/Button';
+import DataTable from '@/components/table/DataTable';
 import { documentRepository } from '@/features/documentRepository';
 import { formatBRL, formatDateBR } from '@/lib/formatters';
 import { useAppContext } from '@/context/AppContext';
@@ -422,44 +423,67 @@ export default function DocumentoDetalhesPage({ params: paramsProp }) {
               </span>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="border-b border-gray-200 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/40 text-gray-700 dark:text-slate-300">
-                    <th className="py-2.5 px-3 font-semibold">#</th>
-                    <th className="py-2.5 px-3 font-semibold">Código</th>
-                    <th className="py-2.5 px-3 font-semibold">Descrição do Produto</th>
-                    <th className="py-2.5 px-3 font-semibold">NCM</th>
-                    <th className="py-2.5 px-3 font-semibold">CFOP</th>
-                    <th className="py-2.5 px-3 font-semibold">Un</th>
-                    <th className="py-2.5 px-3 font-semibold text-right">Qtd</th>
-                    <th className="py-2.5 px-3 font-semibold text-right">Valor Unit.</th>
-                    <th className="py-2.5 px-3 font-semibold text-right">Desconto</th>
-                    <th className="py-2.5 px-3 font-semibold text-right">Total Item</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
-                  {document.itens?.map((it, idx) => (
-                    <tr key={it.itemId || idx} className="hover:bg-gray-50/80 dark:hover:bg-slate-800/50">
-                      <td className="py-2 px-3 text-gray-500 dark:text-slate-400">{it.item || idx + 1}</td>
-                      <td className="py-2 px-3 font-mono">{it.codigo || '-'}</td>
-                      <td className="py-2 px-3 font-medium text-gray-900 dark:text-white max-w-xs truncate" title={it.descricao}>
-                        {it.descricao}
-                      </td>
-                      <td className="py-2 px-3 font-mono">{it.ncm}</td>
-                      <td className="py-2 px-3 font-mono">{it.cfop}</td>
-                      <td className="py-2 px-3 uppercase">{it.unidade}</td>
-                      <td className="py-2 px-3 text-right font-mono">{it.quantidade}</td>
-                      <td className="py-2 px-3 text-right font-mono">{formatBRL(it.valorUnitario)}</td>
-                      <td className="py-2 px-3 text-right font-mono text-gray-500">{formatBRL(it.desconto || 0)}</td>
-                      <td className="py-2 px-3 text-right font-mono font-bold text-gray-900 dark:text-white">
-                        {formatBRL(it.valorTotal)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <DataTable
+              data={document.itens || []}
+              searchable={false}
+              showFooter={false}
+              showCount={false}
+              dense
+              getRowKey={(it, idx) => it.itemId || it.codigo || `item_${idx}`}
+              emptyText="Nenhum item encontrado."
+              tableClassName="text-xs"
+              columns={[
+                {
+                  key: 'item',
+                  label: '#',
+                  className: 'text-gray-500 dark:text-slate-400',
+                  render: (it, idx) => it.item || idx + 1,
+                },
+                {
+                  key: 'codigo',
+                  label: 'Código',
+                  className: 'font-mono',
+                  render: (it) => it.codigo || '-',
+                },
+                {
+                  key: 'descricao',
+                  label: 'Descrição do Produto',
+                  className: 'font-medium text-gray-900 dark:text-white max-w-xs truncate',
+                  render: (it) => <span title={it.descricao}>{it.descricao}</span>,
+                },
+                { key: 'ncm', label: 'NCM', className: 'font-mono', render: (it) => it.ncm },
+                { key: 'cfop', label: 'CFOP', className: 'font-mono', render: (it) => it.cfop },
+                { key: 'unidade', label: 'Un', className: 'uppercase', render: (it) => it.unidade },
+                {
+                  key: 'quantidade',
+                  label: 'Qtd',
+                  align: 'right',
+                  className: 'font-mono',
+                  render: (it) => it.quantidade,
+                },
+                {
+                  key: 'valorUnitario',
+                  label: 'Valor Unit.',
+                  align: 'right',
+                  className: 'font-mono',
+                  render: (it) => formatBRL(it.valorUnitario),
+                },
+                {
+                  key: 'desconto',
+                  label: 'Desconto',
+                  align: 'right',
+                  className: 'font-mono text-gray-500',
+                  render: (it) => formatBRL(it.desconto || 0),
+                },
+                {
+                  key: 'valorTotal',
+                  label: 'Total Item',
+                  align: 'right',
+                  className: 'font-mono font-bold text-gray-900 dark:text-white',
+                  render: (it) => formatBRL(it.valorTotal),
+                },
+              ]}
+            />
 
             {/* Totais Gerais SEFAZ */}
             <div className="pt-4 border-t border-gray-100 dark:border-slate-800 grid grid-cols-2 sm:grid-cols-5 gap-3 text-xs">

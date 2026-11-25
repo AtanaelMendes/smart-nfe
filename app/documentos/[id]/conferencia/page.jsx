@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, use, Fragment } from 'react';
+import { useState, useEffect, useMemo, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -17,9 +17,6 @@ import {
   faFilePdf,
   faFileCode,
   faCircleCheck,
-  faSort,
-  faSortUp,
-  faSortDown,
   faChevronDown,
   faChevronUp,
   faLayerGroup,
@@ -30,6 +27,8 @@ import {
 import AppLayout from '@/components/Layouts/AppLayout';
 import Button from '@/components/buttons/Button';
 import InputText from '@/components/inputs/InputText';
+import DataTable from '@/components/table/DataTable';
+import { cn } from '@/assets/utils';
 import { FiscalGroup } from '@/components/notes/FiscalField';
 import { useAppContext } from '@/context/AppContext';
 
@@ -111,6 +110,8 @@ export default function ConferenciaPage({ params }) {
 
   // Edição direta de campo na tabela orientada exclusivamente a itemId estável
   const handleItemChange = (itemId, field, value) => {
+    const current = items.find((item) => item.id === itemId);
+    if (current && String(current[field] ?? '') === String(value ?? '')) return;
     setItems((prevItems) =>
       prevItems.map((item) => {
         if (item.id !== itemId) return item;
@@ -414,6 +415,472 @@ export default function ConferenciaPage({ params }) {
     );
   }
 
+  // ---------------------------------------------------------------------------
+  // Grade de edição de produtos (DataTable)
+  // ---------------------------------------------------------------------------
+  const EDIT_CELL_BASE = cn(
+    'w-full px-1.5 py-1 text-xs rounded border border-transparent bg-transparent dark:bg-transparent',
+    'hover:border-slate-300 focus:border-blue-500 focus:bg-white dark:focus:bg-slate-900'
+  );
+  const EDIT_CELL_MODIFIED = cn(
+    'w-full px-1.5 py-1 text-xs rounded border border-amber-400 bg-amber-50/60 dark:bg-amber-950/40',
+    'text-amber-950 dark:text-amber-200 font-bold focus:border-amber-500'
+  );
+  const EDIT_CELL_MISSING = cn(
+    'w-full px-1.5 py-1 text-xs rounded border border-red-300 bg-red-50 text-red-900',
+    'dark:border-red-800 dark:bg-red-950 dark:text-red-200'
+  );
+  const EDIT_CELL_NEGATIVE = cn(
+    'w-full px-1.5 py-1 text-xs rounded border border-red-500 bg-red-50 dark:bg-red-950/40',
+    'text-red-700 dark:text-red-300 ring-1 ring-red-500'
+  );
+
+  const isMissingNcm = (item) => String(item.ncm || '').replace(/\D/g, '').length !== 8;
+  const isMissingCfop = (item) => !item.cfop || String(item.cfop).trim() === '';
+
+  // Metadados visuais de uma célula editável (classe + indicador de modificação).
+  const editableMeta = (item, field, options = {}) => {
+    const {
+      className = '',
+      invalid = false,
+      invalidTitle,
+      invalidClass = EDIT_CELL_MISSING,
+    } = options;
+
+    const original = item.valorOriginal;
+    const modified = Boolean(original && original[field] !== item[field]);
+    const inputClass = cn(
+      invalid ? invalidClass : modified ? EDIT_CELL_MODIFIED : EDIT_CELL_BASE,
+      className
+    );
+
+    return { modified, inputClass, title: invalid ? invalidTitle : undefined };
+  };
+
+  // Dica "Orig: ..." exibida abaixo de campos modificados.
+  const renderOriginalHint = (item, field, options = {}) => {
+    const { origTitle, origFormat, origAlign = 'left' } = options;
+    const original = item.valorOriginal;
+    if (!original || original[field] === item[field]) return null;
+
+    return (
+      <span
+        className={cn(
+          'block truncate text-[10px] text-slate-400 line-through dark:text-slate-500',
+          origAlign === 'right' ? 'pr-1 text-right' : origAlign === 'center' ? 'text-center' : ''
+        )}
+        title={origTitle}
+      >
+        Orig: {origFormat ? origFormat(original[field]) : original[field]}
+      </span>
+    );
+  };
+
+  // Colunas da grade — a ordenação continua centralizada em handleSort/sortConfig
+  const SORTABLE_HEADER_CLASS =
+    'hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors';
+
+  const itemColumns = [
+    {
+      key: 'item',
+      label: '#',
+      align: 'center',
+      width: 'w-12',
+      sortable: true,
+      sortKey: 'item',
+      className: 'font-mono text-slate-400',
+      render: (row, index) => row.item || index + 1,
+    },
+    {
+      key: 'codigo',
+      label: 'Código',
+      width: 'w-24',
+      sortable: true,
+      sortKey: 'codigo',
+      render: (item, index) => {
+        const meta = editableMeta(item, 'codigo', { className: 'font-mono' });
+        return (
+          <>
+            <InputText
+              id={'conf-cell-' + item.id + '-codigo'}
+              type="text"
+              value={item.codigo ?? ''}
+              title={meta.title}
+              data-row-index={index}
+              data-field="codigo"
+              onChange={(_e, value) => handleItemChange(item.id, 'codigo', value)}
+              onKeyDown={(event) => handleKeyDown(event, index, 'codigo', item.id)}
+              className={meta.inputClass}
+            />
+            {renderOriginalHint(item, 'codigo', { origTitle: 'Código original' })}
+          </>
+        );
+      },
+    },
+    {
+      key: 'descricao',
+      label: 'Descrição da Mercadoria',
+      sortable: true,
+      sortKey: 'descricao',
+      render: (item, index) => {
+        const meta = editableMeta(item, 'descricao', { className: 'font-medium text-slate-900 dark:text-slate-100' });
+        return (
+          <>
+            <InputText
+              id={'conf-cell-' + item.id + '-descricao'}
+              type="text"
+              value={item.descricao ?? ''}
+              title={meta.title}
+              data-row-index={index}
+              data-field="descricao"
+              onChange={(_e, value) => handleItemChange(item.id, 'descricao', value)}
+              onKeyDown={(event) => handleKeyDown(event, index, 'descricao', item.id)}
+              className={meta.inputClass}
+            />
+            {renderOriginalHint(item, 'descricao', { origTitle: 'Descrição original' })}
+          </>
+        );
+      },
+    },
+    {
+      key: 'ncm',
+      label: 'NCM',
+      width: 'w-24',
+      sortable: true,
+      sortKey: 'ncm',
+      render: (item, index) => {
+        const meta = editableMeta(item, 'ncm', { className: 'font-mono', invalid: isMissingNcm(item), invalidClass: EDIT_CELL_MISSING });
+        return (
+          <>
+            <InputText
+              id={'conf-cell-' + item.id + '-ncm'}
+              type="text"
+              value={item.ncm ?? ''}
+              placeholder="00000000"
+              title={meta.title}
+              data-row-index={index}
+              data-field="ncm"
+              onChange={(_e, value) => handleItemChange(item.id, 'ncm', value)}
+              onKeyDown={(event) => handleKeyDown(event, index, 'ncm', item.id)}
+              className={meta.inputClass}
+            />
+            {renderOriginalHint(item, 'ncm', { origTitle: 'NCM original' })}
+          </>
+        );
+      },
+    },
+    {
+      key: 'cfop',
+      label: 'CFOP',
+      align: 'center',
+      width: 'w-16',
+      sortable: true,
+      sortKey: 'cfop',
+      render: (item, index) => {
+        const meta = editableMeta(item, 'cfop', { className: 'font-mono text-center', invalid: isMissingCfop(item), invalidClass: EDIT_CELL_MISSING });
+        return (
+          <>
+            <InputText
+              id={'conf-cell-' + item.id + '-cfop'}
+              type="text"
+              value={item.cfop ?? ''}
+              placeholder="7101"
+              title={meta.title}
+              data-row-index={index}
+              data-field="cfop"
+              onChange={(_e, value) => handleItemChange(item.id, 'cfop', value)}
+              onKeyDown={(event) => handleKeyDown(event, index, 'cfop', item.id)}
+              className={meta.inputClass}
+            />
+            {renderOriginalHint(item, 'cfop', { origTitle: 'CFOP original', origAlign: 'center' })}
+          </>
+        );
+      },
+    },
+    {
+      key: 'unidade',
+      label: 'Unid.',
+      align: 'center',
+      width: 'w-16',
+      sortable: true,
+      sortKey: 'unidade',
+      render: (item, index) => {
+        const meta = editableMeta(item, 'unidade', { className: 'text-center uppercase' });
+        return (
+          <>
+            <InputText
+              id={'conf-cell-' + item.id + '-unidade'}
+              type="text"
+              value={item.unidade ?? ''}
+              title={meta.title}
+              data-row-index={index}
+              data-field="unidade"
+              onChange={(_e, value) => handleItemChange(item.id, 'unidade', value)}
+              onKeyDown={(event) => handleKeyDown(event, index, 'unidade', item.id)}
+              className={meta.inputClass}
+            />
+            {renderOriginalHint(item, 'unidade', { origTitle: 'Unidade original', origAlign: 'center' })}
+          </>
+        );
+      },
+    },
+    {
+      key: 'quantidade',
+      label: 'Qtd',
+      align: 'right',
+      width: 'w-24',
+      sortable: true,
+      sortKey: 'quantidade',
+      render: (item, index) => {
+        const meta = editableMeta(item, 'quantidade', { className: 'font-mono text-right', invalid: isDecimalNegative(item.quantidade), invalidTitle: 'Quantidade não pode ser negativa', invalidClass: EDIT_CELL_NEGATIVE });
+        return (
+          <>
+            <InputText
+              id={'conf-cell-' + item.id + '-quantidade'}
+              type="text"
+              value={item.quantidade ?? ''}
+              title={meta.title}
+              data-row-index={index}
+              data-field="quantidade"
+              onChange={(_e, value) => handleItemChange(item.id, 'quantidade', value)}
+              onKeyDown={(event) => handleKeyDown(event, index, 'quantidade', item.id)}
+              className={meta.inputClass}
+            />
+            {renderOriginalHint(item, 'quantidade', { origTitle: 'Quantidade original', origAlign: 'right' })}
+          </>
+        );
+      },
+    },
+    {
+      key: 'valorUnitario',
+      label: 'Unitário (R$)',
+      align: 'right',
+      width: 'w-28',
+      sortable: true,
+      sortKey: 'valorUnitario',
+      render: (item, index) => {
+        const meta = editableMeta(item, 'valorUnitario', { className: 'font-mono text-right', invalid: isDecimalNegative(item.valorUnitario), invalidTitle: 'Valor unitário não pode ser negativo', invalidClass: EDIT_CELL_NEGATIVE });
+        return (
+          <>
+            <InputText
+              id={'conf-cell-' + item.id + '-valorUnitario'}
+              type="text"
+              value={item.valorUnitario ?? ''}
+              title={meta.title}
+              data-row-index={index}
+              data-field="valorUnitario"
+              onChange={(_e, value) => handleItemChange(item.id, 'valorUnitario', value)}
+              onKeyDown={(event) => handleKeyDown(event, index, 'valorUnitario', item.id)}
+              className={meta.inputClass}
+            />
+            {renderOriginalHint(item, 'valorUnitario', { origTitle: 'Valor unitário original', origAlign: 'right' })}
+          </>
+        );
+      },
+    },
+    {
+      key: 'valorTotal',
+      label: 'Total (R$)',
+      align: 'right',
+      width: 'w-28',
+      sortable: true,
+      sortKey: 'valorTotal',
+      className: 'font-mono',
+      render: (row) => {
+        const original = row.valorOriginal;
+        return (
+          <>
+            <span className="block font-bold text-slate-900 dark:text-slate-100">
+              {formatBRL(row.valorTotal)}
+            </span>
+            {original && original.valorTotal !== row.valorTotal && (
+              <span
+                className="block text-[10px] text-slate-400 line-through dark:text-slate-500"
+                title="Total original do produto"
+              >
+                Orig: {formatBRL(original.valorTotal)}
+              </span>
+            )}
+          </>
+        );
+      },
+    },
+    {
+      key: 'acoes',
+      label: 'Ações',
+      align: 'center',
+      width: 'w-20',
+      sortable: false,
+      render: (row) => (
+        <div className="flex items-center justify-center gap-1">
+          <Button
+            buttonType="ghost"
+            size="small"
+            outline
+            onClick={() => toggleItemDetails(row.id)}
+            className="!p-1 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700"
+            title="Detalhes fiscais do item"
+          >
+            <FontAwesomeIcon
+              icon={expandedItems.has(row.id) ? faChevronUp : faChevronDown}
+              className="w-3.5 h-3.5"
+            />
+          </Button>
+          {row.modificado ? (
+            <>
+              <span className="text-[10px] bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 font-semibold px-1.5 py-0.5 rounded">
+                Editado
+              </span>
+              <Button
+                buttonType="warning"
+                size="small"
+                outline
+                onClick={() => handleRestoreItem(row.id)}
+                className="!p-1 text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-slate-100 dark:hover:bg-slate-700"
+                title="Restaurar valor original deste item (Esc)"
+              >
+                <FontAwesomeIcon icon={faRotateLeft} className="w-3.5 h-3.5" />
+              </Button>
+            </>
+          ) : (
+            <span className="text-[10px] text-slate-400">Original</span>
+          )}
+        </div>
+      ),
+    },
+  ].map((column) =>
+    column.sortable === false
+      ? column
+      : { ...column, headerClassName: SORTABLE_HEADER_CLASS }
+  );
+
+  // Detalhes fiscais expandidos de cada item
+  const renderItemDetails = (item, index) => {
+    const trib = item.tributos || {};
+    const icms = trib.icms || {};
+    const ipi = trib.ipi || {};
+    const pis = trib.pis || {};
+    const cofins = trib.cofins || {};
+    const ibsCbs = trib.ibsCbs || null;
+
+    return (
+      <div className="space-y-2 px-3 py-3">
+        <div className="flex items-center gap-2 text-[11px] font-bold uppercase text-blue-700 dark:text-blue-300">
+          <FontAwesomeIcon icon={faLayerGroup} />
+          Detalhes fiscais do item {item.item || index + 1}
+        </div>
+
+        <FiscalGroup title="Produto e Unidades" accent="slate">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2 text-[11px]">
+            <ReadField label="CEST" value={item.cest} mono />
+            <ReadField label="GTIN Comercial" value={item.cEAN} mono />
+            <ReadField label="GTIN Tributável" value={item.cEANTrib} mono />
+            <ReadField label="UN Tributável" value={item.unidadeTributavel} mono />
+            <ReadField label="Qtd Tributável" value={item.quantidadeTributavel} mono />
+            <ReadField label="Valor Unit. Trib." value={item.valorUnitarioTributavel} mono />
+            <ReadField label="Compõe Total (indTot)" value={item.indicadorComposicaoTotal} mono />
+            <ReadField label="Pedido" value={item.pedido} />
+            <ReadField label="Item do Pedido" value={item.itemPedido} />
+            <ReadField label="Info. Adicional" value={item.informacoesAdicionais} className="md:col-span-2" />
+          </div>
+        </FiscalGroup>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2">
+          <FiscalGroup title="ICMS" accent="blue">
+            <div className="grid grid-cols-2 gap-1.5 text-[11px]">
+              <ReadField label="CST" value={icms.cst} mono />
+              <ReadField label="CSOSN" value={icms.csosn} mono />
+              <ReadField label="Origem" value={icms.origem} mono />
+              <ReadField label="Mod. Base" value={icms.modalidadeBase} mono />
+              <ReadField label="Base ICMS" value={icms.vBC} mono />
+              <ReadField label="% Redução" value={icms.pRedBC} mono />
+              <ReadField label="Alíquota %" value={icms.pICMS} mono />
+              <ReadField label="Valor ICMS" value={icms.vICMS} mono />
+            </div>
+          </FiscalGroup>
+
+          <FiscalGroup title="IPI" accent="blue">
+            <div className="grid grid-cols-2 gap-1.5 text-[11px]">
+              <ReadField label="CST" value={ipi.cst} mono />
+              <ReadField label="Enquadramento" value={ipi.cEnq} mono />
+              <ReadField label="Base IPI" value={ipi.vBC} mono />
+              <ReadField label="Alíquota %" value={ipi.pIPI} mono />
+              <ReadField label="Valor IPI" value={ipi.vIPI} mono />
+            </div>
+          </FiscalGroup>
+
+          <FiscalGroup title="PIS / COFINS" accent="blue">
+            <div className="grid grid-cols-2 gap-1.5 text-[11px]">
+              <ReadField label="CST PIS" value={pis.cst} mono />
+              <ReadField label="Base PIS" value={pis.vBC} mono />
+              <ReadField label="Alíq. PIS %" value={pis.pPIS} mono />
+              <ReadField label="Valor PIS" value={pis.vPIS} mono />
+              <ReadField label="CST COFINS" value={cofins.cst} mono />
+              <ReadField label="Base COFINS" value={cofins.vBC} mono />
+              <ReadField label="Alíq. COFINS %" value={cofins.pCOFINS} mono />
+              <ReadField label="Valor COFINS" value={cofins.vCOFINS} mono />
+            </div>
+          </FiscalGroup>
+
+          <FiscalGroup title="IBS / CBS" accent="emerald">
+            {ibsCbs ? (
+              <div className="grid grid-cols-2 gap-1.5 text-[11px]">
+                <ReadField label="CST" value={ibsCbs.cst} mono />
+                <ReadField label="Class. Trib." value={ibsCbs.cClassTrib} mono />
+                <ReadField label="Base IBS/CBS" value={ibsCbs.vBC} mono />
+                <ReadField label="% IBS UF" value={ibsCbs.pIBSUF} mono />
+                <ReadField label="Valor IBS UF" value={ibsCbs.vIBSUF} mono />
+                <ReadField label="% IBS Mun" value={ibsCbs.pIBSMun} mono />
+                <ReadField label="Valor IBS Mun" value={ibsCbs.vIBSMun} mono />
+                <ReadField label="Valor IBS" value={ibsCbs.vIBS} mono />
+                <ReadField label="% CBS" value={ibsCbs.pCBS} mono />
+                <ReadField label="Valor CBS" value={ibsCbs.vCBS} mono />
+              </div>
+            ) : (
+              <p className="text-[11px] text-slate-400 italic">Grupo IBS/CBS não informado neste item.</p>
+            )}
+          </FiscalGroup>
+        </div>
+      </div>
+    );
+  };
+
+  // Rodapé de totais (equivalente ao tfoot original da grade)
+  const hasCostComposition =
+    recalculatedTotals?.valorFrete !== '0.00' ||
+    recalculatedTotals?.valorSeguro !== '0.00' ||
+    recalculatedTotals?.outrasDespesas !== '0.00' ||
+    recalculatedTotals?.valorDesconto !== '0.00' ||
+    recalculatedTotals?.valorIPI !== '0.00';
+
+  const renderTotalsFooter = () => (
+    <div className="flex flex-col gap-1">
+      <div className="flex items-center justify-between gap-3 font-bold">
+        <span className="text-slate-700 dark:text-slate-200">
+          Total dos Produtos ({items.length} itens)
+        </span>
+        <span className="font-mono text-sm text-blue-600 dark:text-blue-400">
+          {formatBRL(recalculatedTotals?.valorProdutos)}
+        </span>
+      </div>
+      {hasCostComposition && (
+        <div className="flex flex-col gap-1 text-[11px] font-normal text-slate-500 dark:text-slate-400 sm:flex-row sm:items-center sm:justify-between">
+          <span>
+            Composição: Produtos ({formatBRL(recalculatedTotals?.valorProdutos)})
+            {recalculatedTotals?.valorDesconto !== '0.00' && ` − Desconto (${formatBRL(recalculatedTotals?.valorDesconto)})`}
+            {recalculatedTotals?.valorFrete !== '0.00' && ` + Frete (${formatBRL(recalculatedTotals?.valorFrete)})`}
+            {recalculatedTotals?.valorSeguro !== '0.00' && ` + Seguro (${formatBRL(recalculatedTotals?.valorSeguro)})`}
+            {recalculatedTotals?.outrasDespesas !== '0.00' && ` + Outras (${formatBRL(recalculatedTotals?.outrasDespesas)})`}
+            {recalculatedTotals?.valorIPI !== '0.00' && ` + IPI (${formatBRL(recalculatedTotals?.valorIPI)})`}
+          </span>
+          <span className="text-right font-mono font-bold text-slate-800 dark:text-slate-200">
+            Total NF-e: {formatBRL(recalculatedTotals?.valorTotalNota)}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <AppLayout
       breadcrumbs={[
@@ -660,505 +1127,36 @@ export default function ConferenciaPage({ params }) {
             </div>
           </div>
 
-          {/* Grid de Edição
-              NOTA: as células editáveis (codigo, descricao, ncm, cfop, unidade, quantidade,
-              valorUnitario) permanecem como <input> NATIVOS de forma intencional: a navegação
-              por teclado exige data-row-index/data-field (usados por document.querySelector no
-              handleKeyDown), o handler onKeyDown com preventDefault/Escape + blur e o foco direto
-              no elemento. O componente InputText não repassa atributos data-*, não expõe onKeyDown
-              e mantém estado interno com máscara, o que quebraria Enter/Escape e a seleção de
-              texto ao navegar entre linhas. */}
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs text-left text-slate-600 dark:text-slate-300">
-              <thead className="text-[11px] uppercase bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 border-b border-slate-200 dark:border-slate-600">
-                <tr>
-                  <th
-                    className="px-2 py-2 w-12 text-center cursor-pointer select-none hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
-                    onClick={() => handleSort('item')}
-                    title="Ordenar por número do item"
-                  >
-                    <div className="flex items-center justify-center gap-1">
-                      <span>#</span>
-                      <FontAwesomeIcon
-                        icon={sortConfig.key === 'item' ? (sortConfig.direction === 'asc' ? faSortUp : faSortDown) : faSort}
-                        className={`w-2.5 h-2.5 ${sortConfig.key === 'item' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 opacity-60'}`}
-                      />
-                    </div>
-                  </th>
-
-                  <th
-                    className="px-2 py-2 w-24 cursor-pointer select-none hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
-                    onClick={() => handleSort('codigo')}
-                    title="Ordenar por código"
-                  >
-                    <div className="flex items-center justify-start gap-1">
-                      <span>Código</span>
-                      <FontAwesomeIcon
-                        icon={sortConfig.key === 'codigo' ? (sortConfig.direction === 'asc' ? faSortUp : faSortDown) : faSort}
-                        className={`w-2.5 h-2.5 ${sortConfig.key === 'codigo' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 opacity-60'}`}
-                      />
-                    </div>
-                  </th>
-
-                  <th
-                    className="px-3 py-2 cursor-pointer select-none hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
-                    onClick={() => handleSort('descricao')}
-                    title="Ordenar por descrição"
-                  >
-                    <div className="flex items-center justify-start gap-1">
-                      <span>Descrição da Mercadoria</span>
-                      <FontAwesomeIcon
-                        icon={sortConfig.key === 'descricao' ? (sortConfig.direction === 'asc' ? faSortUp : faSortDown) : faSort}
-                        className={`w-2.5 h-2.5 ${sortConfig.key === 'descricao' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 opacity-60'}`}
-                      />
-                    </div>
-                  </th>
-
-                  <th
-                    className="px-2 py-2 w-24 cursor-pointer select-none hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
-                    onClick={() => handleSort('ncm')}
-                    title="Ordenar por NCM"
-                  >
-                    <div className="flex items-center justify-start gap-1">
-                      <span>NCM</span>
-                      <FontAwesomeIcon
-                        icon={sortConfig.key === 'ncm' ? (sortConfig.direction === 'asc' ? faSortUp : faSortDown) : faSort}
-                        className={`w-2.5 h-2.5 ${sortConfig.key === 'ncm' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 opacity-60'}`}
-                      />
-                    </div>
-                  </th>
-
-                  <th
-                    className="px-2 py-2 w-16 text-center cursor-pointer select-none hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
-                    onClick={() => handleSort('cfop')}
-                    title="Ordenar por CFOP"
-                  >
-                    <div className="flex items-center justify-center gap-1">
-                      <span>CFOP</span>
-                      <FontAwesomeIcon
-                        icon={sortConfig.key === 'cfop' ? (sortConfig.direction === 'asc' ? faSortUp : faSortDown) : faSort}
-                        className={`w-2.5 h-2.5 ${sortConfig.key === 'cfop' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 opacity-60'}`}
-                      />
-                    </div>
-                  </th>
-
-                  <th
-                    className="px-2 py-2 w-16 text-center cursor-pointer select-none hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
-                    onClick={() => handleSort('unidade')}
-                    title="Ordenar por unidade"
-                  >
-                    <div className="flex items-center justify-center gap-1">
-                      <span>Unid.</span>
-                      <FontAwesomeIcon
-                        icon={sortConfig.key === 'unidade' ? (sortConfig.direction === 'asc' ? faSortUp : faSortDown) : faSort}
-                        className={`w-2.5 h-2.5 ${sortConfig.key === 'unidade' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 opacity-60'}`}
-                      />
-                    </div>
-                  </th>
-
-                  <th
-                    className="px-2 py-2 w-24 text-right cursor-pointer select-none hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
-                    onClick={() => handleSort('quantidade')}
-                    title="Ordenar por quantidade"
-                  >
-                    <div className="flex items-center justify-end gap-1">
-                      <span>Qtd</span>
-                      <FontAwesomeIcon
-                        icon={sortConfig.key === 'quantidade' ? (sortConfig.direction === 'asc' ? faSortUp : faSortDown) : faSort}
-                        className={`w-2.5 h-2.5 ${sortConfig.key === 'quantidade' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 opacity-60'}`}
-                      />
-                    </div>
-                  </th>
-
-                  <th
-                    className="px-2 py-2 w-28 text-right cursor-pointer select-none hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
-                    onClick={() => handleSort('valorUnitario')}
-                    title="Ordenar por valor unitário"
-                  >
-                    <div className="flex items-center justify-end gap-1">
-                      <span>Unitário (R$)</span>
-                      <FontAwesomeIcon
-                        icon={sortConfig.key === 'valorUnitario' ? (sortConfig.direction === 'asc' ? faSortUp : faSortDown) : faSort}
-                        className={`w-2.5 h-2.5 ${sortConfig.key === 'valorUnitario' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 opacity-60'}`}
-                      />
-                    </div>
-                  </th>
-
-                  <th
-                    className="px-2 py-2 w-28 text-right cursor-pointer select-none hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
-                    onClick={() => handleSort('valorTotal')}
-                    title="Ordenar por total do produto"
-                  >
-                    <div className="flex items-center justify-end gap-1">
-                      <span>Total (R$)</span>
-                      <FontAwesomeIcon
-                        icon={sortConfig.key === 'valorTotal' ? (sortConfig.direction === 'asc' ? faSortUp : faSortDown) : faSort}
-                        className={`w-2.5 h-2.5 ${sortConfig.key === 'valorTotal' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 opacity-60'}`}
-                      />
-                    </div>
-                  </th>
-
-                  <th className="px-2 py-2 w-20 text-center">
-                    Ações
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
-                {filteredAndSortedItems.map((item, index) => {
-                  const isModified = item.modificado;
-                  const orig = item.valorOriginal;
-                  const trib = item.tributos || {};
-                  const icms = trib.icms || {};
-                  const ipi = trib.ipi || {};
-                  const pis = trib.pis || {};
-                  const cofins = trib.cofins || {};
-                  const ibsCbs = trib.ibsCbs || null;
-
-                  return (
-                    <Fragment key={item.id}>
-                    <tr
-                      className={`hover:bg-blue-50/40 dark:hover:bg-slate-700/40 transition-colors ${
-                        isModified ? 'bg-amber-50/30 dark:bg-amber-950/20' : ''
-                      }`}
-                    >
-                      {/* # */}
-                      <td className="px-2 py-1.5 text-center font-mono text-slate-400">
-                        {item.item || index + 1}
-                      </td>
-
-                      {/* Código */}
-                      <td className="px-2 py-1.5">
-                        <input
-                          type="text"
-                          data-row-index={index}
-                          data-field="codigo"
-                          value={item.codigo || ''}
-                          onChange={(e) => handleItemChange(item.id, 'codigo', e.target.value)}
-                          onKeyDown={(e) => handleKeyDown(e, index, 'codigo', item.id)}
-                          className={`w-full px-1.5 py-1 text-xs rounded font-mono transition-colors ${
-                            orig && orig.codigo !== item.codigo
-                              ? 'border-amber-400 bg-amber-50/60 dark:bg-amber-950/40 text-amber-950 dark:text-amber-200 font-bold focus:border-amber-500'
-                              : 'border border-transparent hover:border-slate-300 focus:border-blue-500 bg-transparent focus:bg-white dark:focus:bg-slate-900'
-                          }`}
-                        />
-                        {orig && orig.codigo !== item.codigo && (
-                          <span className="text-[10px] text-slate-400 dark:text-slate-500 line-through block truncate" title="Código original">
-                            Orig: {orig.codigo}
-                          </span>
-                        )}
-                      </td>
-
-                      {/* Descrição */}
-                      <td className="px-3 py-1.5">
-                        <input
-                          type="text"
-                          data-row-index={index}
-                          data-field="descricao"
-                          value={item.descricao || ''}
-                          onChange={(e) => handleItemChange(item.id, 'descricao', e.target.value)}
-                          onKeyDown={(e) => handleKeyDown(e, index, 'descricao', item.id)}
-                          className={`w-full px-1.5 py-1 text-xs rounded font-medium transition-colors ${
-                            orig && orig.descricao !== item.descricao
-                              ? 'border-amber-400 bg-amber-50/60 dark:bg-amber-950/40 text-amber-950 dark:text-amber-200 font-bold focus:border-amber-500'
-                              : 'border border-transparent hover:border-slate-300 focus:border-blue-500 bg-transparent text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900'
-                          }`}
-                        />
-                        {orig && orig.descricao !== item.descricao && (
-                          <span className="text-[10px] text-slate-400 dark:text-slate-500 line-through block truncate" title="Descrição original">
-                            Orig: {orig.descricao}
-                          </span>
-                        )}
-                      </td>
-
-                      {/* NCM */}
-                      <td className="px-2 py-1.5">
-                        <input
-                          type="text"
-                          data-row-index={index}
-                          data-field="ncm"
-                          value={item.ncm || ''}
-                          onChange={(e) => handleItemChange(item.id, 'ncm', e.target.value)}
-                          onKeyDown={(e) => handleKeyDown(e, index, 'ncm', item.id)}
-                          className={`w-full px-1.5 py-1 text-xs rounded font-mono transition-colors ${
-                            !item.ncm || String(item.ncm).replace(/\D/g, '').length !== 8
-                              ? 'border-red-300 bg-red-50 text-red-900 dark:bg-red-950 dark:border-red-800 dark:text-red-200'
-                              : orig && orig.ncm !== item.ncm
-                              ? 'border-amber-400 bg-amber-50/60 dark:bg-amber-950/40 text-amber-950 dark:text-amber-200 font-bold focus:border-amber-500'
-                              : 'border border-transparent hover:border-slate-300 focus:border-blue-500 bg-transparent focus:bg-white dark:focus:bg-slate-900'
-                          }`}
-                          placeholder="00000000"
-                        />
-                        {orig && orig.ncm !== item.ncm && (
-                          <span className="text-[10px] text-slate-400 dark:text-slate-500 line-through block" title="NCM original">
-                            Orig: {orig.ncm}
-                          </span>
-                        )}
-                      </td>
-
-                      {/* CFOP */}
-                      <td className="px-2 py-1.5">
-                        <input
-                          type="text"
-                          data-row-index={index}
-                          data-field="cfop"
-                          value={item.cfop || ''}
-                          onChange={(e) => handleItemChange(item.id, 'cfop', e.target.value)}
-                          onKeyDown={(e) => handleKeyDown(e, index, 'cfop', item.id)}
-                          className={`w-full px-1.5 py-1 text-xs rounded font-mono text-center transition-colors ${
-                            !item.cfop || String(item.cfop).trim() === ''
-                              ? 'border-red-300 bg-red-50 text-red-900 dark:bg-red-950 dark:border-red-800 dark:text-red-200'
-                              : orig && orig.cfop !== item.cfop
-                              ? 'border-amber-400 bg-amber-50/60 dark:bg-amber-950/40 text-amber-950 dark:text-amber-200 font-bold focus:border-amber-500'
-                              : 'border border-transparent hover:border-slate-300 focus:border-blue-500 bg-transparent font-mono text-center focus:bg-white dark:focus:bg-slate-900'
-                          }`}
-                          placeholder="7101"
-                        />
-                        {orig && orig.cfop !== item.cfop && (
-                          <span className="text-[10px] text-slate-400 dark:text-slate-500 line-through block text-center" title="CFOP original">
-                            Orig: {orig.cfop}
-                          </span>
-                        )}
-                      </td>
-
-                      {/* Unidade */}
-                      <td className="px-2 py-1.5 text-center">
-                        <input
-                          type="text"
-                          data-row-index={index}
-                          data-field="unidade"
-                          value={item.unidade || ''}
-                          onChange={(e) => handleItemChange(item.id, 'unidade', e.target.value)}
-                          onKeyDown={(e) => handleKeyDown(e, index, 'unidade', item.id)}
-                          className={`w-full px-1 py-1 text-xs rounded uppercase text-center transition-colors ${
-                            orig && orig.unidade !== item.unidade
-                              ? 'border-amber-400 bg-amber-50/60 dark:bg-amber-950/40 text-amber-950 dark:text-amber-200 font-bold focus:border-amber-500'
-                              : 'border border-transparent hover:border-slate-300 focus:border-blue-500 bg-transparent text-center focus:bg-white dark:focus:bg-slate-900'
-                          }`}
-                        />
-                        {orig && orig.unidade !== item.unidade && (
-                          <span className="text-[10px] text-slate-400 dark:text-slate-500 line-through block" title="Unidade original">
-                            Orig: {orig.unidade}
-                          </span>
-                        )}
-                      </td>
-
-                      {/* Quantidade */}
-                      <td className="px-2 py-1.5 text-right">
-                        <input
-                          type="text"
-                          data-row-index={index}
-                          data-field="quantidade"
-                          value={item.quantidade ?? ''}
-                          onChange={(e) => handleItemChange(item.id, 'quantidade', e.target.value)}
-                          onKeyDown={(e) => handleKeyDown(e, index, 'quantidade', item.id)}
-                          className={`w-full px-1.5 py-1 text-xs rounded font-mono text-right transition-colors ${
-                            isDecimalNegative(item.quantidade)
-                              ? 'border-red-500 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 ring-1 ring-red-500'
-                              : orig && orig.quantidade !== item.quantidade
-                              ? 'border-amber-400 bg-amber-50/60 dark:bg-amber-950/40 text-amber-950 dark:text-amber-200 font-bold focus:border-amber-500'
-                              : 'border border-transparent hover:border-slate-300 focus:border-blue-500 bg-transparent focus:bg-white dark:focus:bg-slate-900'
-                          }`}
-                          title={isDecimalNegative(item.quantidade) ? 'Quantidade não pode ser negativa' : undefined}
-                        />
-                        {orig && orig.quantidade !== item.quantidade && (
-                          <span className="text-[10px] text-slate-400 dark:text-slate-500 line-through block text-right pr-1" title="Quantidade original">
-                            Orig: {orig.quantidade}
-                          </span>
-                        )}
-                      </td>
-
-                      {/* Valor Unitário */}
-                      <td className="px-2 py-1.5 text-right">
-                        <input
-                          type="text"
-                          data-row-index={index}
-                          data-field="valorUnitario"
-                          value={item.valorUnitario ?? ''}
-                          onChange={(e) => handleItemChange(item.id, 'valorUnitario', e.target.value)}
-                          onKeyDown={(e) => handleKeyDown(e, index, 'valorUnitario', item.id)}
-                          className={`w-full px-1.5 py-1 text-xs rounded font-mono text-right transition-colors ${
-                            isDecimalNegative(item.valorUnitario)
-                              ? 'border-red-500 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 ring-1 ring-red-500'
-                              : orig && orig.valorUnitario !== item.valorUnitario
-                              ? 'border-amber-400 bg-amber-50/60 dark:bg-amber-950/40 text-amber-950 dark:text-amber-200 font-bold focus:border-amber-500'
-                              : 'border border-transparent hover:border-slate-300 focus:border-blue-500 bg-transparent focus:bg-white dark:focus:bg-slate-900'
-                          }`}
-                          title={isDecimalNegative(item.valorUnitario) ? 'Valor unitário não pode ser negativo' : undefined}
-                        />
-                        {orig && orig.valorUnitario !== item.valorUnitario && (
-                          <span className="text-[10px] text-slate-400 dark:text-slate-500 line-through block text-right pr-1" title="Valor unitário original">
-                            Orig: {orig.valorUnitario}
-                          </span>
-                        )}
-                      </td>
-
-                      {/* Total */}
-                      <td className="px-3 py-1.5 text-right font-mono">
-                        <span className="font-bold text-slate-900 dark:text-slate-100 block">
-                          {formatBRL(item.valorTotal)}
-                        </span>
-                        {orig && orig.valorTotal !== item.valorTotal && (
-                          <span className="text-[10px] text-slate-400 dark:text-slate-500 line-through block" title="Total original do produto">
-                            Orig: {formatBRL(orig.valorTotal)}
-                          </span>
-                        )}
-                      </td>
-
-                      {/* Ações */}
-                      <td className="px-2 py-1.5 text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          <Button
-                            buttonType="ghost"
-                            size="small"
-                            outline
-                            onClick={() => toggleItemDetails(item.id)}
-                            className="!p-1 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700"
-                            title="Detalhes fiscais do item"
-                          >
-                            <FontAwesomeIcon icon={expandedItems.has(item.id) ? faChevronUp : faChevronDown} className="w-3.5 h-3.5" />
-                          </Button>
-                          {isModified ? (
-                            <>
-                              <span className="text-[10px] bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 font-semibold px-1.5 py-0.5 rounded">
-                                Editado
-                              </span>
-                              <Button
-                                buttonType="warning"
-                                size="small"
-                                outline
-                                onClick={() => handleRestoreItem(item.id)}
-                                className="!p-1 text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-slate-100 dark:hover:bg-slate-700"
-                                title="Restaurar valor original deste item (Esc)"
-                              >
-                                <FontAwesomeIcon icon={faRotateLeft} className="w-3.5 h-3.5" />
-                              </Button>
-                            </>
-                          ) : (
-                            <span className="text-[10px] text-slate-400">Original</span>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-
-                    {expandedItems.has(item.id) && (
-                      <tr className="bg-blue-50/20 dark:bg-slate-800/50">
-                        <td colSpan={10} className="px-3 py-3">
-                          <div className="space-y-2">
-                            <div className="flex items-center gap-2 text-[11px] font-bold uppercase text-blue-700 dark:text-blue-300">
-                              <FontAwesomeIcon icon={faLayerGroup} />
-                              Detalhes fiscais do item {item.item || index + 1}
-                            </div>
-
-                            <FiscalGroup title="Produto e Unidades" accent="slate">
-                              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2 text-[11px]">
-                                <ReadField label="CEST" value={item.cest} mono />
-                                <ReadField label="GTIN Comercial" value={item.cEAN} mono />
-                                <ReadField label="GTIN Tributável" value={item.cEANTrib} mono />
-                                <ReadField label="UN Tributável" value={item.unidadeTributavel} mono />
-                                <ReadField label="Qtd Tributável" value={item.quantidadeTributavel} mono />
-                                <ReadField label="Valor Unit. Trib." value={item.valorUnitarioTributavel} mono />
-                                <ReadField label="Compõe Total (indTot)" value={item.indicadorComposicaoTotal} mono />
-                                <ReadField label="Pedido" value={item.pedido} />
-                                <ReadField label="Item do Pedido" value={item.itemPedido} />
-                                <ReadField label="Info. Adicional" value={item.informacoesAdicionais} className="md:col-span-2" />
-                              </div>
-                            </FiscalGroup>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2">
-                              <FiscalGroup title="ICMS" accent="blue">
-                                <div className="grid grid-cols-2 gap-1.5 text-[11px]">
-                                  <ReadField label="CST" value={icms.cst} mono />
-                                  <ReadField label="CSOSN" value={icms.csosn} mono />
-                                  <ReadField label="Origem" value={icms.origem} mono />
-                                  <ReadField label="Mod. Base" value={icms.modalidadeBase} mono />
-                                  <ReadField label="Base ICMS" value={icms.vBC} mono />
-                                  <ReadField label="% Redução" value={icms.pRedBC} mono />
-                                  <ReadField label="Alíquota %" value={icms.pICMS} mono />
-                                  <ReadField label="Valor ICMS" value={icms.vICMS} mono />
-                                </div>
-                              </FiscalGroup>
-
-                              <FiscalGroup title="IPI" accent="blue">
-                                <div className="grid grid-cols-2 gap-1.5 text-[11px]">
-                                  <ReadField label="CST" value={ipi.cst} mono />
-                                  <ReadField label="Enquadramento" value={ipi.cEnq} mono />
-                                  <ReadField label="Base IPI" value={ipi.vBC} mono />
-                                  <ReadField label="Alíquota %" value={ipi.pIPI} mono />
-                                  <ReadField label="Valor IPI" value={ipi.vIPI} mono />
-                                </div>
-                              </FiscalGroup>
-
-                              <FiscalGroup title="PIS / COFINS" accent="blue">
-                                <div className="grid grid-cols-2 gap-1.5 text-[11px]">
-                                  <ReadField label="CST PIS" value={pis.cst} mono />
-                                  <ReadField label="Base PIS" value={pis.vBC} mono />
-                                  <ReadField label="Alíq. PIS %" value={pis.pPIS} mono />
-                                  <ReadField label="Valor PIS" value={pis.vPIS} mono />
-                                  <ReadField label="CST COFINS" value={cofins.cst} mono />
-                                  <ReadField label="Base COFINS" value={cofins.vBC} mono />
-                                  <ReadField label="Alíq. COFINS %" value={cofins.pCOFINS} mono />
-                                  <ReadField label="Valor COFINS" value={cofins.vCOFINS} mono />
-                                </div>
-                              </FiscalGroup>
-
-                              <FiscalGroup title="IBS / CBS" accent="emerald">
-                                {ibsCbs ? (
-                                  <div className="grid grid-cols-2 gap-1.5 text-[11px]">
-                                    <ReadField label="CST" value={ibsCbs.cst} mono />
-                                    <ReadField label="Class. Trib." value={ibsCbs.cClassTrib} mono />
-                                    <ReadField label="Base IBS/CBS" value={ibsCbs.vBC} mono />
-                                    <ReadField label="% IBS UF" value={ibsCbs.pIBSUF} mono />
-                                    <ReadField label="Valor IBS UF" value={ibsCbs.vIBSUF} mono />
-                                    <ReadField label="% IBS Mun" value={ibsCbs.pIBSMun} mono />
-                                    <ReadField label="Valor IBS Mun" value={ibsCbs.vIBSMun} mono />
-                                    <ReadField label="Valor IBS" value={ibsCbs.vIBS} mono />
-                                    <ReadField label="% CBS" value={ibsCbs.pCBS} mono />
-                                    <ReadField label="Valor CBS" value={ibsCbs.vCBS} mono />
-                                  </div>
-                                ) : (
-                                  <p className="text-[11px] text-slate-400 italic">Grupo IBS/CBS não informado neste item.</p>
-                                )}
-                              </FiscalGroup>
-                            </div>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                    </Fragment>
-                  );
-                })}
-              </tbody>
-              <tfoot className="bg-slate-50 dark:bg-slate-900 font-bold border-t border-slate-200 dark:border-slate-700">
-                <tr>
-                  <td colSpan={6} className="px-4 py-2 text-slate-700 dark:text-slate-200">
-                    Total dos Produtos ({items.length} itens)
-                  </td>
-                  <td colSpan={4} className="px-4 py-2 text-right text-sm text-blue-600 dark:text-blue-400 font-mono">
-                    {formatBRL(recalculatedTotals?.valorProdutos)}
-                  </td>
-                </tr>
-                {(recalculatedTotals?.valorFrete !== '0.00' ||
-                  recalculatedTotals?.valorSeguro !== '0.00' ||
-                  recalculatedTotals?.outrasDespesas !== '0.00' ||
-                  recalculatedTotals?.valorDesconto !== '0.00' ||
-                  recalculatedTotals?.valorIPI !== '0.00') && (
-                  <tr className="text-[11px] text-slate-500 dark:text-slate-400 bg-slate-100/50 dark:bg-slate-800/40 font-normal">
-                    <td colSpan={6} className="px-4 py-1.5">
-                      Composição: Produtos ({formatBRL(recalculatedTotals?.valorProdutos)})
-                      {recalculatedTotals?.valorDesconto !== '0.00' && ` − Desconto (${formatBRL(recalculatedTotals?.valorDesconto)})`}
-                      {recalculatedTotals?.valorFrete !== '0.00' && ` + Frete (${formatBRL(recalculatedTotals?.valorFrete)})`}
-                      {recalculatedTotals?.valorSeguro !== '0.00' && ` + Seguro (${formatBRL(recalculatedTotals?.valorSeguro)})`}
-                      {recalculatedTotals?.outrasDespesas !== '0.00' && ` + Outras (${formatBRL(recalculatedTotals?.outrasDespesas)})`}
-                      {recalculatedTotals?.valorIPI !== '0.00' && ` + IPI (${formatBRL(recalculatedTotals?.valorIPI)})`}
-                    </td>
-                    <td colSpan={4} className="px-4 py-1.5 text-right font-mono font-bold text-slate-800 dark:text-slate-200">
-                      Total NF-e: {formatBRL(recalculatedTotals?.valorTotalNota)}
-                    </td>
-                  </tr>
-                )}
-              </tfoot>
-            </table>
-          </div>
+          {/* Grade de Edição
+              As células editáveis usam InputText, que agora repassa props extras
+              (data-row-index / data-field / onKeyDown) ao <input> nativo — a navegação
+              por teclado do handleKeyDown (document.querySelector + focus/select) e o
+              comportamento Enter/Shift+Enter/Escape permanecem idênticos. A estrutura
+              da tabela, a ordenação e a expansão de detalhes são do DataTable. */}
+          <DataTable
+            data={filteredAndSortedItems}
+            columns={itemColumns}
+            dense
+            searchable={false}
+            showFooter
+            showCount={false}
+            footerRender={renderTotalsFooter}
+            containerClassName="rounded-none border-0 bg-transparent shadow-none dark:bg-transparent"
+            tableClassName="text-xs text-slate-600 dark:text-slate-300"
+            headerCellClassName="px-2 py-2 uppercase"
+            rowClassName={(row) =>
+              row.modificado
+                ? 'odd:bg-amber-50/30 even:bg-amber-50/30 dark:odd:bg-amber-950/20 dark:even:bg-amber-950/20'
+                : ''
+            }
+            getRowKey={(row, index) => row.id ?? row.item ?? `row_${index}`}
+            sortKey={sortConfig.key}
+            sortDirection={sortConfig.direction}
+            onSort={(col) => handleSort(col.sortKey ?? col.key)}
+            isRowExpanded={(row) => expandedItems.has(row.id)}
+            renderExpandedRow={(row, index) => renderItemDetails(row, index)}
+            emptyText="Nenhum produto encontrado para o filtro atual."
+          />
         </div>
 
         {/* Painel fiscal completo do documento importado (somente consulta) */}
