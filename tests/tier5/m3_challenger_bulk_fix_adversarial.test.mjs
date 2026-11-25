@@ -286,8 +286,9 @@ describe('CHALLENGER SUITE 1: Auditoria Estática de Código e Guardrails em val
   it('1.9: FiscalFixConfirmationModal renderiza comparativo com valorAtual em vermelho e valorProposto em verde', () => {
     assert.match(sourceCode, /Valor Atual no Documento/);
     assert.match(sourceCode, /Valor Proposto pelo Assistente/);
-    assert.match(sourceCode, /bg-red-100 text-red-800/);
-    assert.match(sourceCode, /bg-emerald-100 text-emerald-800/);
+    // As cores agora são centralizadas no PillsBadge (danger = vermelho, success = verde).
+    assert.match(sourceCode, /type="danger"[\s\S]{0,400}?valorAtual/);
+    assert.match(sourceCode, /type="success"[\s\S]{0,400}?valorProposto/);
   });
 });
 
