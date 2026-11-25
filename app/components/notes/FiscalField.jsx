@@ -37,14 +37,9 @@ export function FiscalField({
 
   return (
     <div className={className}>
-      <label
-        htmlFor={fieldId}
-        className="block text-[10px] font-semibold uppercase text-gray-500 dark:text-slate-400 mb-0.5"
-      >
-        {label}
-      </label>
       <InputText
         id={fieldId}
+        label={label}
         type={type}
         value={value ?? ''}
         onChange={(_id, val) => onChange && onChange(val)}
@@ -63,14 +58,9 @@ export function FiscalSelect({ label, value, onChange, options = [], className =
 
   return (
     <div className={className}>
-      <label
-        htmlFor={fieldId}
-        className="block text-[10px] font-semibold uppercase text-gray-500 dark:text-slate-400 mb-0.5"
-      >
-        {label}
-      </label>
       <Select
         id={fieldId}
+        label={label}
         hideClearButton
         containerClassName="relative w-full"
         value={value ?? ''}

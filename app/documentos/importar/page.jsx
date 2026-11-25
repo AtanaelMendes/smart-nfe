@@ -428,6 +428,9 @@ export default function ImportarDocumentoPage() {
               : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800'
           }`}
         >
+          {/* Entrada nativa mantida intencionalmente: seleção MÚLTIPLA de arquivos (multiple)
+              alimentando a fila de importação em lote. O componente InputFile é single-file
+              e perderia o comportamento de multi-seleção/queue. */}
           <input
             ref={fileInputRef}
             type="file"
@@ -474,24 +477,28 @@ export default function ImportarDocumentoPage() {
               </div>
 
               <div className="flex items-center gap-2">
-                <button
-                  type="button"
+                <Button
+                  buttonType="secondary"
+                  size="small"
+                  outline
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isProcessing}
-                  className="px-2.5 py-1 text-xs font-medium rounded border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer disabled:opacity-50"
+                  className="text-xs border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
                 >
                   <FontAwesomeIcon icon={faPlus} className="mr-1" />
                   Adicionar Mais
-                </button>
+                </Button>
                 {stats.errors > 0 && !isProcessing && (
-                  <button
-                    type="button"
+                  <Button
+                    buttonType="danger"
+                    size="small"
+                    outline
                     onClick={() => processQueue(true)}
-                    className="px-2.5 py-1 text-xs font-medium rounded border border-rose-300 text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer"
+                    className="text-xs border border-rose-300 dark:border-rose-800 text-rose-700 dark:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-950/40"
                   >
                     <FontAwesomeIcon icon={faRotateRight} className="mr-1" />
                     Repetir Erros ({stats.errors})
-                  </button>
+                  </Button>
                 )}
                 {stats.pending > 0 && !isProcessing && (
                   <Button buttonType="primary" size="small" onClick={() => processQueue(false)}>
@@ -499,15 +506,17 @@ export default function ImportarDocumentoPage() {
                     Processar Lote ({stats.pending})
                   </Button>
                 )}
-                <button
-                  type="button"
+                <Button
+                  buttonType="danger"
+                  size="small"
+                  outline
                   onClick={clearQueue}
                   disabled={isProcessing}
-                  className="text-xs text-slate-400 hover:text-rose-600 p-1 cursor-pointer disabled:opacity-50"
+                  className="!p-1 text-slate-400 hover:text-rose-600 hover:bg-transparent dark:hover:bg-transparent"
                   title="Limpar seleção"
                 >
                   <FontAwesomeIcon icon={faTrashCan} />
-                </button>
+                </Button>
               </div>
             </div>
 
@@ -574,14 +583,16 @@ export default function ImportarDocumentoPage() {
                     )}
 
                     {!isProcessing && (
-                      <button
-                        type="button"
+                      <Button
+                        buttonType="danger"
+                        size="small"
+                        outline
                         onClick={() => removeFile(item.id)}
-                        className="text-slate-400 hover:text-rose-600 cursor-pointer p-1"
+                        className="!p-1 text-slate-400 hover:text-rose-600 hover:bg-transparent dark:hover:bg-transparent"
                         title="Remover"
                       >
                         <FontAwesomeIcon icon={faTrashCan} />
-                      </button>
+                      </Button>
                     )}
                   </div>
                 </div>

@@ -604,10 +604,8 @@ export default function ServiceInvoiceEditor({
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="md:col-span-2">
-            <label htmlFor="nfseTitulo" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
-              Título do Rascunho
-            </label>
             <InputText
+              label="Título do Rascunho"
               id="nfseTitulo"
               value={titulo}
               onChange={(_id, value) => setTitulo(value)}
@@ -617,10 +615,8 @@ export default function ServiceInvoiceEditor({
           </div>
 
           <div>
-            <label htmlFor="nfseCompetencia" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
-              Competência do Serviço *
-            </label>
             <InputText
+              label="Competência do Serviço *"
               id="nfseCompetencia"
               value={competencia}
               onChange={(_id, value) => setCompetencia(value)}
@@ -630,10 +626,8 @@ export default function ServiceInvoiceEditor({
           </div>
 
           <div className="md:col-span-2">
-            <label htmlFor="selectedCompanyId" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
-              Empresa Prestadora *
-            </label>
             <Select
+              label="Empresa Prestadora *"
               id="selectedCompanyId"
               value={selectedCompanyId}
               hideClearButton
@@ -656,10 +650,8 @@ export default function ServiceInvoiceEditor({
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label htmlFor="nfseSeriePrevista" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
-                Série NFS-e
-              </label>
               <InputText
+                label="Série NFS-e"
                 id="nfseSeriePrevista"
                 value={seriePrevista}
                 onChange={(_id, value) => setSeriePrevista(value)}
@@ -667,10 +659,8 @@ export default function ServiceInvoiceEditor({
               />
             </div>
             <div>
-              <label htmlFor="nfseNumeroPrevisto" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
-                Nº Previsto
-              </label>
               <InputText
+                label="Nº Previsto"
                 id="nfseNumeroPrevisto"
                 value={numeroPrevisto}
                 onChange={(_id, value) => setNumeroPrevisto(value)}
@@ -727,10 +717,8 @@ export default function ServiceInvoiceEditor({
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label htmlFor="tomadorTipoPessoa" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
-              Tipo do Tomador
-            </label>
             <Select
+              label="Tipo do Tomador"
               id="tomadorTipoPessoa"
               value={tomador.tipoPessoa || 'PJ'}
               hideClearButton
@@ -751,10 +739,8 @@ export default function ServiceInvoiceEditor({
           </div>
 
           <div>
-            <label htmlFor="tomadorDocumento" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
-              {tomador.tipoPessoa === 'ESTRANGEIRO' ? 'ID Fiscal Exterior' : 'CPF ou CNPJ'}
-            </label>
             <InputText
+              label={tomador.tipoPessoa === 'ESTRANGEIRO' ? 'ID Fiscal Exterior' : 'CPF ou CNPJ'}
               id="tomadorDocumento"
               value={tomador.documento || ''}
               onChange={(_id, value) => setTomador((prev) => ({ ...prev, documento: value }))}
@@ -764,10 +750,8 @@ export default function ServiceInvoiceEditor({
           </div>
 
           <div>
-            <label htmlFor="tomadorEmail" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
-              E-mail para Envio do Espelho
-            </label>
             <InputText
+              label="E-mail para Envio do Espelho"
               id="tomadorEmail"
               type="email"
               value={tomador.email || ''}
@@ -778,10 +762,8 @@ export default function ServiceInvoiceEditor({
           </div>
 
           <div className="md:col-span-2">
-            <label htmlFor="tomadorNome" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
-              Nome ou Razão Social do Tomador *
-            </label>
             <InputText
+              label="Nome ou Razão Social do Tomador *"
               id="tomadorNome"
               value={tomador.nomeOuRazao || ''}
               onChange={(_id, value) => setTomador((prev) => ({ ...prev, nomeOuRazao: value }))}
@@ -792,10 +774,8 @@ export default function ServiceInvoiceEditor({
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label htmlFor="tomadorUf" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
-                UF / Estado
-              </label>
               <InputText
+                label="UF / Estado"
                 id="tomadorUf"
                 maxLength={2}
                 value={tomador.uf || ''}
@@ -805,10 +785,8 @@ export default function ServiceInvoiceEditor({
               />
             </div>
             <div>
-              <label htmlFor="tomadorMunicipio" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
-                Município
-              </label>
               <InputText
+                label="Município"
                 id="tomadorMunicipio"
                 value={tomador.municipio || ''}
                 onChange={(_id, value) => setTomador((prev) => ({ ...prev, municipio: value }))}
@@ -822,12 +800,10 @@ export default function ServiceInvoiceEditor({
         <div className="pt-2 flex items-center gap-2">
           <Checkbox
             id="chk-save-tomador"
+            label="Salvar este tomador no catálogo de clientes reutilizáveis"
             checked={savePersonToCatalog}
             onChange={(_id, checked) => setSavePersonToCatalog(checked)}
           />
-          <label htmlFor="chk-save-tomador" className="text-xs text-gray-700 dark:text-slate-300 cursor-pointer">
-            Salvar este tomador no catálogo de clientes reutilizáveis
-          </label>
         </div>
       </div>
 
@@ -855,10 +831,8 @@ export default function ServiceInvoiceEditor({
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label htmlFor="servicoCodigoTributacaoNacional" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
-              Código de Tributação Nacional *
-            </label>
             <InputText
+              label="Código de Tributação Nacional *"
               id="servicoCodigoTributacaoNacional"
               value={servico.codigoTributacaoNacional || ''}
               onChange={(_id, value) => setServico((prev) => ({ ...prev, codigoTributacaoNacional: value }))}
@@ -868,10 +842,8 @@ export default function ServiceInvoiceEditor({
           </div>
 
           <div>
-            <label htmlFor="servicoSubitemLc116" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
-              Subitem da LC 116/2003
-            </label>
             <InputText
+              label="Subitem da LC 116/2003"
               id="servicoSubitemLc116"
               value={servico.subitemLc116 || ''}
               onChange={(_id, value) => setServico((prev) => ({ ...prev, subitemLc116: value }))}
@@ -881,10 +853,8 @@ export default function ServiceInvoiceEditor({
           </div>
 
           <div>
-            <label htmlFor="servicoMunicipioPrestacao" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
-              Município de Prestação
-            </label>
             <InputText
+              label="Município de Prestação"
               id="servicoMunicipioPrestacao"
               value={servico.municipioPrestacao || ''}
               onChange={(_id, value) => setServico((prev) => ({ ...prev, municipioPrestacao: value }))}
@@ -894,10 +864,8 @@ export default function ServiceInvoiceEditor({
           </div>
 
           <div className="md:col-span-3">
-            <label htmlFor="servicoDescricao" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
-              Discriminação Detalhada dos Serviços Prestados *
-            </label>
             <InputTextArea
+              label="Discriminação Detalhada dos Serviços Prestados *"
               id="servicoDescricao"
               rows={4}
               value={servico.descricao || ''}
@@ -926,10 +894,8 @@ export default function ServiceInvoiceEditor({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="nfseValorBruto" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
-                Valor Bruto dos Serviços (R$) *
-              </label>
               <InputText
+                label="Valor Bruto dos Serviços (R$) *"
                 id="nfseValorBruto"
                 value={valorBruto}
                 onChange={(_id, value) => setValorBruto(value)}
@@ -939,10 +905,8 @@ export default function ServiceInvoiceEditor({
             </div>
 
             <div>
-              <label htmlFor="nfseDescontoIncondicionado" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
-                Desconto Incondicionado (R$)
-              </label>
               <InputText
+                label="Desconto Incondicionado (R$)"
                 id="nfseDescontoIncondicionado"
                 value={valorDescontoIncondicionado}
                 onChange={(_id, value) => setValorDescontoIncondicionado(value)}
@@ -972,10 +936,8 @@ export default function ServiceInvoiceEditor({
 
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 <div>
-                  <label htmlFor="nfseIssRetido" className="block text-[11px] font-medium text-gray-600 dark:text-slate-400 mb-1">
-                    ISS Retido (R$)
-                  </label>
                   <InputText
+                    label="ISS Retido (R$)"
                     id="nfseIssRetido"
                     value={valorIssRetido}
                     onChange={(_id, value) => {
@@ -988,10 +950,8 @@ export default function ServiceInvoiceEditor({
                 </div>
 
                 <div>
-                  <label htmlFor="nfsePisRetido" className="block text-[11px] font-medium text-gray-600 dark:text-slate-400 mb-1">
-                    PIS Retido (R$)
-                  </label>
                   <InputText
+                    label="PIS Retido (R$)"
                     id="nfsePisRetido"
                     value={pis}
                     onChange={(_id, value) => setPis(value)}
@@ -1001,10 +961,8 @@ export default function ServiceInvoiceEditor({
                 </div>
 
                 <div>
-                  <label htmlFor="nfseCofinsRetido" className="block text-[11px] font-medium text-gray-600 dark:text-slate-400 mb-1">
-                    COFINS Retido (R$)
-                  </label>
                   <InputText
+                    label="COFINS Retido (R$)"
                     id="nfseCofinsRetido"
                     value={cofins}
                     onChange={(_id, value) => setCofins(value)}
@@ -1014,10 +972,8 @@ export default function ServiceInvoiceEditor({
                 </div>
 
                 <div>
-                  <label htmlFor="nfseIr" className="block text-[11px] font-medium text-gray-600 dark:text-slate-400 mb-1">
-                    IRRF (R$)
-                  </label>
                   <InputText
+                    label="IRRF (R$)"
                     id="nfseIr"
                     value={ir}
                     onChange={(_id, value) => setIr(value)}
@@ -1027,10 +983,8 @@ export default function ServiceInvoiceEditor({
                 </div>
 
                 <div>
-                  <label htmlFor="nfseCsll" className="block text-[11px] font-medium text-gray-600 dark:text-slate-400 mb-1">
-                    CSLL Retida (R$)
-                  </label>
                   <InputText
+                    label="CSLL Retida (R$)"
                     id="nfseCsll"
                     value={csll}
                     onChange={(_id, value) => setCsll(value)}
@@ -1040,10 +994,8 @@ export default function ServiceInvoiceEditor({
                 </div>
 
                 <div>
-                  <label htmlFor="nfseInss" className="block text-[11px] font-medium text-gray-600 dark:text-slate-400 mb-1">
-                    INSS Retido (R$)
-                  </label>
                   <InputText
+                    label="INSS Retido (R$)"
                     id="nfseInss"
                     value={inss}
                     onChange={(_id, value) => setInss(value)}

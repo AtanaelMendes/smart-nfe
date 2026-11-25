@@ -25,6 +25,7 @@ import {
 
 import AppLayout from '@/components/Layouts/AppLayout';
 import Button from '@/components/buttons/Button';
+import InputText from '@/components/inputs/InputText';
 import { useAppContext } from '@/context/AppContext';
 
 import { formatBRL } from '@/lib/formatters/currency';
@@ -746,78 +747,78 @@ export default function DivisaoNotasPage({ params }) {
                       <span className="w-5 h-5 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center text-[10px] flex-shrink-0">
                         {suffix}
                       </span>
-                      <input
-                        type="text"
+                      <InputText
+                        id={`note-nome-${note.id}`}
                         value={note.nome}
-                        onChange={(e) => handleNoteMetadataChange(note.id, 'nome', e.target.value)}
+                        onChange={(_id, value) => handleNoteMetadataChange(note.id, 'nome', value)}
                         placeholder="Nome da Nota Destino"
-                        className="font-bold text-xs text-slate-900 dark:text-slate-100 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-blue-500 focus:outline-none w-full"
+                        className="font-bold text-xs text-slate-900 dark:text-slate-100 bg-transparent border-0 border-b border-transparent hover:border-slate-300 focus:border-blue-500 rounded-none px-1 py-0.5 w-full"
                       />
                     </div>
 
                     {targetNotes.length > 2 && (
-                      <button
-                        type="button"
+                      <Button
+                        buttonType="danger"
+                        size="small"
+                        outline
+                        square
                         onClick={() => handleRemoveNote(note.id)}
-                        className="text-slate-400 hover:text-red-500 p-1 transition-colors"
+                        className="p-1 text-slate-400 hover:text-red-500"
                         title="Remover esta nota de destino"
                       >
                         <FontAwesomeIcon icon={faTrashCan} className="w-3.5 h-3.5" />
-                      </button>
+                      </Button>
                     )}
                   </div>
 
                   {/* Campos de Destinatário: Razão Social, CNPJ, UF/País */}
                   <div className="space-y-1.5">
                     <div>
-                      <label className="text-[10px] uppercase text-slate-500 font-semibold block">
-                        Razão Social / Destinatário
-                      </label>
-                      <input
-                        type="text"
+                      <InputText
+                        small
+                        label="Razão Social / Destinatário"
+                        id={`note-razao-${note.id}`}
                         value={note.razaoSocial}
-                        onChange={(e) =>
-                          handleNoteMetadataChange(note.id, 'razaoSocial', e.target.value)
+                        onChange={(_id, value) =>
+                          handleNoteMetadataChange(note.id, 'razaoSocial', value)
                         }
                         placeholder="Nome da empresa destinatária"
-                        className="w-full px-2 py-1 text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 focus:border-blue-500 focus:outline-none"
+                        className="w-full px-2 py-1 text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:border-blue-500"
                       />
                     </div>
 
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <label className="text-[10px] uppercase text-slate-500 font-semibold block">
-                          CNPJ / Tax ID
-                        </label>
-                        <input
-                          type="text"
+                        <InputText
+                          small
+                          label="CNPJ / Tax ID"
+                          id={`note-cnpj-${note.id}`}
                           value={note.cnpj}
-                          onChange={(e) =>
-                            handleNoteMetadataChange(note.id, 'cnpj', e.target.value)
+                          onChange={(_id, value) =>
+                            handleNoteMetadataChange(note.id, 'cnpj', value)
                           }
                           placeholder="CNPJ ou ID Estrangeiro"
-                          className="w-full px-2 py-1 text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 focus:border-blue-500 focus:outline-none"
+                          className="w-full px-2 py-1 text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:border-blue-500"
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] uppercase text-slate-500 font-semibold block">
-                          UF / País
-                        </label>
-                        <input
-                          type="text"
+                        <InputText
+                          small
+                          label="UF / País"
+                          id={`note-uf-pais-${note.id}`}
                           value={note.uf ? `${note.uf} / ${note.pais}` : note.pais}
-                          onChange={(e) => {
-                            const val = e.target.value;
+                          onChange={(_id, value) => {
+                            const val = value || '';
                             if (val.includes('/')) {
                               const parts = val.split('/');
                               handleNoteMetadataChange(note.id, 'uf', parts[0].trim());
-                              handleNoteMetadataChange(note.id, 'pais', parts[1].trim());
+                              handleNoteMetadataChange(note.id, 'pais', (parts[1] || '').trim());
                             } else {
                               handleNoteMetadataChange(note.id, 'pais', val.trim());
                             }
                           }}
                           placeholder="Ex: SP / Brasil ou Holanda"
-                          className="w-full px-2 py-1 text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 focus:border-blue-500 focus:outline-none"
+                          className="w-full px-2 py-1 text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:border-blue-500"
                         />
                       </div>
                     </div>
@@ -845,38 +846,48 @@ export default function DivisaoNotasPage({ params }) {
             Ações Rápidas de Alocação:
           </span>
           <div className="flex flex-wrap items-center gap-1.5">
-            <button
-              type="button"
+            <Button
+              buttonType="secondary"
+              size="small"
+              bordered
               onClick={handleDistributeEqually}
-              className="px-2.5 py-1 text-xs font-semibold rounded bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors"
+              className="px-2.5 py-1 text-xs font-semibold border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-600"
               title="Distribuir 100% das quantidades em partes iguais entre as notas"
             >
               Distribuir Igualmente ({targetNotes.length} Notas)
-            </button>
+            </Button>
             {batchResult.hasRemaining && (
-              <button
-                type="button"
+              <Button
+                buttonType="warning"
+                size="small"
+                outline
+                bordered
                 onClick={handleDistributeRemainingAll}
-                className="px-2.5 py-1 text-xs font-semibold rounded bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900/60 transition-colors"
+                className="px-2.5 py-1 text-xs font-semibold border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900/60"
                 title="Distribuir apenas o saldo pendente de cada item igualmente"
               >
                 Dividir Saldos Restantes ({targetNotes.length} Notas)
-              </button>
+              </Button>
             )}
-            <button
-              type="button"
+            <Button
+              buttonType="secondary"
+              size="small"
+              bordered
               onClick={handleAllocateAllToFirst}
-              className="px-2.5 py-1 text-xs font-semibold rounded bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors"
+              className="px-2.5 py-1 text-xs font-semibold border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-600"
             >
               Alocar 100% na Nota 1
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
+              buttonType="danger"
+              size="small"
+              outline
+              bordered
               onClick={handleClearAll}
-              className="px-2.5 py-1 text-xs font-semibold rounded bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-slate-600 transition-colors"
+              className="px-2.5 py-1 text-xs font-semibold border-slate-300 dark:border-slate-600 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-slate-600"
             >
               Limpar Alocações
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -983,28 +994,32 @@ export default function DivisaoNotasPage({ params }) {
                             className="px-2 py-1.5 text-center bg-blue-50/20 dark:bg-blue-900/10 border-l border-slate-200 dark:border-slate-700"
                           >
                             <div className="flex items-center justify-center gap-1">
-                              <input
-                                type="text"
-                                placeholder="0"
-                                value={cellVal}
-                                onChange={(e) =>
-                                  handleQuantityChange(note.id, it.id, e.target.value)
-                                }
-                                className={`w-20 px-2 py-1 text-xs text-right font-mono rounded border transition-colors ${
-                                  isExcess
-                                    ? 'border-red-400 dark:border-red-600 focus:border-red-500'
-                                    : 'border-slate-300 dark:border-slate-600 focus:border-blue-500'
-                                } bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none`}
-                              />
+                              <div className="w-20 flex-shrink-0">
+                                <InputText
+                                  id={`qty-${note.id}-${it.id}`}
+                                  placeholder="0"
+                                  value={cellVal}
+                                  onChange={(_id, value) =>
+                                    handleQuantityChange(note.id, it.id, value)
+                                  }
+                                  className={`w-full px-2 py-1 text-xs text-right font-mono rounded ${
+                                    isExcess
+                                      ? 'border-red-400 dark:border-red-600 focus:border-red-500'
+                                      : 'border-slate-300 dark:border-slate-600 focus:border-blue-500'
+                                  } bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100`}
+                                />
+                              </div>
                               {isRemaining && (
-                                <button
-                                  type="button"
+                                <Button
+                                  buttonType="warning"
+                                  size="small"
+                                  square
                                   onClick={() => handleAllocateRemaining(note.id, it)}
                                   title={`Distribuir 100% do saldo restante (${formatQuantity(report.balanceStr)}) para ${note.nome}`}
-                                  className="w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold bg-amber-100 hover:bg-amber-200 text-amber-800 dark:bg-amber-900/50 dark:hover:bg-amber-800 dark:text-amber-200 transition-colors"
+                                  className="w-5 h-5 p-0 text-[10px] font-bold flex items-center justify-center bg-amber-100 hover:bg-amber-200 text-amber-800 dark:bg-amber-900/50 dark:hover:bg-amber-800 dark:text-amber-200"
                                 >
                                   +
-                                </button>
+                                </Button>
                               )}
                             </div>
                           </td>
@@ -1031,15 +1046,17 @@ export default function DivisaoNotasPage({ params }) {
                             {formatQuantity(report.balanceStr)}
                           </span>
                           {isRemaining && (
-                            <button
-                              type="button"
+                            <Button
+                              buttonType="warning"
+                              size="small"
+                              outline
                               onClick={() => handleDistributeItemEqually(it)}
                               title={`Dividir saldo deste item (${formatQuantity(report.balanceStr)}) igualmente entre as ${targetNotes.length} notas`}
-                              className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-100 hover:bg-amber-200 text-amber-800 dark:bg-amber-900/50 dark:hover:bg-amber-800 dark:text-amber-200 inline-flex items-center gap-1 transition-colors"
+                              className="px-1.5 py-0.5 text-[10px] font-semibold bg-amber-100 hover:bg-amber-200 text-amber-800 dark:bg-amber-900/50 dark:hover:bg-amber-800 dark:text-amber-200 inline-flex items-center gap-1"
                             >
                               <FontAwesomeIcon icon={faScaleBalanced} className="w-2.5 h-2.5" />
                               <span>÷ Dividir</span>
-                            </button>
+                            </Button>
                           )}
                         </div>
                       </td>

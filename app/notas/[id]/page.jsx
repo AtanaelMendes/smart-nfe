@@ -25,6 +25,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import AppLayout from '@/components/Layouts/AppLayout';
 import Dialog from '@/components/Layouts/Dialog';
+import Button from '@/components/buttons/Button';
 import { documentRepository } from '@/features/documentRepository';
 import { formatBRL, formatDateBR } from '@/lib/formatters';
 import { useAppContext } from '@/context/AppContext';
@@ -232,40 +233,43 @@ export default function DocumentoDetalhesPage({ params: paramsProp }) {
               <span>Editar</span>
             </Link>
 
-            <button
-              type="button"
+            <Button
+              buttonType="ghost"
+              size="small"
               onClick={handleDuplicate}
               disabled={actionLoading}
-              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-gray-700 dark:text-slate-200 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 rounded-lg transition-colors disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-gray-700 dark:text-slate-200 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 rounded-lg"
               title="Duplicar rascunho"
             >
               <FontAwesomeIcon icon={faCopy} />
               <span>Duplicar</span>
-            </button>
+            </Button>
 
             {isNFe && (
-              <button
-                type="button"
+              <Button
+                buttonType="ghost"
+                size="small"
                 onClick={handleAddToPreparation}
                 disabled={actionLoading}
-                className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 border border-emerald-200 dark:border-emerald-800 rounded-lg transition-colors disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 border border-emerald-200 dark:border-emerald-800 rounded-lg"
                 title="Integrar à preparação N:M"
               >
                 <FontAwesomeIcon icon={faBoxesPacking} />
                 <span>Adicionar à Preparação</span>
-              </button>
+              </Button>
             )}
 
-            <button
-              type="button"
+            <Button
+              buttonType="ghost"
+              size="small"
               onClick={() => setShowDeleteModal(true)}
               disabled={actionLoading}
-              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg"
               title="Excluir rascunho"
             >
               <FontAwesomeIcon icon={faTrashCan} />
               <span>Excluir</span>
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -578,21 +582,23 @@ export default function DocumentoDetalhesPage({ params: paramsProp }) {
             Tem certeza de que deseja excluir permanentemente o rascunho <strong>&quot;{document.titulo}&quot;</strong>?
           </p>
           <div className="flex justify-end gap-3 pt-4">
-            <button
-              type="button"
+            <Button
+              buttonType="secondary"
+              size="small"
               onClick={() => setShowDeleteModal(false)}
-              className="px-4 py-2 text-xs font-semibold rounded-lg bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-200 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors"
+              className="px-4 py-2 text-xs font-semibold bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-200 hover:bg-gray-200 dark:hover:bg-slate-700 rounded-lg"
             >
               Cancelar
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
+              buttonType="danger"
+              size="small"
               onClick={handleDelete}
               disabled={actionLoading}
-              className="px-4 py-2 text-xs font-semibold rounded-lg bg-red-600 hover:bg-red-700 text-white transition-colors disabled:opacity-50"
+              className="px-4 py-2 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-lg"
             >
               {actionLoading ? 'Excluindo...' : 'Sim, Excluir'}
-            </button>
+            </Button>
           </div>
         </div>
       </Dialog>

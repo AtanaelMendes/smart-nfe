@@ -27,6 +27,7 @@ import {
 
 import AppLayout from '@/components/Layouts/AppLayout';
 import Button from '@/components/buttons/Button';
+import Checkbox from '@/components/inputs/Checkbox';
 import { useAppContext } from '@/context/AppContext';
 import { invoiceRepository } from '@/features/invoiceRepository';
 import { formatBRL } from '@/lib/formatters/currency';
@@ -119,14 +120,17 @@ function FiscalFixConfirmationModal({
               [Demonstração] Validação Fiscal Assistida (R2)
             </span>
           </div>
-          <button
-            type="button"
+          <Button
+            buttonType="ghost"
+            size="small"
+            square
+            outline
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-md transition-colors"
+            className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
             title="Fechar (Escape)"
           >
             <FontAwesomeIcon icon={faTimes} className="w-4 h-4" />
-          </button>
+          </Button>
         </div>
 
         {/* Body */}
@@ -285,14 +289,17 @@ function SafeBulkReviewModal({
               [Demonstração] Separação de Segurança Fiscal e Bloqueio de Massa (R2)
             </span>
           </div>
-          <button
-            type="button"
+          <Button
+            buttonType="ghost"
+            size="small"
+            square
+            outline
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-md transition-colors"
+            className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
             title="Fechar (Escape)"
           >
             <FontAwesomeIcon icon={faTimes} className="w-4 h-4" />
-          </button>
+          </Button>
         </div>
 
         {/* Body */}
@@ -307,14 +314,16 @@ function SafeBulkReviewModal({
                 </h4>
               </div>
               {mechanicalIssues.length > 0 && (
-                <button
-                  type="button"
+                <Button
+                  buttonType="primary"
+                  size="small"
+                  outline
                   onClick={onToggleAll}
-                  className="text-xs text-blue-600 dark:text-blue-400 hover:underline font-semibold flex items-center gap-1"
+                  className="px-1 py-0.5 text-xs font-semibold inline-flex items-center gap-1"
                 >
                   <FontAwesomeIcon icon={faCheckDouble} className="w-3 h-3" />
                   {allMechanicalSelected ? 'Desmarcar Todas' : 'Selecionar Todas'}
-                </button>
+                </Button>
               )}
             </div>
 
@@ -336,12 +345,14 @@ function SafeBulkReviewModal({
                           : 'border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900/40 opacity-75'
                       }`}
                     >
-                      <input
-                        type="checkbox"
-                        checked={isChecked}
-                        onChange={() => {}} // controlado pelo container
-                        className="mt-0.5 rounded text-emerald-600 focus:ring-emerald-500 h-4 w-4 pointer-events-none"
-                      />
+                      <div className="mt-0.5 pointer-events-none">
+                        <Checkbox
+                          id={`bulk-issue-${issue.id}`}
+                          checked={isChecked}
+                          onChange={() => {}} // controlado pelo container
+                          className="pointer-events-none"
+                        />
+                      </div>
                       <div className="space-y-1 flex-1">
                         <div className="flex items-center justify-between gap-2">
                           <span className="font-bold text-slate-900 dark:text-slate-100">
@@ -601,13 +612,16 @@ export default function ValidacaoPage({ params }) {
           <span>
             Item #{pendingFix.itemNumero} ({pendingFix.campo}) ajustado para &quot;{valorNovo}&quot;.
           </span>
-          <button
-            type="button"
+          <Button
+            buttonType="success"
+            size="small"
+            outline
+            bordered
             onClick={() => handleUndo(undoEntry)}
-            className="px-2 py-0.5 text-xs font-bold bg-white text-emerald-800 rounded border border-emerald-300 hover:bg-emerald-100 transition-colors shadow-xs"
+            className="px-2 py-0.5 text-xs font-bold bg-white text-emerald-800 border-emerald-300 hover:bg-emerald-100 shadow-xs"
           >
             Desfazer
-          </button>
+          </Button>
         </span>
       );
 
@@ -1028,39 +1042,42 @@ export default function ValidacaoPage({ params }) {
             {/* Abas de Navegação / Filtro */}
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-700 pb-2">
               <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
+                <Button
+                  buttonType="secondary"
+                  size="small"
                   onClick={() => setActiveTab('todas')}
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg bg-transparent ${
                     activeTab === 'todas'
                       ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300'
-                      : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700'
+                      : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700 dark:bg-transparent'
                   }`}
                 >
                   Todas as Pendências ({issues.length})
-                </button>
-                <button
-                  type="button"
+                </Button>
+                <Button
+                  buttonType="secondary"
+                  size="small"
                   onClick={() => setActiveTab('erros')}
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg bg-transparent ${
                     activeTab === 'erros'
                       ? 'bg-red-100 text-red-800 dark:bg-red-950/50 dark:text-red-300'
-                      : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700'
+                      : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700 dark:bg-transparent'
                   }`}
                 >
                   Erros Bloqueantes ({errosBloqueantes.length})
-                </button>
-                <button
-                  type="button"
+                </Button>
+                <Button
+                  buttonType="secondary"
+                  size="small"
                   onClick={() => setActiveTab('avisos')}
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg bg-transparent ${
                     activeTab === 'avisos'
                       ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300'
-                      : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700'
+                      : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700 dark:bg-transparent'
                   }`}
                 >
                   Alertas Fiscais ({alertasFiscais.length})
-                </button>
+                </Button>
               </div>
 
               <span className="text-[11px] text-slate-500">

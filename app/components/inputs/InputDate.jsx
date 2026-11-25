@@ -64,7 +64,7 @@ const InputDate = ({small, variant, ...props}) => {
 			variantClasses[variant || "default"],
 			)}>
 			{props.label && (
-				<div className='flex absolute top-[-9px] left-2 w-fit z-10 text-xs px-0.5 rounded-md mb-0 pb-0 text-nowrap before:bg-white before:top-0.5 before:left-0 before:absolute before:w-full before:h-[12px] before:-z-10 before:content-[""] before:rounded-lg'>
+				<div className='flex absolute top-[-9px] left-2 w-fit z-10 text-xs px-0.5 rounded-md mb-0 pb-0 text-nowrap before:bg-white dark:before:bg-slate-800 before:top-0.5 before:left-0 before:absolute before:w-full before:h-[12px] before:-z-10 before:content-[""] before:rounded-lg'>
 					<label htmlFor={props.id} >
 						<FieldLabel className={cn(props?.required ? 'ml-4' : 'ml-0', variantClasses[variant || "default"], 'mb-0 pb-0')}>
 							{props.label || ''}

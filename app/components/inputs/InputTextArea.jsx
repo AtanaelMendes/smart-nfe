@@ -93,7 +93,7 @@ const InputTextArea = React.memo(function ({
     return (
         <>
             {label && (
-                <label htmlFor={id} className={`${small ? 'mb-0.5 text-xs' : 'mb-2'} text-sm font-medium text-gray-900 inline-flex`}>
+                <label htmlFor={id} className={`${small ? 'mb-0.5 text-xs' : 'mb-2'} text-sm font-medium text-gray-900 dark:text-slate-100 inline-flex`}>
                     {required && (
                         <FontAwesomeIcon
                             icon={faAsterisk}

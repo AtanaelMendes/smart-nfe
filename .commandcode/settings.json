@@ -13,7 +13,8 @@
       "Shell(npx eslint app/components/notes/FiscalField.jsx)",
       "Shell(if:*)",
       "Shell({:*)",
-      "Shell(npx eslint \"app/components/notes/ProductInvoiceEditor.jsx\" \"app/components/notes/ServiceInvoiceEditor.jsx\")"
+      "Shell(npx eslint \"app/components/notes/ProductInvoiceEditor.jsx\" \"app/components/notes/ServiceInvoiceEditor.jsx\")",
+      "Shell(npx eslint app/components/buttons/Button.jsx app/components/Layouts/SmartNFeHeader.jsx app/components/Layouts/SmartNFeSidebar.jsx app/components/feedback/ScreenTourTip.jsx)"
     ],
     "deny": [],
     "defaultMode": "default"

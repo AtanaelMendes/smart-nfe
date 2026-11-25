@@ -29,6 +29,7 @@ import {
 
 import AppLayout from '@/components/Layouts/AppLayout';
 import Button from '@/components/buttons/Button';
+import InputText from '@/components/inputs/InputText';
 import { FiscalGroup } from '@/components/notes/FiscalField';
 import { useAppContext } from '@/context/AppContext';
 
@@ -648,18 +649,25 @@ export default function ConferenciaPage({ params }) {
             </div>
 
             <div className="relative w-64">
-              <FontAwesomeIcon icon={faMagnifyingGlass} className="absolute left-2.5 top-2 text-slate-400 w-3 h-3" />
-              <input
-                type="text"
-                placeholder="Buscar código, descrição ou NCM..."
+              <FontAwesomeIcon icon={faMagnifyingGlass} className="absolute left-2.5 top-2 z-10 text-slate-400 w-3 h-3 pointer-events-none" />
+              <InputText
+                id="conferenciaSearch"
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-8 pr-2 py-1 text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
+                placeholder="Buscar código, descrição ou NCM..."
+                onChange={(id, value) => setSearchTerm(value)}
+                className="pl-8 pr-2 py-1 text-xs rounded border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
               />
             </div>
           </div>
 
-          {/* Grid de Edição */}
+          {/* Grid de Edição
+              NOTA: as células editáveis (codigo, descricao, ncm, cfop, unidade, quantidade,
+              valorUnitario) permanecem como <input> NATIVOS de forma intencional: a navegação
+              por teclado exige data-row-index/data-field (usados por document.querySelector no
+              handleKeyDown), o handler onKeyDown com preventDefault/Escape + blur e o foco direto
+              no elemento. O componente InputText não repassa atributos data-*, não expõe onKeyDown
+              e mantém estado interno com máscara, o que quebraria Enter/Escape e a seleção de
+              texto ao navegar entre linhas. */}
           <div className="overflow-x-auto">
             <table className="w-full text-xs text-left text-slate-600 dark:text-slate-300">
               <thead className="text-[11px] uppercase bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 border-b border-slate-200 dark:border-slate-600">
@@ -999,27 +1007,31 @@ export default function ConferenciaPage({ params }) {
                       {/* Ações */}
                       <td className="px-2 py-1.5 text-center">
                         <div className="flex items-center justify-center gap-1">
-                          <button
-                            type="button"
+                          <Button
+                            buttonType="ghost"
+                            size="small"
+                            outline
                             onClick={() => toggleItemDetails(item.id)}
-                            className="p-1 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                            className="!p-1 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700"
                             title="Detalhes fiscais do item"
                           >
                             <FontAwesomeIcon icon={expandedItems.has(item.id) ? faChevronUp : faChevronDown} className="w-3.5 h-3.5" />
-                          </button>
+                          </Button>
                           {isModified ? (
                             <>
                               <span className="text-[10px] bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 font-semibold px-1.5 py-0.5 rounded">
                                 Editado
                               </span>
-                              <button
-                                type="button"
+                              <Button
+                                buttonType="warning"
+                                size="small"
+                                outline
                                 onClick={() => handleRestoreItem(item.id)}
-                                className="p-1 text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                                className="!p-1 text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-slate-100 dark:hover:bg-slate-700"
                                 title="Restaurar valor original deste item (Esc)"
                               >
                                 <FontAwesomeIcon icon={faRotateLeft} className="w-3.5 h-3.5" />
-                              </button>
+                              </Button>
                             </>
                           ) : (
                             <span className="text-[10px] text-slate-400">Original</span>
@@ -1151,17 +1163,18 @@ export default function ConferenciaPage({ params }) {
 
         {/* Painel fiscal completo do documento importado (somente consulta) */}
         <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-xs">
-          <button
-            type="button"
+          <Button
+            buttonType="ghost"
+            block
             onClick={() => setFiscalPanelOpen((v) => !v)}
-            className="w-full flex items-center justify-between px-4 py-3 text-sm font-bold text-slate-900 dark:text-slate-100"
+            className="flex items-center justify-between !py-3 text-sm font-bold text-slate-900 dark:text-slate-100 dark:bg-slate-800"
           >
             <span className="flex items-center gap-2">
               <FontAwesomeIcon icon={faBarcode} className="text-blue-600" />
               Detalhes fiscais completos do XML (identificação, participantes, transporte, cobrança e tributos)
             </span>
             <FontAwesomeIcon icon={fiscalPanelOpen ? faChevronUp : faChevronDown} className="text-slate-400" />
-          </button>
+          </Button>
 
           {fiscalPanelOpen && (
             <div className="p-4 pt-0 space-y-2">

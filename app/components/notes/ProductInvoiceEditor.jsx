@@ -627,10 +627,8 @@ export default function ProductInvoiceEditor({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Título do Rascunho */}
           <div className="md:col-span-2">
-            <label htmlFor="nfeTitulo" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
-              Título de Referência do Rascunho
-            </label>
             <InputText
+              label="Título de Referência do Rascunho"
               id="nfeTitulo"
               value={titulo}
               onChange={(_id, value) => setTitulo(value)}
@@ -641,10 +639,8 @@ export default function ProductInvoiceEditor({
 
           {/* Data Prevista */}
           <div>
-            <label htmlFor="nfeDataPrevista" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
-              Data Prevista de Emissão
-            </label>
             <InputDate
+              label="Data Prevista de Emissão"
               id="nfeDataPrevista"
               value={dataPrevistaEmissao}
               onChange={(_id, value) => setDataPrevistaEmissao(value)}
@@ -655,10 +651,8 @@ export default function ProductInvoiceEditor({
 
           {/* Empresa Emitente */}
           <div className="md:col-span-2">
-            <label htmlFor="selectedCompanyId" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
-              Empresa Emitente (Origem) *
-            </label>
             <Select
+              label="Empresa Emitente (Origem) *"
               id="selectedCompanyId"
               value={selectedCompanyId}
               hideClearButton
@@ -681,10 +675,8 @@ export default function ProductInvoiceEditor({
 
           {/* Natureza da Operação */}
           <div>
-            <label htmlFor="nfeNaturezaOperacao" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
-              Natureza da Operação *
-            </label>
             <InputText
+              label="Natureza da Operação *"
               id="nfeNaturezaOperacao"
               value={naturezaOperacao}
               onChange={(_id, value) => setNaturezaOperacao(value)}
@@ -695,10 +687,8 @@ export default function ProductInvoiceEditor({
 
           {/* Destino da Operação */}
           <div>
-            <label htmlFor="destinoOperacao" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
-              Destino da Operação
-            </label>
             <Select
+              label="Destino da Operação"
               id="destinoOperacao"
               value={destinoOperacao}
               hideClearButton
@@ -725,10 +715,8 @@ export default function ProductInvoiceEditor({
 
           {/* Finalidade */}
           <div>
-            <label htmlFor="finalidadeEmissao" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
-              Finalidade da NF-e
-            </label>
             <Select
+              label="Finalidade da NF-e"
               id="finalidadeEmissao"
               value={finalidadeEmissao}
               hideClearButton
@@ -746,10 +734,8 @@ export default function ProductInvoiceEditor({
           {/* Série e Número Previsto */}
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label htmlFor="nfeSeriePrevista" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
-                Série Prevista
-              </label>
               <InputText
+                label="Série Prevista"
                 id="nfeSeriePrevista"
                 value={seriePrevista}
                 onChange={(_id, value) => setSeriePrevista(value)}
@@ -757,10 +743,8 @@ export default function ProductInvoiceEditor({
               />
             </div>
             <div>
-              <label htmlFor="nfeNumeroPrevisto" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
-                Número Previsto
-              </label>
               <InputText
+                label="Número Previsto"
                 id="nfeNumeroPrevisto"
                 placeholder="Automático"
                 value={numeroPrevisto}
@@ -875,10 +859,8 @@ export default function ProductInvoiceEditor({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Tipo de Pessoa */}
           <div>
-            <label htmlFor="destinatarioTipoPessoa" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
-              Tipo de Pessoa
-            </label>
             <Select
+              label="Tipo de Pessoa"
               id="destinatarioTipoPessoa"
               value={destinatario.tipoPessoa || 'PJ'}
               hideClearButton
@@ -901,10 +883,8 @@ export default function ProductInvoiceEditor({
 
           {/* Documento (CNPJ/CPF ou ID Estrangeiro) */}
           <div>
-            <label htmlFor="destinatarioDocumento" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
-              {destinatario.tipoPessoa === 'ESTRANGEIRO' ? 'ID Fiscal Internacional / VAT' : 'CPF ou CNPJ *'}
-            </label>
             <InputText
+              label={destinatario.tipoPessoa === 'ESTRANGEIRO' ? 'ID Fiscal Internacional / VAT' : 'CPF ou CNPJ *'}
               id="destinatarioDocumento"
               value={destinatario.documento || ''}
               onChange={(_id, value) => setDestinatario((prev) => ({ ...prev, documento: value }))}
@@ -915,10 +895,8 @@ export default function ProductInvoiceEditor({
 
           {/* Inscrição Estadual */}
           <div>
-            <label htmlFor="destinatarioInscricaoEstadual" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
-              Inscrição Estadual (IE)
-            </label>
             <InputText
+              label="Inscrição Estadual (IE)"
               id="destinatarioInscricaoEstadual"
               value={destinatario.inscricaoEstadual || ''}
               onChange={(_id, value) => setDestinatario((prev) => ({ ...prev, inscricaoEstadual: value }))}
@@ -929,10 +907,8 @@ export default function ProductInvoiceEditor({
 
           {/* Nome ou Razão Social */}
           <div className="md:col-span-2">
-            <label htmlFor="destinatarioNome" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
-              Nome ou Razão Social *
-            </label>
             <InputText
+              label="Nome ou Razão Social *"
               id="destinatarioNome"
               value={destinatario.nomeOuRazao || ''}
               onChange={(_id, value) => setDestinatario((prev) => ({ ...prev, nomeOuRazao: value }))}
@@ -944,10 +920,8 @@ export default function ProductInvoiceEditor({
           {/* UF e Município */}
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label htmlFor="destinatarioUf" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
-                UF / Estado
-              </label>
               <InputText
+                label="UF / Estado"
                 id="destinatarioUf"
                 value={destinatario.uf || ''}
                 onChange={(_id, value) => setDestinatario((prev) => ({ ...prev, uf: value.toUpperCase() }))}
@@ -957,10 +931,8 @@ export default function ProductInvoiceEditor({
               />
             </div>
             <div>
-              <label htmlFor="destinatarioMunicipio" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
-                Município
-              </label>
               <InputText
+                label="Município"
                 id="destinatarioMunicipio"
                 value={destinatario.municipio || ''}
                 onChange={(_id, value) => setDestinatario((prev) => ({ ...prev, municipio: value }))}
@@ -994,12 +966,10 @@ export default function ProductInvoiceEditor({
         <div className="pt-2 flex items-center gap-2">
           <Checkbox
             id="chk-save-person"
+            label="Salvar este destinatário no cadastro reutilizável de clientes"
             checked={savePersonToCatalog}
             onChange={(_id, checked) => setSavePersonToCatalog(checked)}
           />
-          <label htmlFor="chk-save-person" className="text-xs text-gray-700 dark:text-slate-300 cursor-pointer">
-            Salvar este destinatário no cadastro reutilizável de clientes
-          </label>
         </div>
       </div>
 
@@ -1325,10 +1295,8 @@ export default function ProductInvoiceEditor({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="modalidadeFrete" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
-                Modalidade do Frete
-              </label>
               <Select
+                label="Modalidade do Frete"
                 id="modalidadeFrete"
                 value={modalidadeFrete}
                 hideClearButton
@@ -1344,10 +1312,8 @@ export default function ProductInvoiceEditor({
             </div>
 
             <div>
-              <label htmlFor="nfeValorFrete" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
-                Valor do Frete (R$)
-              </label>
               <InputText
+                label="Valor do Frete (R$)"
                 id="nfeValorFrete"
                 value={valorFrete}
                 onChange={(_id, value) => setValorFrete(value)}
@@ -1357,10 +1323,8 @@ export default function ProductInvoiceEditor({
             </div>
 
             <div>
-              <label htmlFor="nfeValorSeguro" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
-                Valor do Seguro (R$)
-              </label>
               <InputText
+                label="Valor do Seguro (R$)"
                 id="nfeValorSeguro"
                 value={valorSeguro}
                 onChange={(_id, value) => setValorSeguro(value)}
@@ -1370,10 +1334,8 @@ export default function ProductInvoiceEditor({
             </div>
 
             <div>
-              <label htmlFor="nfeOutrasDespesas" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
-                Outras Despesas Acessórias (R$)
-              </label>
               <InputText
+                label="Outras Despesas Acessórias (R$)"
                 id="nfeOutrasDespesas"
                 value={outrasDespesas}
                 onChange={(_id, value) => setOutrasDespesas(value)}
@@ -1383,10 +1345,8 @@ export default function ProductInvoiceEditor({
             </div>
 
             <div>
-              <label htmlFor="nfeValorIPI" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
-                Valor do IPI (R$)
-              </label>
               <InputText
+                label="Valor do IPI (R$)"
                 id="nfeValorIPI"
                 value={valorIPI}
                 onChange={(_id, value) => setValorIPI(value)}
@@ -1397,10 +1357,8 @@ export default function ProductInvoiceEditor({
           </div>
 
           <div>
-            <label htmlFor="nfeInformacoesAdicionais" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
-              Informações Complementares / Fisco
-            </label>
             <InputTextArea
+              label="Informações Complementares / Fisco"
               id="nfeInformacoesAdicionais"
               rows={2}
               value={informacoesAdicionais}

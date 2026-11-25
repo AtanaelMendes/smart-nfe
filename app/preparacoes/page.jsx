@@ -20,6 +20,7 @@ import {
 import AppLayout from '@/components/Layouts/AppLayout';
 import DataTable from '@/components/table/DataTable';
 import Button from '@/components/buttons/Button';
+import InputText from '@/components/inputs/InputText';
 import Select from '@/components/inputs/Select';
 import Dialog from '@/components/Layouts/Dialog';
 import { useAppContext } from '@/context/AppContext';
@@ -234,13 +235,16 @@ export default function PreparacoesPage() {
             <FontAwesomeIcon icon={faPenToSquare} className="mr-1" />
             {item.status === 'completed' ? 'Reabrir' : 'Editar'}
           </Button>
-          <button
+          <Button
+            buttonType="danger"
+            size="small"
+            outline
             onClick={() => setDeleteDialog({ open: true, preparation: item })}
-            className="p-1.5 text-slate-400 hover:text-red-600 rounded transition-colors cursor-pointer"
+            className="p-1.5"
             title="Excluir preparação"
           >
             <FontAwesomeIcon icon={faTrashCan} className="w-3.5 h-3.5" />
-          </button>
+          </Button>
         </div>
       ),
     },
@@ -297,13 +301,14 @@ export default function PreparacoesPage() {
         {/* Filters */}
         <div className="flex flex-col sm:flex-row items-center gap-3 bg-white dark:bg-slate-800 p-3 rounded-lg border border-slate-200 dark:border-slate-700">
           <div className="relative flex-1 w-full">
-            <FontAwesomeIcon icon={faMagnifyingGlass} className="absolute left-3 top-2.5 text-slate-400 w-3.5 h-3.5" />
-            <input
-              type="text"
-              placeholder="Buscar por número, título ou cliente..."
+            <FontAwesomeIcon icon={faMagnifyingGlass} className="absolute left-3 top-2.5 text-slate-400 w-3.5 h-3.5 z-10" />
+            <InputText
+              id="searchTerm"
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-blue-500"
+              onChange={(id, value) => setSearchTerm(value)}
+              placeholder="Buscar por número, título ou cliente..."
+              small
+              className="pl-9 pr-3 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
             />
           </div>
 

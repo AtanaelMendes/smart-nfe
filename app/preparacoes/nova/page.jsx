@@ -28,6 +28,8 @@ import {
 
 import AppLayout from '@/components/Layouts/AppLayout';
 import Button from '@/components/buttons/Button';
+import InputText from '@/components/inputs/InputText';
+import InputNumber from '@/components/inputs/InputNumber';
 import Select from '@/components/inputs/Select';
 import Dialog from '@/components/Layouts/Dialog';
 import { useAppContext } from '@/context/AppContext';
@@ -613,70 +615,60 @@ function NovaPreparacaoInner() {
 
         {/* Non-Linear Step Tabs Navigation */}
         <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-1.5 flex items-center gap-1 overflow-x-auto text-xs">
-          <button
-            type="button"
+          <Button
+            buttonType={activeStep === 'origens' ? 'primary' : 'ghost'}
+            outline={activeStep !== 'origens'}
+            size="small"
             onClick={() => setActiveStep('origens')}
-            className={`px-3 py-1.5 rounded font-medium flex items-center gap-1.5 cursor-pointer whitespace-nowrap transition-colors ${
-              activeStep === 'origens'
-                ? 'bg-blue-600 text-white'
-                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
-            }`}
+            className="flex items-center gap-1.5 whitespace-nowrap px-3 py-1.5"
           >
             <span className="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center text-[10px]">1</span>
             Origens ({preparation.sourceInvoiceIds.length})
-          </button>
+          </Button>
 
-          <button
-            type="button"
+          <Button
+            buttonType={activeStep === 'cliente' ? 'primary' : 'ghost'}
+            outline={activeStep !== 'cliente'}
+            size="small"
             onClick={() => setActiveStep('cliente')}
-            className={`px-3 py-1.5 rounded font-medium flex items-center gap-1.5 cursor-pointer whitespace-nowrap transition-colors ${
-              activeStep === 'cliente'
-                ? 'bg-blue-600 text-white'
-                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
-            }`}
+            className="flex items-center gap-1.5 whitespace-nowrap px-3 py-1.5"
           >
             <span className="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center text-[10px]">2</span>
             Cliente Exportação {preparation.clienteExportacao ? '✓' : ''}
-          </button>
+          </Button>
 
-          <button
-            type="button"
+          <Button
+            buttonType={activeStep === 'destinos' ? 'primary' : 'ghost'}
+            outline={activeStep !== 'destinos'}
+            size="small"
             onClick={() => setActiveStep('destinos')}
-            className={`px-3 py-1.5 rounded font-medium flex items-center gap-1.5 cursor-pointer whitespace-nowrap transition-colors ${
-              activeStep === 'destinos'
-                ? 'bg-blue-600 text-white'
-                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
-            }`}
+            className="flex items-center gap-1.5 whitespace-nowrap px-3 py-1.5"
           >
             <span className="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center text-[10px]">3</span>
             Destinos ({preparation.destinos.length})
-          </button>
+          </Button>
 
-          <button
-            type="button"
+          <Button
+            buttonType={activeStep === 'alocacao' ? 'primary' : 'ghost'}
+            outline={activeStep !== 'alocacao'}
+            size="small"
             onClick={() => setActiveStep('alocacao')}
-            className={`px-3 py-1.5 rounded font-bold flex items-center gap-1.5 cursor-pointer whitespace-nowrap transition-colors ${
-              activeStep === 'alocacao'
-                ? 'bg-blue-600 text-white shadow-xs'
-                : 'text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30'
-            }`}
+            className="flex items-center gap-1.5 whitespace-nowrap px-3 py-1.5 font-bold"
           >
             <span className="w-4 h-4 rounded-full bg-blue-500 text-white flex items-center justify-center text-[10px]">4</span>
             Alocação de Mercadorias (Matriz N:M)
-          </button>
+          </Button>
 
-          <button
-            type="button"
+          <Button
+            buttonType={activeStep === 'revisao' ? 'primary' : 'ghost'}
+            outline={activeStep !== 'revisao'}
+            size="small"
             onClick={() => setActiveStep('revisao')}
-            className={`px-3 py-1.5 rounded font-medium flex items-center gap-1.5 cursor-pointer whitespace-nowrap transition-colors ${
-              activeStep === 'revisao'
-                ? 'bg-blue-600 text-white'
-                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
-            }`}
+            className="flex items-center gap-1.5 whitespace-nowrap px-3 py-1.5"
           >
             <span className="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center text-[10px]">5</span>
             Revisão & Totais
-          </button>
+          </Button>
         </div>
 
         {/* STEP 1: ORIGENS */}
@@ -693,13 +685,14 @@ function NovaPreparacaoInner() {
               </div>
 
               <div className="relative w-full sm:w-72">
-                <FontAwesomeIcon icon={faMagnifyingGlass} className="absolute left-3 top-2.5 text-slate-400 w-3.5 h-3.5" />
-                <input
-                  type="text"
-                  placeholder="Buscar notas disponíveis..."
+                <FontAwesomeIcon icon={faMagnifyingGlass} className="absolute left-3 top-2.5 text-slate-400 w-3.5 h-3.5 z-10" />
+                <InputText
+                  id="originSearch"
                   value={originSearch}
-                  onChange={(e) => setOriginSearch(e.target.value)}
-                  className="w-full pl-9 pr-3 py-1.5 text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
+                  onChange={(id, value) => setOriginSearch(value)}
+                  placeholder="Buscar notas disponíveis..."
+                  small
+                  className="pl-9 pr-3 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
                 />
               </div>
             </div>
@@ -894,12 +887,14 @@ function NovaPreparacaoInner() {
                         <span className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold">
                           {index + 1}
                         </span>
-                        <input
-                          type="text"
-                          value={dest.nome}
-                          onChange={(e) => updateDestinationName(dest.id, e.target.value)}
-                          className="font-bold text-sm text-slate-900 dark:text-slate-100 px-2 py-1 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800"
-                        />
+                        <div className="w-full max-w-[260px]">
+                          <InputText
+                            id={`destino-nome-${dest.id}`}
+                            value={dest.nome}
+                            onChange={(id, value) => updateDestinationName(dest.id, value)}
+                            className="py-1 px-2 font-bold text-slate-900 dark:text-slate-100 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800"
+                          />
+                        </div>
                       </div>
                       <p className="text-xs text-slate-500 pl-7">
                         Itens alocados: <strong>{tot.totalItemsCount}</strong> • Subtotal: <strong>{formatBRL(tot.totalValue)}</strong>
@@ -907,33 +902,39 @@ function NovaPreparacaoInner() {
                     </div>
 
                     <div className="flex items-center gap-2 shrink-0">
-                      <button
-                        type="button"
+                      <Button
+                        buttonType="primary"
+                        size="small"
+                        outline
                         onClick={() => allocateEverythingToDestination(dest.id)}
-                        className="px-2.5 py-1 text-xs font-medium rounded border border-blue-300 text-blue-700 hover:bg-blue-50 dark:border-blue-800 dark:text-blue-300 cursor-pointer"
                         title="Alocar todo o saldo disponível nesta nota"
+                        className="px-2.5 py-1"
                       >
                         <FontAwesomeIcon icon={faBolt} className="mr-1" />
                         Alocar Tudo Aqui
-                      </button>
-                      <button
-                        type="button"
+                      </Button>
+                      <Button
+                        buttonType="secondary"
+                        size="small"
+                        outline
                         onClick={() => clearDestinationAllocations(dest.id)}
-                        className="px-2.5 py-1 text-xs font-medium rounded border border-slate-300 text-slate-600 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-400 cursor-pointer"
                         title="Limpar alocações desta nota"
+                        className="px-2.5 py-1"
                       >
                         <FontAwesomeIcon icon={faRotateLeft} className="mr-1" />
                         Limpar
-                      </button>
+                      </Button>
                       {preparation.destinos.length > 1 && (
-                        <button
-                          type="button"
+                        <Button
+                          buttonType="danger"
+                          size="small"
+                          outline
                           onClick={() => removeDestination(dest.id)}
-                          className="p-1.5 text-slate-400 hover:text-rose-600 cursor-pointer"
                           title="Remover nota de destino"
+                          className="p-1.5"
                         >
                           <FontAwesomeIcon icon={faTrashCan} />
-                        </button>
+                        </Button>
                       )}
                     </div>
                   </div>
@@ -1072,25 +1073,27 @@ function NovaPreparacaoInner() {
                               >
                                 <div className="space-y-1">
                                   <div className="flex items-center gap-1">
-                                    <input
-                                      type="number"
-                                      step="0.0001"
-                                      min="0"
+                                    <InputNumber
+                                      id={`qty-${origin.sourceInvoiceId}-${origin.item.id}-${dest.id}`}
                                       value={currentQty}
                                       placeholder="0.0000"
-                                      onChange={(e) =>
+                                      min="0"
+                                      small
+                                      onChange={(id, value) =>
                                         setAllocationQuantity(
                                           origin.sourceInvoiceId,
                                           origin.item.id,
                                           dest.id,
-                                          e.target.value,
+                                          value,
                                           origin.unitPriceOrigin
                                         )
                                       }
-                                      className="w-full px-2 py-1 text-right font-mono text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 focus:outline-blue-500"
+                                      className="text-right font-mono"
                                     />
-                                    <button
-                                      type="button"
+                                    <Button
+                                      buttonType="primary"
+                                      size="small"
+                                      outline
                                       onClick={() =>
                                         allocateAllAvailableToDest(
                                           origin.sourceInvoiceId,
@@ -1099,11 +1102,11 @@ function NovaPreparacaoInner() {
                                           origin.unitPriceOrigin
                                         )
                                       }
-                                      className="px-1 py-1 text-[10px] bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 rounded hover:bg-blue-200 cursor-pointer shrink-0"
                                       title="Alocar todo o saldo disponível neste destino"
+                                      className="px-1 py-1 text-[10px] shrink-0"
                                     >
                                       Max
-                                    </button>
+                                    </Button>
                                   </div>
                                 </div>
                               </td>

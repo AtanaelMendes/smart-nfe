@@ -775,11 +775,9 @@ export default function DocumentosPage() {
           </p>
 
           <div className="space-y-1">
-            <label className="font-bold text-slate-700 dark:text-slate-200">
-              Selecione o Cliente de Exportação:
-            </label>
             <Select
               id="selectedCustomerId"
+              label="Selecione o Cliente de Exportação:"
               value={selectedCustomerId}
               hideClearButton
               onChange={(id, val) => setSelectedCustomerId(val)}

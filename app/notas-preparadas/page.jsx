@@ -339,34 +339,37 @@ ${detXml}
       render: (item) => (
         <div className="flex items-center justify-center gap-1.5 py-1">
           {/* Visualizar Espelho DANFE */}
-          <button
-            type="button"
+          <Button
+            buttonType="ghost"
+            size="small"
             title="Visualizar Espelho DANFE"
             onClick={() => setSelectedDanfe(item)}
-            className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded cursor-pointer transition-colors"
+            className="!p-1.5 rounded bg-transparent dark:bg-transparent text-blue-600 hover:text-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900/30"
           >
             <FontAwesomeIcon icon={faEye} className="w-3.5 h-3.5" />
-          </button>
+          </Button>
 
           {/* Download XML Simulado */}
-          <button
-            type="button"
+          <Button
+            buttonType="ghost"
+            size="small"
             title="Baixar XML Simulado"
             onClick={() => handleDownloadXml(item)}
-            className="p-1.5 text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded cursor-pointer transition-colors"
+            className="!p-1.5 rounded bg-transparent dark:bg-transparent text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-900/30"
           >
             <FontAwesomeIcon icon={faDownload} className="w-3.5 h-3.5" />
-          </button>
+          </Button>
 
           {/* Excluir Nota Preparada */}
-          <button
-            type="button"
+          <Button
+            buttonType="ghost"
+            size="small"
             title="Excluir Nota Preparada"
             onClick={() => setNoteToDelete(item)}
-            className="p-1.5 text-rose-600 hover:text-rose-800 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded cursor-pointer transition-colors"
+            className="!p-1.5 rounded bg-transparent dark:bg-transparent text-rose-600 hover:text-rose-800 hover:bg-rose-50 dark:hover:bg-rose-900/30"
           >
             <FontAwesomeIcon icon={faTrashCan} className="w-3.5 h-3.5" />
-          </button>
+          </Button>
         </div>
       ),
     },
@@ -467,13 +470,15 @@ ${detXml}
                     MODO DEMONSTRAÇÃO
                   </span>
                 </div>
-                <button
-                  type="button"
+                <Button
+                  buttonType="ghost"
+                  size="small"
+                  title="Fechar espelho DANFE"
                   onClick={() => setSelectedDanfe(null)}
-                  className="text-slate-400 hover:text-white transition-colors cursor-pointer"
+                  className="!bg-transparent !p-1 text-slate-400 hover:text-white dark:!bg-transparent"
                 >
                   <FontAwesomeIcon icon={faXmark} className="w-4 h-4" />
-                </button>
+                </Button>
               </div>
 
               {/* Corpo do DANFE */}
