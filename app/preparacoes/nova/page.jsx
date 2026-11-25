@@ -60,6 +60,8 @@ export const EXPORT_CUSTOMERS = [
   { id: 'cust-005', name: 'Auto Assembly Europe GmbH', country: 'Alemanha', foreignId: 'DE-HH-20200' },
 ];
 
+const emitenteKey = (emit) => emit?.cnpj || emit?.cpf || emit?.documento || emit?.razaoSocial || '';
+
 function NovaPreparacaoInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -69,7 +71,7 @@ function NovaPreparacaoInner() {
   const sourceIdsParam = searchParams.get('sourceIds');
 
   // Active step
-  const [activeStep, setActiveStep] = useState('origens'); // 'origens' | 'cliente' | 'destinos' | 'alocacao' | 'revisao'
+  const [activeStep, setActiveStep] = useState('origens'); // 'origens' | 'emitente' | 'cliente' | 'destinos' | 'alocacao' | 'revisao'
 
   // Master Data
   const [allInvoices, setAllInvoices] = useState([]);
@@ -165,6 +167,52 @@ function NovaPreparacaoInner() {
     });
     return Array.from(map.values());
   }, [selectedInvoices]);
+
+  // ---- Etapa 2: Empresa Emitente ----
+  const isEmitenteValid = Boolean(
+    preparation.emitente &&
+      emitenteKey(preparation.emitente) &&
+      availableEmitentes.some(
+        (emit) => emitenteKey(emit) === emitenteKey(preparation.emitente)
+      )
+  );
+
+  // Emitente único nas origens é apresentado/assumido automaticamente.
+  const effectiveEmitente = isEmitenteValid
+    ? preparation.emitente
+    : availableEmitentes.length === 1
+      ? availableEmitentes[0]
+      : null;
+  const emitenteReady = Boolean(effectiveEmitente);
+
+  // Mantém preparation.emitente coerente quando as origens mudam:
+  // escolha válida é preservada; única opção é assumida; inválida é limpa.
+  useEffect(() => {
+    setPreparation((prev) => {
+      const currentKey = emitenteKey(prev.emitente);
+      const stillAvailable =
+        currentKey &&
+        availableEmitentes.some((emit) => emitenteKey(emit) === currentKey);
+      if (stillAvailable) return prev;
+      if (availableEmitentes.length === 1) {
+        return { ...prev, emitente: availableEmitentes[0] };
+      }
+      if (prev.emitente) return { ...prev, emitente: null };
+      return prev;
+    });
+  }, [availableEmitentes]);
+
+  const renderEmitentePending = () => (
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-lg border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 p-3 text-xs text-amber-900 dark:text-amber-200">
+      <div className="flex items-center gap-2">
+        <FontAwesomeIcon icon={faTriangleExclamation} className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+        <span><strong>Empresa emitente pendente:</strong> defina quem emitirá as notas de saída.</span>
+      </div>
+      <Button buttonType="warning" size="small" outline onClick={() => setActiveStep('emitente')}>
+        Selecionar empresa emitente
+      </Button>
+    </div>
+  );
 
   const [completionIssues, setCompletionIssues] = useState(null);
 
@@ -516,6 +564,12 @@ function NovaPreparacaoInner() {
       return;
     }
 
+    if (!emitenteReady) {
+      toast.error('Selecione a empresa emitente das notas de saída.');
+      setActiveStep('emitente');
+      return;
+    }
+
     try {
       setIsSaving(true);
 
@@ -775,13 +829,24 @@ function NovaPreparacaoInner() {
           </Button>
 
           <Button
+            buttonType={activeStep === 'emitente' ? 'primary' : 'ghost'}
+            outline={activeStep !== 'emitente'}
+            size="small"
+            onClick={() => setActiveStep('emitente')}
+            className="flex items-center gap-1.5 whitespace-nowrap px-3 py-1.5"
+          >
+            <span className="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center text-[10px]">2</span>
+            Empresa Emitente {emitenteReady ? '✓' : ''}
+          </Button>
+
+          <Button
             buttonType={activeStep === 'cliente' ? 'primary' : 'ghost'}
             outline={activeStep !== 'cliente'}
             size="small"
             onClick={() => setActiveStep('cliente')}
             className="flex items-center gap-1.5 whitespace-nowrap px-3 py-1.5"
           >
-            <span className="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center text-[10px]">2</span>
+            <span className="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center text-[10px]">3</span>
             Cliente Exportação {preparation.clienteExportacao ? '✓' : ''}
           </Button>
 
@@ -792,7 +857,7 @@ function NovaPreparacaoInner() {
             onClick={() => setActiveStep('destinos')}
             className="flex items-center gap-1.5 whitespace-nowrap px-3 py-1.5"
           >
-            <span className="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center text-[10px]">3</span>
+            <span className="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center text-[10px]">4</span>
             Destinos ({preparation.destinos.length})
           </Button>
 
@@ -803,7 +868,7 @@ function NovaPreparacaoInner() {
             onClick={() => setActiveStep('alocacao')}
             className="flex items-center gap-1.5 whitespace-nowrap px-3 py-1.5 font-bold"
           >
-            <span className="w-4 h-4 rounded-full bg-blue-500 text-white flex items-center justify-center text-[10px]">4</span>
+            <span className="w-4 h-4 rounded-full bg-blue-500 text-white flex items-center justify-center text-[10px]">5</span>
             Alocação de Mercadorias (Matriz N:M)
           </Button>
 
@@ -814,7 +879,7 @@ function NovaPreparacaoInner() {
             onClick={() => setActiveStep('revisao')}
             className="flex items-center gap-1.5 whitespace-nowrap px-3 py-1.5"
           >
-            <span className="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center text-[10px]">5</span>
+            <span className="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center text-[10px]">6</span>
             Revisão & Totais
           </Button>
         </div>
@@ -904,7 +969,76 @@ function NovaPreparacaoInner() {
             </div>
 
             <div className="flex justify-end pt-3">
-              <Button buttonType="primary" size="small" onClick={() => setActiveStep('cliente')}>
+              <Button buttonType="primary" size="small" onClick={() => setActiveStep('emitente')}>
+                Prosseguir para Empresa Emitente
+                <FontAwesomeIcon icon={faArrowRight} className="ml-1.5" />
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 2: EMPRESA EMITENTE */}
+        {activeStep === 'emitente' && (
+          <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-5 space-y-4">
+            <div className="border-b border-slate-200 dark:border-slate-700 pb-3">
+              <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                Passo 2: Qual empresa emitirá as notas de saída?
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Selecione a empresa responsável pela emissão das notas de saída. Quando as origens possuem emitentes diferentes, a escolha precisa ser explícita.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+              {availableEmitentes.map((emit) => {
+                const key = emitenteKey(emit);
+                const isSelected = emitenteReady && emitenteKey(effectiveEmitente) === key;
+                return (
+                  <div
+                    key={key}
+                    onClick={() => setPreparation((prev) => ({ ...prev, emitente: emit }))}
+                    className={`p-3 rounded-lg border cursor-pointer text-xs transition-all ${
+                      isSelected
+                        ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-900/20 ring-1 ring-blue-500'
+                        : 'border-slate-200 dark:border-slate-700 hover:border-slate-400'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-bold text-slate-900 dark:text-slate-100 truncate">
+                        {emit.razaoSocial || emit.nomeFantasia || 'Emitente'}
+                      </span>
+                      {isSelected && <FontAwesomeIcon icon={faCircleCheck} className="text-blue-600 w-4 h-4 shrink-0" />}
+                    </div>
+                    <span className="text-[11px] text-slate-500 font-mono block mt-0.5">
+                      CNPJ: {emit.cnpj || emit.cpf || emit.documento || '—'}
+                    </span>
+                  </div>
+                );
+              })}
+              {availableEmitentes.length === 0 && (
+                <span className="text-xs text-slate-400 italic">
+                  Selecione ao menos uma NF-e de origem para listar as empresas emitentes disponíveis.
+                </span>
+              )}
+            </div>
+
+            {availableEmitentes.length === 1 && (
+              <p className="text-[11px] text-emerald-700 dark:text-emerald-300">
+                Há apenas um emitente nas origens; ele foi selecionado automaticamente.
+              </p>
+            )}
+            {availableEmitentes.length > 1 && !emitenteReady && (
+              <p className="text-[11px] text-amber-700 dark:text-amber-300">
+                As origens possuem emitentes diferentes. Escolha explicitamente a empresa emitente para prosseguir.
+              </p>
+            )}
+
+            <div className="flex justify-between pt-3">
+              <Button buttonType="secondary" size="small" outline onClick={() => setActiveStep('origens')}>
+                <FontAwesomeIcon icon={faArrowLeft} className="mr-1.5" />
+                Voltar para Origens
+              </Button>
+              <Button buttonType="primary" size="small" onClick={() => setActiveStep('cliente')} disabled={!emitenteReady}>
                 Prosseguir para Cliente de Exportação
                 <FontAwesomeIcon icon={faArrowRight} className="ml-1.5" />
               </Button>
@@ -912,12 +1046,14 @@ function NovaPreparacaoInner() {
           </div>
         )}
 
-        {/* STEP 2: CLIENTE EXPORTAÇÃO */}
+        {/* STEP 3: CLIENTE EXPORTAÇÃO */}
         {activeStep === 'cliente' && (
           <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-5 space-y-4">
+            {!emitenteReady && renderEmitentePending()}
+
             <div className="border-b border-slate-200 dark:border-slate-700 pb-3">
               <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                Passo 2: Definir Cliente Final de Exportação
+                Passo 3: Definir Cliente Final de Exportação
               </h2>
               <p className="text-xs text-slate-500 mt-0.5">
                 O cliente final de exportação é a entidade destinatária da operação comercial internacional.
@@ -953,47 +1089,10 @@ function NovaPreparacaoInner() {
               })}
             </div>
 
-            <div className="pt-2 border-t border-slate-200 dark:border-slate-700 space-y-2">
-              <div>
-                <h3 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                  Empresa Emitente da Saída
-                </h3>
-                <p className="text-[11px] text-slate-500 mt-0.5">
-                  Vários fornecedores de origem não determinam automaticamente o emitente. Selecione a empresa responsável pelas notas de saída.
-                </p>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                {availableEmitentes.map((emit) => {
-                  const key = emit.cnpj || emit.razaoSocial;
-                  const isSelected = (preparation.emitente?.cnpj || preparation.emitente?.razaoSocial) === key;
-                  return (
-                    <div
-                      key={key}
-                      onClick={() => setPreparation((prev) => ({ ...prev, emitente: emit }))}
-                      className={`p-2.5 rounded-lg border cursor-pointer text-xs transition-all ${
-                        isSelected
-                          ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-900/20 ring-1 ring-blue-500'
-                          : 'border-slate-200 dark:border-slate-700 hover:border-slate-400'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="font-bold text-slate-900 dark:text-slate-100 truncate">{emit.razaoSocial || 'Emitente'}</span>
-                        {isSelected && <FontAwesomeIcon icon={faCircleCheck} className="text-blue-600 w-3.5 h-3.5 shrink-0" />}
-                      </div>
-                      <span className="text-[11px] text-slate-500 font-mono block mt-0.5">{emit.cnpj || emit.cpf || '—'}</span>
-                    </div>
-                  );
-                })}
-                {availableEmitentes.length === 0 && (
-                  <span className="text-xs text-slate-400 italic">Selecione origens para listar os emitentes disponíveis.</span>
-                )}
-              </div>
-            </div>
-
             <div className="flex justify-between pt-3">
-              <Button buttonType="secondary" size="small" outline onClick={() => setActiveStep('origens')}>
+              <Button buttonType="secondary" size="small" outline onClick={() => setActiveStep('emitente')}>
                 <FontAwesomeIcon icon={faArrowLeft} className="mr-1.5" />
-                Voltar para Origens
+                Voltar para Empresa Emitente
               </Button>
               <Button buttonType="primary" size="small" onClick={() => setActiveStep('destinos')}>
                 Prosseguir para Destinos
@@ -1003,13 +1102,15 @@ function NovaPreparacaoInner() {
           </div>
         )}
 
-        {/* STEP 3: DESTINOS */}
+        {/* STEP 4: DESTINOS */}
         {activeStep === 'destinos' && (
           <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-5 space-y-4">
+            {!emitenteReady && renderEmitentePending()}
+
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-700 pb-3">
               <div>
                 <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                  Passo 3: Configurar Notas de Destino (Exportação)
+                  Passo 4: Configurar Notas de Destino (Exportação)
                 </h2>
                 <p className="text-xs text-slate-500 mt-0.5">
                   Adicione e renomeie as notas preparadas de exportação que receberão as mercadorias.
@@ -1103,14 +1204,16 @@ function NovaPreparacaoInner() {
           </div>
         )}
 
-        {/* STEP 4: ALOCAÇÃO DE MERCADORIAS (MATRIZ N:M) */}
+        {/* STEP 5: ALOCAÇÃO DE MERCADORIAS (MATRIZ N:M) */}
         {activeStep === 'alocacao' && (
           <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-4 space-y-3">
+            {!emitenteReady && renderEmitentePending()}
+
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-700 pb-3">
               <div>
                 <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
                   <FontAwesomeIcon icon={faCalculator} className="text-blue-600" />
-                  Matriz de Alocação de Mercadorias (N origens → M destinos)
+                  Passo 5: Matriz de Alocação de Mercadorias (N origens → M destinos)
                 </h2>
                 <p className="text-xs text-slate-500 mt-0.5">
                   Edite as quantidades alocadas para cada destino. O saldo disponível é conferido em tempo real com precisão decimal estrita.
@@ -1165,12 +1268,14 @@ function NovaPreparacaoInner() {
           </div>
         )}
 
-        {/* STEP 5: REVISÃO & TOTAIS */}
+        {/* STEP 6: REVISÃO & TOTAIS */}
         {activeStep === 'revisao' && (
           <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-5 space-y-4">
+            {!emitenteReady && renderEmitentePending()}
+
             <div className="border-b border-slate-200 dark:border-slate-700 pb-3">
               <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                Passo 5: Revisão Geral da Preparação
+                Passo 6: Revisão Geral da Preparação
               </h2>
               <p className="text-xs text-slate-500 mt-0.5">
                 Valide as notas de saída que serão geradas, os totais consolidados e as notas de origem envolvidas.
@@ -1208,6 +1313,43 @@ function NovaPreparacaoInner() {
                   Cliente: {preparation.clienteExportacao?.name || 'Não atribuído'}
                 </span>
               </div>
+            </div>
+
+            {/* Empresa Emitente da Saída */}
+            <div
+              className={`p-4 rounded-lg border space-y-2 ${
+                emitenteReady
+                  ? 'border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-900/40'
+                  : 'border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40'
+              }`}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="font-bold text-xs text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                  Empresa emitente da saída
+                </h3>
+                <Button
+                  buttonType={emitenteReady ? 'secondary' : 'warning'}
+                  size="small"
+                  outline
+                  onClick={() => setActiveStep('emitente')}
+                >
+                  Alterar
+                </Button>
+              </div>
+              {emitenteReady ? (
+                <div className="text-xs">
+                  <p className="font-semibold text-slate-900 dark:text-slate-100">
+                    {effectiveEmitente?.razaoSocial || effectiveEmitente?.nomeFantasia || '—'}
+                  </p>
+                  <p className="text-slate-500 font-mono">
+                    CNPJ: {effectiveEmitente?.cnpj || effectiveEmitente?.cpf || effectiveEmitente?.documento || '—'}
+                  </p>
+                </div>
+              ) : (
+                <p className="text-xs text-amber-800 dark:text-amber-200">
+                  Empresa emitente pendente. Selecione a empresa que emitirá as notas de saída para concluir a preparação.
+                </p>
+              )}
             </div>
 
             {/* Destinations Breakdown */}
@@ -1252,6 +1394,11 @@ function NovaPreparacaoInner() {
                     Revalidar
                   </Button>
                 </div>
+                {Array.isArray(completionIssues.errors) && completionIssues.errors.some((err) => err.field === 'emitente') && (
+                  <Button buttonType="warning" size="small" outline onClick={() => setActiveStep('emitente')}>
+                    Selecionar empresa emitente
+                  </Button>
+                )}
                 {Array.isArray(completionIssues.errors) && completionIssues.errors.map((err, idx) => (
                   <p key={`err-${idx}`} className="flex items-start gap-1.5 text-rose-700 dark:text-rose-300">
                     <FontAwesomeIcon icon={faTriangleExclamation} className="w-3 h-3 mt-0.5 shrink-0" />
