@@ -442,6 +442,7 @@ ${detXml}
               data={notes}
               columns={columns}
               dense={false}
+              nowrap
               mainText={`Notas Preparadas (${notes.length} ${notes.length === 1 ? 'lote gerado' : 'lotes gerados'})`}
             />
           </div>

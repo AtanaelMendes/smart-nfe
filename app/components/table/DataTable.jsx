@@ -37,6 +37,7 @@ const SORT_ICONS = { asc: '▲', desc: '▼' };
  *   renderExpandedRow(row, index)  — linha de detalhes expansível
  *   isRowExpanded(row, index)      — controla quais linhas estão expandidas
  *   containerClassName / tableClassName / headerClassName / rowClassName / cellClassName / headerCellClassName
+ *   nowrap                         — Impede quebra de linha nas células e cabeçalhos (alinhamento vertical centralizado)
  *   emptyRender                    — render customizado de estado vazio
  */
 export default function DataTable({
@@ -67,6 +68,7 @@ export default function DataTable({
   headerCellClassName = '',
   emptyRender,
   footerRender,
+  nowrap = false,
   searchPlaceholder = 'Filtrar dados...',
 }) {
   const [filterText, setFilterText] = useState('');
@@ -122,6 +124,7 @@ export default function DataTable({
 
   const cellPadding = dense ? 'px-2.5 py-1 text-xs' : 'px-4 py-2.5 text-sm';
   const headerPadding = dense ? 'px-2.5 py-1.5 text-xs' : 'px-4 py-2 text-xs';
+  const nowrapClasses = nowrap ? 'align-middle whitespace-nowrap' : '';
   const colCount = effectiveColumns.length || 1;
   const hasExplicitColumns = useExplicitColumns;
   const canSort = typeof onSort === 'function';
@@ -150,6 +153,7 @@ export default function DataTable({
         className={cn(
           headerPadding,
           alignClass,
+          nowrapClasses,
           col.width || '',
           col.headerClassName,
           headerCellClassName,
@@ -174,7 +178,7 @@ export default function DataTable({
     return (
       <td
         key={col.key || `td_${colIndex}`}
-        className={cn(cellPadding, alignClass, col.className, cellClassName)}
+        className={cn(cellPadding, alignClass, nowrapClasses, col.className, cellClassName)}
       >
         {typeof col.render === 'function'
           ? col.render(row, rowIndex)
@@ -259,7 +263,7 @@ export default function DataTable({
                             return (
                               <td
                                 key={`legacy_${key}_${kIndex}`}
-                                className={cn(cellPadding, alignClass, cellClassName)}
+                                className={cn(cellPadding, alignClass, nowrapClasses, cellClassName)}
                               >
                                 {row[key] ?? '-'}
                               </td>
