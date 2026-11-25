@@ -56,9 +56,12 @@ const CodeBlock = ({ code }) => {
 
     return (
         <div className="relative mt-4">
-            <button
+            <Button
+                buttonType="secondary"
+                size="small"
                 onClick={copyToClipboard}
-                className="absolute top-2 right-2 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white text-xs rounded transition-colors flex items-center gap-2"
+                title="Copiar código"
+                className="absolute top-2 right-2 px-3 py-1.5 bg-gray-700 dark:bg-gray-700 hover:bg-gray-600 dark:hover:bg-gray-600 text-white dark:text-white text-xs rounded flex items-center gap-2"
             >
                 {copied ? (
                     <>
@@ -71,7 +74,7 @@ const CodeBlock = ({ code }) => {
                         <span>Copiar</span>
                     </>
                 )}
-            </button>
+            </Button>
             <pre className="bg-gray-900 text-green-400 p-4 rounded-lg text-sm overflow-x-auto border border-gray-700">
                 <code>{code}</code>
             </pre>
@@ -242,13 +245,15 @@ export default function DevPage() {
 
                     {/* Dark Mode Toggle */}
                     <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-                        <button
+                        <Button
+                            buttonType="ghost"
+                            block
                             onClick={() => {
                                 console.log('🔘 Button clicked! Current darkMode:', darkMode);
                                 toggleDarkMode();
                                 console.log('🔘 toggleDarkMode called');
                             }}
-                            className="w-full flex items-center justify-between px-4 py-3 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                            className="flex items-center justify-between px-4 py-3 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"
                         >
                             <span className="flex items-center gap-3">
                                 <span className="text-xl">{darkMode ? '🌙' : '☀️'}</span>
@@ -259,7 +264,7 @@ export default function DevPage() {
                             <div className={`w-12 h-6 rounded-full transition-colors ${darkMode ? 'bg-primary' : 'bg-gray-300'} relative`}>
                                 <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${darkMode ? 'transform translate-x-6' : ''}`}></div>
                             </div>
-                        </button>
+                        </Button>
                     </div>
 
                     <nav className="p-4">
@@ -269,15 +274,17 @@ export default function DevPage() {
                         {menuItems.map((section) => (
                             <div key={section.id} className="mb-2">
                                 {/* Section Header */}
-                                <button
+                                <Button
+                                    buttonType="ghost"
+                                    block
                                     onClick={() => {
                                         setActiveSection(section.id);
                                         toggleSection(section.id);
                                     }}
-                                    className={`w-full text-left px-4 py-2.5 rounded-lg transition-all duration-200 flex items-center justify-between ${
+                                    className={`text-left px-4 py-2.5 rounded-lg flex items-center justify-between ${
                                         activeSection === section.id
                                             ? 'bg-primary text-white shadow-md'
-                                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                            : 'bg-transparent dark:bg-transparent text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                                     }`}
                                 >
                                     <div className="flex items-center gap-3">
@@ -294,23 +301,25 @@ export default function DevPage() {
                                     >
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                                     </svg>
-                                </button>
+                                </Button>
 
                                 {/* Section Items (Tree) */}
                                 {expandedSections.includes(section.id) && (
                                     <div className="ml-4 mt-1 border-l-2 border-gray-200 dark:border-gray-700 pl-2">
                                         {section.items.map((item) => (
-                                            <button
+                                            <Button
+                                                buttonType="ghost"
+                                                block
                                                 key={item.id}
                                                 onClick={() => {
                                                     setActiveSection(section.id);
                                                     scrollToComponent(item.id);
                                                 }}
-                                                className="w-full text-left px-3 py-1.5 rounded text-sm transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 flex items-center gap-2"
+                                                className="text-left px-3 py-1.5 rounded text-sm bg-transparent dark:bg-transparent hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 flex items-center gap-2"
                                             >
                                                 <span className="text-gray-400">→</span>
                                                 {item.label}
-                                            </button>
+                                            </Button>
                                         ))}
                                     </div>
                                 )}

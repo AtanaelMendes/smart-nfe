@@ -323,53 +323,68 @@ export default function DashboardPage() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
-            <button
+            <Button
+              buttonType="ghost"
+              size="small"
+              block
               onClick={() => handleLoadScenario('demo-01', 'Demo 01 (Agroexport)')}
-              className="flex flex-col text-left p-2.5 rounded bg-white/10 hover:bg-white/20 transition-all border border-white/10 hover:border-blue-400 focus:outline-none cursor-pointer"
+              className="flex flex-col items-start text-left bg-white/10 hover:bg-white/20 text-white dark:bg-white/10 dark:text-white border border-white/10 dark:border-white/10 hover:border-blue-400 px-2.5 py-2.5 rounded transition-all"
             >
               <span className="text-xs font-bold text-white">Demo 01 — XML Agro</span>
               <span className="text-[11px] text-blue-200">8 itens (Café/Soja)</span>
               <span className="text-[10px] text-slate-400 mt-1">R$ 291.200,00</span>
-            </button>
+            </Button>
 
-            <button
+            <Button
+              buttonType="ghost"
+              size="small"
+              block
               onClick={() => handleLoadScenario('demo-02', 'Demo 02 (Metalúrgica)')}
-              className="flex flex-col text-left p-2.5 rounded bg-white/10 hover:bg-white/20 transition-all border border-white/10 hover:border-blue-400 focus:outline-none cursor-pointer"
+              className="flex flex-col items-start text-left bg-white/10 hover:bg-white/20 text-white dark:bg-white/10 dark:text-white border border-white/10 dark:border-white/10 hover:border-blue-400 px-2.5 py-2.5 rounded transition-all"
             >
               <span className="text-xs font-bold text-white">Demo 02 — PDF Metal</span>
               <span className="text-[11px] text-blue-200">25 itens metalmecânicos</span>
               <span className="text-[10px] text-slate-400 mt-1">R$ 148.750,00</span>
-            </button>
+            </Button>
 
-            <button
+            <Button
+              buttonType="ghost"
+              size="small"
+              block
               onClick={() => handleLoadScenario('demo-03', 'Demo 03 (Eletroparts)')}
-              className="flex flex-col text-left p-2.5 rounded bg-white/10 hover:bg-white/20 transition-all border border-white/10 hover:border-blue-400 focus:outline-none cursor-pointer"
+              className="flex flex-col items-start text-left bg-white/10 hover:bg-white/20 text-white dark:bg-white/10 dark:text-white border border-white/10 dark:border-white/10 hover:border-blue-400 px-2.5 py-2.5 rounded transition-all"
             >
               <span className="text-xs font-bold text-white">Demo 03 — Stress Test</span>
               <span className="text-[11px] text-blue-200">50 itens automotivos</span>
               <span className="text-[10px] text-slate-400 mt-1">R$ 625.800,00</span>
-            </button>
+            </Button>
 
-            <button
+            <Button
+              buttonType="danger"
+              size="small"
+              block
               onClick={() => handleLoadScenario('demo-04', 'Demo 04 (Inconsistências)')}
-              className="flex flex-col text-left p-2.5 rounded bg-red-950/50 hover:bg-red-900/50 transition-all border border-red-500/40 hover:border-red-400 focus:outline-none cursor-pointer"
+              className="flex flex-col items-start text-left bg-red-950/50 hover:bg-red-900/50 text-red-200 dark:bg-red-950/50 dark:text-red-200 border border-red-500/40 hover:border-red-400 px-2.5 py-2.5 rounded transition-all"
             >
-              <span className="text-xs font-bold text-red-200 flex items-center justify-between">
+              <span className="text-xs font-bold text-red-200 flex items-center justify-between w-full">
                 <span>Demo 04 — Erros</span>
                 <span className="text-[9px] bg-red-800 text-white px-1 rounded">Atenção</span>
               </span>
               <span className="text-[11px] text-red-300">12 itens com alertas</span>
               <span className="text-[10px] text-red-400 mt-1">CFOP / NCM / Matemática</span>
-            </button>
+            </Button>
 
-            <button
+            <Button
+              buttonType="ghost"
+              size="small"
+              block
               onClick={() => handleLoadScenario('demo-05', 'Demo 05 (Lotes Múltiplos)')}
-              className="flex flex-col text-left p-2.5 rounded bg-white/10 hover:bg-white/20 transition-all border border-white/10 hover:border-blue-400 focus:outline-none cursor-pointer"
+              className="flex flex-col items-start text-left bg-white/10 hover:bg-white/20 text-white dark:bg-white/10 dark:text-white border border-white/10 dark:border-white/10 hover:border-blue-400 px-2.5 py-2.5 rounded transition-all"
             >
               <span className="text-xs font-bold text-white">Demo 05 — Lotes Repetidos</span>
               <span className="text-[11px] text-blue-200">15 itens (Soja/Milho/Sorgo)</span>
               <span className="text-[10px] text-slate-400 mt-1">R$ 342.000,00</span>
-            </button>
+            </Button>
           </div>
         </div>
 

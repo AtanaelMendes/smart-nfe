@@ -19,6 +19,7 @@ import {
 
 import AppLayout from '@/components/Layouts/AppLayout';
 import Button from '@/components/buttons/Button';
+import ButtonToggle from '@/components/buttons/ButtonToggle';
 import Select from '@/components/inputs/Select';
 import Dialog from '@/components/Layouts/Dialog';
 import { useAppContext } from '@/context/AppContext';
@@ -111,17 +112,12 @@ export default function ConfiguracoesPage() {
                 {isDark ? 'Tema escuro ativo (ideal para ambientes com pouca luz)' : 'Tema claro ativo (padrão de alta visibilidade)'}
               </span>
             </div>
-            <button
-              type="button"
-              onClick={toggleDarkMode}
-              suppressHydrationWarning
-              className={`w-12 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors ${
-                isDark ? 'bg-blue-600 justify-end' : 'bg-slate-300 justify-start'
-              }`}
-              aria-label="Alternar Modo Escuro"
-            >
-              <div className="bg-white w-4 h-4 rounded-full shadow-md" />
-            </button>
+            <ButtonToggle
+              id="toggleDarkMode"
+              primary
+              checked={isDark}
+              onChange={() => toggleDarkMode()}
+            />
           </div>
         </div>
 
@@ -197,16 +193,12 @@ export default function ConfiguracoesPage() {
                 Salva edições e conferências de itens no navegador automaticamente em tempo real
               </span>
             </div>
-            <button
-              type="button"
-              onClick={() => setLocalSettings({ ...localSettings, autoSave: !localSettings.autoSave })}
-              className={`w-12 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors ${
-                localSettings.autoSave ? 'bg-blue-600 justify-end' : 'bg-slate-300 justify-start'
-              }`}
-              aria-label="Alternar Salvamento Automático"
-            >
-              <div className="bg-white w-4 h-4 rounded-full shadow-md" />
-            </button>
+            <ButtonToggle
+              id="autoSave"
+              primary
+              checked={localSettings.autoSave}
+              onChange={() => setLocalSettings({ ...localSettings, autoSave: !localSettings.autoSave })}
+            />
           </div>
 
           {/* Exibir Valores Originais */}
@@ -219,16 +211,12 @@ export default function ConfiguracoesPage() {
                 Exibe um tooltip com o valor original importado quando uma célula for alterada
               </span>
             </div>
-            <button
-              type="button"
-              onClick={() => setLocalSettings({ ...localSettings, showOriginalValues: !localSettings.showOriginalValues })}
-              className={`w-12 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors ${
-                localSettings.showOriginalValues ? 'bg-blue-600 justify-end' : 'bg-slate-300 justify-start'
-              }`}
-              aria-label="Alternar Comparativo de Valor Original"
-            >
-              <div className="bg-white w-4 h-4 rounded-full shadow-md" />
-            </button>
+            <ButtonToggle
+              id="showOriginalValues"
+              primary
+              checked={localSettings.showOriginalValues}
+              onChange={() => setLocalSettings({ ...localSettings, showOriginalValues: !localSettings.showOriginalValues })}
+            />
           </div>
         </div>
 

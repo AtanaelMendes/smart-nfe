@@ -1,6 +1,7 @@
 import { faMailBulk, faMessage, faPhone, faPlus, faX } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import React, { useState } from 'react';
+import { useState } from 'react';
+import Button from './Button';
 
 const FloatActionButtonExpandable = () => {
     const [isExpanded, setIsExpanded] = useState(false);
@@ -13,32 +14,44 @@ const FloatActionButtonExpandable = () => {
         <div className="fixed bottom-4 right-4 flex flex-col items-end space-y-2">
             {isExpanded && (
                 <>
-                    <button
-                        className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-full shadow-lg transition duration-300 ease-in-out"
+                    <Button
+                        buttonType="success"
+                        pill
                         onClick={() => alert('Chat clicked!')}
+                        title="Ligar"
+                        className="!px-4 !py-2 font-bold shadow-lg"
                     >
                         <FontAwesomeIcon icon={faPhone} width="16" height="16" />
-                    </button>
-                    <button
-                        className="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded-full shadow-lg transition duration-300 ease-in-out"
+                    </Button>
+                    <Button
+                        buttonType="warning"
+                        pill
                         onClick={() => alert('Phone clicked!')}
+                        title="Mensagem"
+                        className="!px-4 !py-2 font-bold shadow-lg"
                     >
                         <FontAwesomeIcon icon={faMessage} width="16" height="16" />
-                    </button>
-                    <button
-                        className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-full shadow-lg transition duration-300 ease-in-out"
+                    </Button>
+                    <Button
+                        buttonType="danger"
+                        pill
                         onClick={() => alert('Email clicked!')}
+                        title="E-mail"
+                        className="!px-4 !py-2 font-bold shadow-lg"
                     >
                         <FontAwesomeIcon icon={faMailBulk} width="16" height="16" />
-                    </button>
+                    </Button>
                 </>
             )}
-            <button
+            <Button
+                buttonType="primary"
+                pill
                 onClick={toggleExpand}
-                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-4 px-4 rounded-full shadow-lg transition duration-300 ease-in-out"
+                title={isExpanded ? 'Fechar ações' : 'Abrir ações'}
+                className="!px-4 !py-4 font-bold shadow-lg"
             >
                 {isExpanded ? <FontAwesomeIcon icon={faX} width="16" height="16" /> : <FontAwesomeIcon icon={faPlus} width="16" height="16" />}
-            </button>
+            </Button>
         </div>
     );
 };

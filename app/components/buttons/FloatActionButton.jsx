@@ -1,89 +1,64 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlus, faSave, faX } from "@fortawesome/free-solid-svg-icons";
 import { cn } from "@/assets/utils";
+import Button from "./Button";
 
-const baseButtonStyles =
-    "rounded-full text-white drop-shadow transition duration-300 ease-in-out";
 const baseIconStyles = "drop-shadow";
 
-export const FabCancel = ({ id, onClick, className, small, absolute, disableZIndex, disabled, ...props }) => {
-    const handleClick = () => {
-        if (typeof onClick === "function" && !disabled) {
-            onClick();
-        }
-    };
+// Classes de posicionamento/dimensão compartilhadas por todos os FABs.
+// O Button cuida da forma (pill), variante de cor e estados de foco/disabled.
+const fabClassName = ({ small, absolute, disableZIndex, disabled, className }) =>
+    cn(
+        "drop-shadow transition duration-300 ease-in-out",
+        !disableZIndex && "z-[999]",
+        small ? "!p-2" : "!p-4",
+        absolute ? "absolute" : "fixed",
+        disabled && "opacity-50 cursor-not-allowed",
+        className
+    );
 
+export const FabCancel = ({ onClick, className, small, absolute, disableZIndex, disabled, title = "Cancelar", ...props }) => {
     return (
-        <button
-            id={id || "fab-cancel"}
-            onClick={handleClick}
-            disabled={disabled}
-            className={cn(
-                baseButtonStyles,
-                !disableZIndex && "z-[999]",
-                "bg-red-500 hover:bg-red-400",
-                small ? "p-2" : "p-4",
-                absolute ? "absolute" : "fixed",
-                disabled && "opacity-50 cursor-not-allowed",
-                className
-            )}
+        <Button
             {...props}
+            buttonType="danger"
+            pill
+            onClick={typeof onClick === "function" ? onClick : null}
+            disabled={disabled}
+            title={title}
+            className={cn("bg-red-500 hover:bg-red-400", fabClassName({ small, absolute, disableZIndex, disabled, className }))}
         >
             <FontAwesomeIcon icon={faX} width="25" height="25" className={baseIconStyles} />
-        </button>
+        </Button>
     );
 };
 
-export const FabSave = ({ id, onClick, className, small, absolute, disableZIndex, disabled, ...props }) => {
-    const handleClick = () => {
-        if (typeof onClick === "function" && !disabled) {
-            onClick();
-        }
-    };
-
+export const FabSave = ({ onClick, className, small, absolute, disableZIndex, disabled, title = "Salvar", ...props }) => {
     return (
-        <button
-            id={id || "fab-save"}
-            onClick={handleClick}
-            disabled={disabled}
-            className={cn(
-                baseButtonStyles,
-                !disableZIndex && "z-[999]",
-                "bg-green-500 hover:bg-green-400",
-                small ? "p-2" : "p-4",
-                absolute ? "absolute" : "fixed",
-                disabled && "opacity-50 cursor-not-allowed",
-                className
-            )}
+        <Button
             {...props}
+            buttonType="success"
+            pill
+            onClick={typeof onClick === "function" ? onClick : null}
+            disabled={disabled}
+            title={title}
+            className={fabClassName({ small, absolute, disableZIndex, disabled, className })}
         >
             <FontAwesomeIcon icon={faSave} width="25" height="25" className={baseIconStyles} />
-        </button>
+        </Button>
     );
 };
 
-export const FabAdd = ({ id, onClick, className, small, absolute, disableZIndex, label, disabled, ...props }) => {
-    const handleClick = () => {
-        if (typeof onClick === "function" && !disabled) {
-            onClick();
-        }
-    };
-
+export const FabAdd = ({ onClick, className, small, absolute, disableZIndex, label, disabled, title, ...props }) => {
     return (
-        <button
-            id={id || "fab-add"}
-            onClick={handleClick}
-            disabled={disabled}
-            className={cn(
-                baseButtonStyles,
-                !disableZIndex && "z-[999]",
-                "flex flex-row items-center gap-2 bg-primary hover:bg-blue-500",
-                small ? "p-2" : "p-4",
-                absolute ? "absolute" : "fixed",
-                disabled && "opacity-50 cursor-not-allowed",
-                className
-            )}
+        <Button
             {...props}
+            buttonType="primary"
+            pill
+            onClick={typeof onClick === "function" ? onClick : null}
+            disabled={disabled}
+            title={title || label || "Adicionar"}
+            className={cn("flex flex-row items-center gap-2 hover:bg-blue-500", fabClassName({ small, absolute, disableZIndex, disabled, className }))}
         >
             <FontAwesomeIcon icon={faPlus} width="25" height="25" className={baseIconStyles} />
             {label && (
@@ -91,12 +66,11 @@ export const FabAdd = ({ id, onClick, className, small, absolute, disableZIndex,
                     {label}
                 </span>
             )}
-        </button>
+        </Button>
     );
 };
 
 export const FabCustom = ({
-    id,
     onClick,
     className,
     small,
@@ -106,30 +80,22 @@ export const FabCustom = ({
     color,
     hover,
     disabled,
+    title = "Ação",
     ...props
 }) => {
-    const handleClick = () => {
-        if (typeof onClick === "function" && !disabled) {
-            onClick();
-        }
-    };
-
     return (
-        <button
-            id={id || "fab-custom"}
-            onClick={handleClick}
+        <Button
+            {...props}
+            pill
+            onClick={typeof onClick === "function" ? onClick : null}
             disabled={disabled}
+            title={title}
             className={cn(
-                baseButtonStyles,
-                !disableZIndex && "z-[999]",
                 color || "bg-slate-300",
                 hover || "hover:bg-white-shadow-4",
-                small ? "p-2" : "p-4",
-                absolute ? "absolute" : "fixed",
-                disabled && "opacity-50 cursor-not-allowed",
-                className
+                "text-white",
+                fabClassName({ small, absolute, disableZIndex, disabled, className })
             )}
-            {...props}
         >
             <FontAwesomeIcon
                 icon={icon || faPlus}
@@ -137,7 +103,7 @@ export const FabCustom = ({
                 height="25"
                 className={baseIconStyles}
             />
-        </button>
+        </Button>
     );
 };
 

@@ -2,6 +2,7 @@ import { Caption, Title, Label } from "@/components/Layouts/Typography";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { TooltipComponent } from "../Layouts/TooltipComponent";
 import { faClose } from "@fortawesome/free-solid-svg-icons";
+import Button from "@/components/buttons/Button";
 import PillsBadge from "@/components/buttons/PillsBadge";
 import { useAppContext } from "@/context/AppContext";
 import React, { useState, useEffect } from "react";
@@ -124,11 +125,12 @@ const ScheduleNotification = (props) => {
             >
                 {renderTableBody()}
             </div>
-            <button
+            <Button
                 className="absolute top-2 right-2 p-0"
-                onClick={(e) => {
+                onClick={() => {
                     setShowComponent(false);
                 }}
+                title="Fechar notificação"
             >
                 <span className="icon">
                     <FontAwesomeIcon
@@ -138,7 +140,7 @@ const ScheduleNotification = (props) => {
                         className="self-start mr-1 text-white hover:text-slate-600"
                     />
                 </span>
-            </button>
+            </Button>
         </div>
     );
 };

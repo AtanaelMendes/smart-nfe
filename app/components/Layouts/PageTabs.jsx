@@ -1,6 +1,7 @@
 import { cn } from "@/assets/utils";
 import { faRotateRight, faX } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import Button from "@/components/buttons/Button";
 import { useState } from "react";
 import NewBadge from "./NewBadge";
 
@@ -20,15 +21,14 @@ const PageTabs = ({ pageTabs, onClick, wordWrap, scrollable }) => {
                     tabData.visible ? "" : "hidden"
                 )}
             >
-                <button
+                <Button
                     type="button"
-                    id={tabData.id + "-tab"}
                     onClick={() => {
                         handleChangeTabs(tabData.id);
                     }}
                     className={cn(
                         (!tabData.active && tabData?.blink) && "after:bg-danger after:animate-ping after:absolute after:bottom-1 after:left-4 after:rounded-t-lg after:w-1/2 after:h-3/5",
-                        "relative inline-block h-8 xl:h-10 px-1 border-b-4 rounded-t-lg hover:text-white hover:drop-shadow-text-subtle-dark hover:border-yellow-300 transition-colors duration-200",
+                        "relative inline-block h-8 xl:h-10 px-1 py-0 text-xs border-b-4 rounded-t-lg hover:text-white hover:drop-shadow-text-subtle-dark hover:border-yellow-300 transition-colors duration-200",
                         wordWrap ? "word-wrap" : "whitespace-nowrap",
                         tabData.active
                             ? "text-white border-yellow-300 drop-shadow-text-subtle-dark"
@@ -44,10 +44,10 @@ const PageTabs = ({ pageTabs, onClick, wordWrap, scrollable }) => {
                         size={tabData?.newBadge?.size}
                         className={tabData?.newBadge?.className}
                     />}
-                </button>
+                </Button>
 
                 {typeof tabData.reloadTab === "function" && Number.isNaN(Number(tabData?.contador)) &&
-                    <button
+                    <Button
                         type="button"
                         className={`
                             bg-white absolute -top-2 -right-1.5 rounded-full cursor-pointer p-0.5 shadow border border-slate-300 z-40 transition-transform duration-200 h-[18px]
@@ -65,12 +65,12 @@ const PageTabs = ({ pageTabs, onClick, wordWrap, scrollable }) => {
                             height="12"
                             className="text-primary"
                         />
-                    </button>
+                    </Button>
                 }
 
                 {/* BUTTON CLOSE */}
                 {typeof tabData.closeCallback === "function" &&
-                    <button
+                    <Button
                         type="button"
                         className={`
                             text-primary
@@ -86,16 +86,16 @@ const PageTabs = ({ pageTabs, onClick, wordWrap, scrollable }) => {
                             width="12"
                             height="12"
                         />
-                    </button>
+                    </Button>
                 }
 
                 {/* CONTADOR */}
                 {tabData?.contador >= 0 && (
-                    <button
+                    <Button
                         type="button"
                         disabled={typeof tabData.reloadTab !== "function" || !tabData.active}
                         className={cn(
-                            "rounded-full p-[2px] text-white h-[18px] z-10 text-xs font-semibold absolute min-w-[18px] -top-1.5 -right-1.5 text-center shadow transition-colors duration-200",
+                            "rounded-full p-[2px] text-white h-[18px] z-10 text-xs font-semibold absolute min-w-[18px] -top-1.5 -right-1.5 text-center shadow transition-colors duration-200 disabled:opacity-100",
                             !tabData.active ? "bg-slate-500" : "bg-red-500",
                             tabData.active && reload ? "animate-spin" : ""
                         )}
@@ -111,7 +111,7 @@ const PageTabs = ({ pageTabs, onClick, wordWrap, scrollable }) => {
                             height="12"
                             className={`text-white ${tabData.active && reload ? "" : "hidden"} `}
                         />
-                    </button>
+                    </Button>
                 )}
             </li>
         );

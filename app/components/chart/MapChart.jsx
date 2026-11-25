@@ -4,6 +4,7 @@ import * as am5map from "@amcharts/amcharts5/map";
 import am5themes_Animated from "@amcharts/amcharts5/themes/Animated";
 import am5geodata_worldLow from "@amcharts/amcharts5-geodata/worldLow";
 import am5geodata_brazilLow from "@amcharts/amcharts5-geodata/brazilLow";
+import Button from "@/components/buttons/Button";
 
 const MapChart = () => {
   const [showJoinvilleDetails, setShowJoinvilleDetails] = useState(false);
@@ -350,12 +351,16 @@ const MapChart = () => {
                   🏢 Filiais em {estado.nome}
                   <span className="text-lg text-gray-600 ml-2">({estado.filiais.length} unidades)</span>
                 </h2>
-                <button
+                <Button
+                  buttonType="ghost"
+                  outline
+                  size="small"
                   onClick={() => setSelectedEstado(null)}
-                  className="text-gray-500 hover:text-gray-700 text-xl font-bold"
+                  title="Fechar lista de filiais"
+                  className="text-xl font-bold !px-2 !py-1 text-gray-500 hover:text-gray-700 dark:hover:text-slate-200"
                 >
                   ✕
-                </button>
+                </Button>
               </div>
               <p className="text-sm text-gray-600 mt-2">
                 Clique em qualquer filial para ver os detalhes completos
@@ -397,10 +402,18 @@ const MapChart = () => {
                       </div>
                     </div>
                     <div className="ml-4">
-                      <button className={`${cores.button} text-white px-4 py-2 rounded text-sm transition-colors flex items-center`}>
-                        <span className="mr-1">👁️</span>
+                      <Button
+                        buttonType="primary"
+                        onClick={() => {
+                          setSelectedEstado(null);
+                          setSelectedUnidade(filial);
+                        }}
+                        title={`Ver detalhes de ${filial.NM_UNIDADE}`}
+                        className={`${cores.button} text-white transition-colors flex items-center gap-1`}
+                      >
+                        <span>👁️</span>
                         Ver Detalhes
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -425,12 +438,13 @@ const MapChart = () => {
 
             {/* Botão de fechar */}
             <div className="mt-6 text-center">
-              <button
+              <Button
+                buttonType="secondary"
                 onClick={() => setSelectedEstado(null)}
-                className="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg transition-colors"
+                className="bg-gray-500 hover:bg-gray-600 text-white !px-6 !py-2 rounded-lg transition-colors"
               >
                 Fechar
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -446,12 +460,16 @@ const MapChart = () => {
           {/* Header */}
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-3xl font-bold text-gray-800">{unidade.NM_UNIDADE}</h2>
-            <button
+            <Button
+              buttonType="ghost"
+              outline
+              size="small"
               onClick={() => setSelectedUnidade(null)}
-              className="text-gray-500 hover:text-gray-700 text-xl font-bold"
+              title="Fechar detalhes da unidade"
+              className="text-xl font-bold !px-2 !py-1 text-gray-500 hover:text-gray-700 dark:hover:text-slate-200"
             >
               ✕
-            </button>
+            </Button>
           </div>
 
           {/* Conteúdo principal */}
@@ -502,18 +520,22 @@ const MapChart = () => {
               <div className="bg-orange-50 p-4 rounded-lg">
                 <h3 className="text-lg font-semibold text-orange-800 mb-3">Ações Rápidas</h3>
                 <div className="space-y-2">
-                  <button 
+                  <Button
+                    buttonType="primary"
+                    block
                     onClick={() => window.open(`https://maps.google.com/?q=${unidade.GR_LATITUDE},${unidade.GR_LONGITUDE}`, '_blank')}
-                    className="w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors"
+                    className="transition-colors"
                   >
                     📍 Ver no Google Maps
-                  </button>
-                  <button 
+                  </Button>
+                  <Button
+                    buttonType="success"
+                    block
                     onClick={() => window.open(`mailto:${unidade.DS_EMAIL.split(';')[0].trim()}`, '_blank')}
-                    className="w-full bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition-colors"
+                    className="transition-colors"
                   >
                     ✉️ Enviar Email
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -521,12 +543,13 @@ const MapChart = () => {
 
           {/* Botão de fechar */}
           <div className="mt-6 text-center">
-            <button
+            <Button
+              buttonType="primary"
               onClick={() => setSelectedUnidade(null)}
-              className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg transition-colors"
+              className="!px-6 !py-2 rounded-lg transition-colors"
             >
               Fechar
-            </button>
+            </Button>
           </div>
         </div>
       </div>

@@ -16,6 +16,7 @@ import {
   faXmark,
 } from '@fortawesome/free-solid-svg-icons';
 import { useAppContext } from '@/context/AppContext';
+import Button from '@/components/buttons/Button';
 
 const menuItems = [
   {
@@ -179,7 +180,7 @@ export default function SmartNFeSidebar({
 
         {/* Toggle button */}
         <div className="border-t border-slate-700 p-2">
-          <button
+          <Button
             type="button"
             onClick={onToggle}
             title={collapsed ? 'Expandir menu lateral' : 'Recolher menu lateral'}
@@ -192,7 +193,7 @@ export default function SmartNFeSidebar({
               className="w-3 h-3"
             />
             {!collapsed && <span className="ml-2 text-xs">Recolher</span>}
-          </button>
+          </Button>
         </div>
       </aside>
 
@@ -224,7 +225,7 @@ export default function SmartNFeSidebar({
                 </div>
                 <span className="font-bold text-base tracking-tight text-white">SmartNFe</span>
               </div>
-              <button
+              <Button
                 type="button"
                 onClick={onMobileClose}
                 aria-label="Fechar menu lateral"
@@ -233,7 +234,7 @@ export default function SmartNFeSidebar({
                 className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 transition-colors cursor-pointer"
               >
                 <FontAwesomeIcon icon={faXmark} className="w-5 h-5" />
-              </button>
+              </Button>
             </div>
 
             {/* Navigation */}

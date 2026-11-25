@@ -166,12 +166,12 @@ export function SortControl({ configOptions, dataObject = {}, setSortedDataFn = 
         return (
             <div className="inline-block" ref={dropdownRef}>
                 <TooltipComponent content={<div className="text-xs z-[100]">Ordenação</div>} usePortal={false}>
-                    <button
-                        className="flex items-center gap-2 px-3 py-1 mb-1 border border-gray-300 rounded-md bg-white shadow-sm hover:bg-gray-100 xl:py-2.5 xl:px-4"
+                    <Button
+                        className="flex items-center gap-2 px-3 py-1 mb-1 border border-gray-300 rounded-md bg-white text-gray-600 shadow-sm hover:bg-gray-100 xl:py-2.5 xl:px-4"
                         onClick={() => setIsOpen(!isOpen)}
                     >
                         <FontAwesomeIcon icon={faArrowDownShortWide} width={"16"} height={"16"} className="text-gray-600" />
-                    </button>
+                    </Button>
                 </TooltipComponent>
 
                 {isOpen && (

@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react';
 import { faCloudUploadAlt, faFile, faTimes } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import Button from '@/components/buttons/Button';
 import { useAppContext } from '@/context/AppContext';
 
 /**
@@ -81,8 +82,7 @@ export default function InputFile({
     }
   };
 
-  const clearFile = (e) => {
-    e.stopPropagation();
+  const clearFile = () => {
     setSelectedFile(null);
     setSelectedFileName('');
     if (fileInputRef.current) {
@@ -200,16 +200,20 @@ export default function InputFile({
             )}
           </div>
           {selectedFile && (
-            <div className="col-span-1 flex items-center justify-center">
-              <button
-                type="button"
+            <div
+              className="col-span-1 flex items-center justify-center"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Button
+                buttonType="danger"
+                outline
+                size="small"
                 onClick={clearFile}
-                className="text-slate-400 hover:text-red-500 dark:text-slate-500 dark:hover:text-red-400 transition-colors p-1"
+                className="!p-1"
                 title="Remover arquivo"
-                aria-label="Remover arquivo selecionado"
               >
                 <FontAwesomeIcon icon={faTimes} className="w-3.5 h-3.5" />
-              </button>
+              </Button>
             </div>
           )}
         </div>

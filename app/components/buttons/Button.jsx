@@ -1,5 +1,5 @@
 import { cn } from '@/assets/utils';
-import React from 'react';
+import React, { forwardRef } from 'react';
 
 const btnType = (outline, bordered, buttonType) => {
 	const variants = {
@@ -72,7 +72,7 @@ export const generateButtonClass = (
  * @version 1.2.0
  * @returns {JSX.Element} O elemento de botão renderizado.
  */
-const Button = ({
+const Button = forwardRef(({
 	buttonType,
 	size = 'medium',
 	type = 'button',
@@ -86,7 +86,8 @@ const Button = ({
 	className = '',
 	disabled = false,
 	title = '',
-}) => {
+	...rest
+}, ref) => {
 	const	handleClick = (evt) => {
 		if (type === 'button' && evt) {
 			evt.stopPropagation();
@@ -96,6 +97,7 @@ const Button = ({
 
 	return (
 		<button
+			ref={ref}
 			type={type}
 			className={cn(
 				generateButtonClass(buttonType, pill, square, size, block, outline, bordered, disabled),
@@ -104,10 +106,13 @@ const Button = ({
 			onClick={handleClick.bind(null, this)}
 			disabled={disabled}
 			title={title}
+			{...rest}
 		>
 			{children}
 		</button>
 	)
-}
+})
+
+Button.displayName = 'Button'
 
 export default Button

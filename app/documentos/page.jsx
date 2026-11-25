@@ -26,6 +26,8 @@ import AppLayout from '@/components/Layouts/AppLayout';
 import DataTable from '@/components/table/DataTable';
 import Button from '@/components/buttons/Button';
 import Select from '@/components/inputs/Select';
+import InputText from '@/components/inputs/InputText';
+import Checkbox from '@/components/inputs/Checkbox';
 import Dialog from '@/components/Layouts/Dialog';
 import { useAppContext } from '@/context/AppContext';
 
@@ -286,19 +288,19 @@ export default function DocumentosPage() {
       render: (item) => {
         const isSelected = selectedIds.has(item.id);
         return (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              toggleSelect(item.id);
-            }}
-            className="text-slate-400 hover:text-blue-600 cursor-pointer p-1"
+          <Button
+            buttonType="ghost"
+            size="small"
+            outline
+            title={isSelected ? 'Desmarcar documento' : 'Selecionar documento'}
+            onClick={() => toggleSelect(item.id)}
+            className="!p-1 text-slate-400 hover:bg-transparent dark:hover:bg-transparent"
           >
             <FontAwesomeIcon
               icon={isSelected ? faCheckSquare : faSquare}
               className={`w-4 h-4 ${isSelected ? 'text-blue-600' : 'text-slate-300 dark:text-slate-600'}`}
             />
-          </button>
+          </Button>
         );
       },
     },
@@ -350,28 +352,33 @@ export default function DocumentosPage() {
       render: (item) => (
         <div className="flex items-center gap-1.5">
           {item.clienteExportacao ? (
-            <span
+            <Button
+              buttonType="ghost"
+              size="small"
+              outline
               onClick={() => {
                 setSelectedCustomerId(item.clienteExportacao.id);
                 setAssignDialog({ open: true, invoiceId: item.id });
               }}
-              className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-purple-50 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 cursor-pointer hover:bg-purple-100 border border-purple-200 dark:border-purple-800 truncate max-w-[150px]"
+              className="inline-flex items-center gap-1 !px-2 !py-0.5 text-[11px] font-medium bg-purple-50 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 hover:bg-purple-100 border border-purple-200 dark:border-purple-800 max-w-[150px]"
               title={`${item.clienteExportacao.name} (${item.clienteExportacao.country})`}
             >
               <FontAwesomeIcon icon={faGlobe} className="w-2.5 h-2.5 shrink-0" />
               <span className="truncate">{item.clienteExportacao.name}</span>
-            </span>
+            </Button>
           ) : (
-            <button
-              type="button"
+            <Button
+              buttonType="ghost"
+              size="small"
+              outline
               onClick={() => {
                 setSelectedCustomerId('');
                 setAssignDialog({ open: true, invoiceId: item.id });
               }}
-              className="text-[11px] text-slate-400 hover:text-blue-600 underline cursor-pointer"
+              className="!p-0 text-[11px] text-slate-400 hover:text-blue-600 underline bg-transparent dark:bg-transparent hover:bg-transparent dark:hover:bg-transparent"
             >
               + Atribuir
-            </button>
+            </Button>
           )}
         </div>
       ),
@@ -435,13 +442,16 @@ export default function DocumentosPage() {
             <FontAwesomeIcon icon={faPenToSquare} className="w-3 h-3 mr-1" />
             Conferir
           </Button>
-          <button
+          <Button
+            buttonType="ghost"
+            size="small"
+            outline
             onClick={() => setDeleteDialog({ open: true, invoice: item })}
-            className="p-1.5 text-slate-400 hover:text-red-600 rounded transition-colors cursor-pointer"
+            className="!p-1.5 text-slate-400 hover:text-red-600 hover:bg-transparent dark:hover:bg-slate-700"
             title="Excluir documento"
           >
             <FontAwesomeIcon icon={faTrashCan} className="w-3.5 h-3.5" />
-          </button>
+          </Button>
         </div>
       ),
     },
@@ -530,13 +540,15 @@ export default function DocumentosPage() {
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
-              <button
-                type="button"
+              <Button
+                buttonType="ghost"
+                size="small"
+                outline
                 onClick={clearSelection}
-                className="text-xs text-slate-600 dark:text-slate-300 hover:underline px-2 py-1 cursor-pointer"
+                className="text-xs text-slate-600 dark:text-slate-300 hover:underline hover:bg-transparent dark:hover:bg-transparent"
               >
                 Limpar seleção
-              </button>
+              </Button>
               <Button
                 buttonType="primary"
                 size="small"
@@ -555,13 +567,13 @@ export default function DocumentosPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5">
             {/* Search Input */}
             <div className="relative col-span-1 sm:col-span-2">
-              <FontAwesomeIcon icon={faMagnifyingGlass} className="absolute left-3 top-2.5 text-slate-400 w-3.5 h-3.5" />
-              <input
-                type="text"
-                placeholder="Buscar por NF-e, fornecedor, CNPJ, produto ou NCM..."
+              <FontAwesomeIcon icon={faMagnifyingGlass} className="absolute left-3 top-2.5 z-10 text-slate-400 w-3.5 h-3.5 pointer-events-none" />
+              <InputText
+                id="documentosSearch"
                 value={rawSearchTerm}
-                onChange={(e) => setRawSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-3 py-1.5 text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-blue-500"
+                placeholder="Buscar por NF-e, fornecedor, CNPJ, produto ou NCM..."
+                onChange={(id, value) => setRawSearchTerm(value)}
+                className="pl-9 pr-3 py-1.5 text-xs rounded border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-blue-500"
               />
             </div>
 
@@ -654,45 +666,49 @@ export default function DocumentosPage() {
               />
 
               {/* Balance Checkbox */}
-              <label className="flex items-center gap-1.5 text-slate-700 dark:text-slate-300 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={onlyAvailableBalance}
-                  onChange={(e) => setOnlyAvailableBalance(e.target.checked)}
-                  className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span>Apenas com saldo disponível</span>
-              </label>
+              <Checkbox
+                id="onlyAvailableBalance"
+                checked={onlyAvailableBalance}
+                onChange={(id, checked) => setOnlyAvailableBalance(checked)}
+                label="Apenas com saldo disponível"
+                className="gap-1.5 text-xs select-none [&>span]:text-xs [&>span]:font-normal [&>span]:text-slate-700 dark:[&>span]:text-slate-300"
+              />
             </div>
 
             {/* Selection fast actions */}
             <div className="flex items-center gap-2">
-              <button
-                type="button"
+              <Button
+                buttonType="primary"
+                size="small"
+                outline
                 onClick={selectAllFiltered}
-                className="text-blue-600 hover:underline cursor-pointer"
+                className="text-xs text-blue-600 hover:underline hover:bg-transparent dark:hover:bg-transparent"
               >
                 Selecionar visíveis ({filteredInvoices.length})
-              </button>
+              </Button>
               <span>•</span>
-              <button
-                type="button"
+              <Button
+                buttonType="ghost"
+                size="small"
+                outline
                 onClick={invertSelection}
-                className="text-slate-500 hover:underline cursor-pointer"
+                className="text-xs text-slate-500 hover:underline hover:bg-transparent dark:hover:bg-transparent"
               >
                 Inverter
-              </button>
+              </Button>
               {hasActiveFilters && (
                 <>
                   <span>•</span>
-                  <button
-                    type="button"
+                  <Button
+                    buttonType="danger"
+                    size="small"
+                    outline
                     onClick={resetFilters}
-                    className="text-rose-600 hover:underline cursor-pointer flex items-center gap-1"
+                    className="inline-flex items-center gap-1 text-xs text-rose-600 hover:underline hover:bg-transparent dark:hover:bg-transparent"
                   >
                     <FontAwesomeIcon icon={faXmark} />
                     Limpar filtros
-                  </button>
+                  </Button>
                 </>
               )}
             </div>

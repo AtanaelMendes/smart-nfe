@@ -7,6 +7,7 @@ import {
     faChevronCircleRight,
 } from "@fortawesome/free-solid-svg-icons";
 import { FieldLabel } from "@/components/Layouts/Typography";
+import Button from "@/components/buttons/Button";
 import { cn } from "@/assets/utils";
 
 // Helper functions
@@ -71,12 +72,12 @@ const Calendar = ({ year, month, onSelectDate, selectedDate }) => {
 
             <div className="grid grid-cols-7 gap-2">
                 {days.map((day, idx) => (
-                    <button
+                    <Button
                         key={idx}
                         onClick={() => day && onSelectDate(new Date(year, month, day))}
                         disabled={!day}
                         className={cn(
-                            "p-2 text-sm rounded",
+                            "w-full p-2 text-sm font-normal",
                             !day && "invisible",
                             day && selectedDate?.getDate() === day && selectedDate?.getMonth() === month && selectedDate?.getFullYear() === year
                                 ? "bg-blue-500 text-white"
@@ -84,7 +85,7 @@ const Calendar = ({ year, month, onSelectDate, selectedDate }) => {
                         )}
                     >
                         {day}
-                    </button>
+                    </Button>
                 ))}
             </div>
         </div>
@@ -194,9 +195,9 @@ const DatePicker = ({ label, onChange, id, maxDate, defaultDate, required }) => 
                 <div className="absolute top-full mt-2 z-50">
                     <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-4">
                         <div className="flex justify-between items-center mb-4">
-                            <button
+                            <Button
                                 onClick={handlePrevMonth}
-                                className="p-1 hover:bg-gray-100 rounded"
+                                className="p-1 hover:bg-gray-100"
                             >
                                 <FontAwesomeIcon
                                     icon={faChevronCircleLeft}
@@ -204,13 +205,13 @@ const DatePicker = ({ label, onChange, id, maxDate, defaultDate, required }) => 
                                     height="20"
                                     className="text-slate-500"
                                 />
-                            </button>
+                            </Button>
                             <span className="font-semibold text-gray-700">
                                 {new Date(currentYear, currentMonth).toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}
                             </span>
-                            <button
+                            <Button
                                 onClick={handleNextMonth}
-                                className="p-1 hover:bg-gray-100 rounded"
+                                className="p-1 hover:bg-gray-100"
                             >
                                 <FontAwesomeIcon
                                     icon={faChevronCircleRight}
@@ -218,7 +219,7 @@ const DatePicker = ({ label, onChange, id, maxDate, defaultDate, required }) => 
                                     height="20"
                                     className="text-slate-500"
                                 />
-                            </button>
+                            </Button>
                         </div>
 
                         <Calendar
@@ -229,26 +230,31 @@ const DatePicker = ({ label, onChange, id, maxDate, defaultDate, required }) => 
                         />
 
                         <div className="flex gap-2 mt-4">
-                            <button
+                            <Button
+                                buttonType="primary"
+                                size="small"
                                 onClick={() => {
                                     const today = new Date();
                                     handleSelectDate(today);
                                 }}
-                                className="flex-1 px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
+                                className="flex-1 px-3 py-1"
                             >
                                 Hoje
-                            </button>
-                            <button
+                            </Button>
+                            <Button
+                                buttonType="secondary"
+                                bordered
+                                size="small"
                                 onClick={() => {
                                     setInputValue("");
                                     setSelectedDate(null);
                                     onChange("");
                                     setShow(false);
                                 }}
-                                className="flex-1 px-3 py-1 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 text-sm"
+                                className="flex-1 px-3 py-1"
                             >
                                 Limpar
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 </div>

@@ -21,7 +21,9 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import AppLayout from '@/components/Layouts/AppLayout';
 import Dialog from '@/components/Layouts/Dialog';
+import Button from '@/components/buttons/Button';
 import Select from '@/components/inputs/Select';
+import InputText from '@/components/inputs/InputText';
 import { documentRepository } from '@/features/documentRepository';
 import { catalogsRepository } from '@/features/catalogsRepository';
 import { formatBRL, formatDateBR } from '@/lib/formatters';
@@ -140,13 +142,16 @@ export default function NotasListPage() {
           </div>
 
           <div className="flex items-center gap-2">
-            <button
+            <Button
+              buttonType="ghost"
+              outline
+              size="small"
               onClick={loadData}
               title="Atualizar lista"
-              className="p-2.5 rounded-lg border border-gray-300 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-600 dark:text-slate-300 transition-colors"
+              className="!p-2.5 rounded-lg border border-gray-300 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-600 dark:text-slate-300"
             >
               <FontAwesomeIcon icon={faRotateRight} className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            </button>
+            </Button>
 
             <Link
               href="/notas/nova"
@@ -197,13 +202,15 @@ export default function NotasListPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {/* Busca livre */}
             <div className="relative">
-              <FontAwesomeIcon icon={faSearch} className="absolute left-3 top-3 text-gray-400 w-3.5 h-3.5" />
-              <input
-                type="text"
-                placeholder="Buscar por título, número ou cliente..."
+              <FontAwesomeIcon icon={faSearch} className="absolute left-3 top-3 text-gray-400 w-3.5 h-3.5 z-10" />
+              <InputText
+                id="searchQuery"
+                name="searchQuery"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 text-xs bg-gray-50 dark:bg-slate-800/80 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onChange={(id, val) => setSearchQuery(val)}
+                placeholder="Buscar por título, número ou cliente..."
+                small
+                className="pl-9 pr-3 py-2 bg-gray-50 dark:bg-slate-800/80 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-white placeholder-gray-400"
               />
             </div>
 
@@ -401,25 +408,27 @@ export default function NotasListPage() {
                               <FontAwesomeIcon icon={faPenToSquare} className="w-3.5 h-3.5" />
                             </Link>
 
-                            <button
-                              type="button"
+                            <Button
+                              buttonType="ghost"
+                              size="small"
                               onClick={() => handleDuplicate(doc.id, doc.titulo)}
                               disabled={actionLoading}
                               title="Duplicar Rascunho"
-                              className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-slate-700 text-indigo-600 dark:text-indigo-400 transition-colors disabled:opacity-50"
+                              className="!p-1.5 rounded bg-transparent dark:bg-transparent hover:bg-gray-200 dark:hover:bg-slate-700 text-indigo-600 dark:text-indigo-400"
                             >
                               <FontAwesomeIcon icon={faCopy} className="w-3.5 h-3.5" />
-                            </button>
+                            </Button>
 
-                            <button
-                              type="button"
+                            <Button
+                              buttonType="ghost"
+                              size="small"
                               onClick={() => confirmDelete(doc)}
                               disabled={actionLoading}
                               title="Excluir Rascunho"
-                              className="p-1.5 rounded hover:bg-red-100 dark:hover:bg-red-950/40 text-red-600 dark:text-red-400 transition-colors disabled:opacity-50"
+                              className="!p-1.5 rounded bg-transparent dark:bg-transparent hover:bg-red-100 dark:hover:bg-red-950/40 text-red-600 dark:text-red-400"
                             >
                               <FontAwesomeIcon icon={faTrashCan} className="w-3.5 h-3.5" />
-                            </button>
+                            </Button>
                           </div>
                         </td>
                       </tr>

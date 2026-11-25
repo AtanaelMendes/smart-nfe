@@ -1,5 +1,6 @@
 'use client';
 import { useAppContext } from '@/context/AppContext';
+import Button from '@/components/buttons/Button';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faCheckCircle,
@@ -56,13 +57,13 @@ export default function ToastContainer() {
           >
             <FontAwesomeIcon icon={config.icon} className={`mt-0.5 flex-shrink-0 ${config.iconColor}`} />
             <span className="flex-1 text-sm font-medium">{toast.message}</span>
-            <button
+            <Button
               onClick={() => removeToast(toast.id)}
               className="flex-shrink-0 hover:opacity-70 p-0.5 transition-opacity"
-              aria-label="Fechar notificação"
+              title="Fechar notificação"
             >
               <FontAwesomeIcon icon={faTimes} className="w-3 h-3" />
-            </button>
+            </Button>
           </div>
         );
       })}

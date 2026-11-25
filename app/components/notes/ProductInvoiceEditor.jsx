@@ -30,6 +30,10 @@ import { documentRepository } from '@/features/documentRepository';
 import { validateNFe } from '@/features/validation/nfeValidator';
 import { FiscalField, FiscalSelect, FiscalGroup } from './FiscalField';
 import Select from '@/components/inputs/Select';
+import InputText from '@/components/inputs/InputText';
+import InputDate from '@/components/inputs/InputDate';
+import InputTextArea from '@/components/inputs/InputTextArea';
+import Checkbox from '@/components/inputs/Checkbox';
 import Button from '@/components/buttons/Button';
 import { formatBRL } from '@/lib/formatters';
 import { cleanDecimalString, decimalAdd, decimalSubtract, decimalCompare } from '@/lib/calculations/decimal';
@@ -92,6 +96,10 @@ function withItemDefaults(item, index) {
 
 const INPUT_CLS =
   'w-full px-2 py-1 text-xs bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none';
+
+/* Campos de formulário (blocos de identificação, emitente, destinatário, totais). */
+const FORM_CLS =
+  'px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 dark:border-slate-700 rounded-lg dark:text-white focus:ring-2 focus:ring-blue-500';
 
 export default function ProductInvoiceEditor({
   initialData = null,
@@ -213,16 +221,14 @@ export default function ProductInvoiceEditor({
   }, [selectedCompanyId]);
 
   // Atualiza emitente quando o select muda
-  const handleCompanyChange = (e) => {
-    const compId = e.target.value;
+  const handleCompanyChange = (compId) => {
     setSelectedCompanyId(compId);
     const found = companies.find((c) => c.id === compId);
     setEmitente(found || null);
   };
 
   // Atualiza destinatário quando seleciona do cadastro existente
-  const handlePersonSelect = (e) => {
-    const personId = e.target.value;
+  const handlePersonSelect = (personId) => {
     setSelectedPersonId(personId);
     if (!personId) return;
 
@@ -588,9 +594,10 @@ export default function ProductInvoiceEditor({
             type="button"
             buttonType="ghost"
             outline
+            bordered
             size="small"
             onClick={handleValidate}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg border border-gray-300 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-700 dark:text-slate-200 transition-colors"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold"
           >
             <FontAwesomeIcon icon={faCheckDouble} className="text-blue-600" />
             <span>Validar Dados</span>
@@ -602,7 +609,7 @@ export default function ProductInvoiceEditor({
             size="small"
             onClick={() => handleSave(true)}
             disabled={saving}
-            className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 text-white shadow-xs transition-colors disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold shadow-xs"
           >
             <FontAwesomeIcon icon={faFloppyDisk} />
             <span>{saving ? 'Salvando...' : 'Salvar e Revisar'}</span>
@@ -620,41 +627,42 @@ export default function ProductInvoiceEditor({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Título do Rascunho */}
           <div className="md:col-span-2">
-            <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
+            <label htmlFor="nfeTitulo" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
               Título de Referência do Rascunho
             </label>
-            <input
-              type="text"
+            <InputText
+              id="nfeTitulo"
               value={titulo}
-              onChange={(e) => setTitulo(e.target.value)}
+              onChange={(_id, value) => setTitulo(value)}
               placeholder="Ex: NF-e Comercial Peças Industriais"
-              className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+              className={FORM_CLS}
             />
           </div>
 
           {/* Data Prevista */}
           <div>
-            <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
+            <label htmlFor="nfeDataPrevista" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
               Data Prevista de Emissão
             </label>
-            <input
-              type="date"
+            <InputDate
+              id="nfeDataPrevista"
               value={dataPrevistaEmissao}
-              onChange={(e) => setDataPrevistaEmissao(e.target.value)}
-              className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+              onChange={(_id, value) => setDataPrevistaEmissao(value)}
+              small
+              className="px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 dark:text-white"
             />
           </div>
 
           {/* Empresa Emitente */}
           <div className="md:col-span-2">
-            <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
+            <label htmlFor="selectedCompanyId" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
               Empresa Emitente (Origem) *
             </label>
             <Select
               id="selectedCompanyId"
               value={selectedCompanyId}
               hideClearButton
-              onChange={(_id, value) => handleCompanyChange({ target: { value } })}
+              onChange={(_id, value) => handleCompanyChange(value)}
               className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
               options={[
                 { value: '', label: 'Selecione uma empresa cadastrada...' },
@@ -673,21 +681,21 @@ export default function ProductInvoiceEditor({
 
           {/* Natureza da Operação */}
           <div>
-            <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
+            <label htmlFor="nfeNaturezaOperacao" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
               Natureza da Operação *
             </label>
-            <input
-              type="text"
+            <InputText
+              id="nfeNaturezaOperacao"
               value={naturezaOperacao}
-              onChange={(e) => setNaturezaOperacao(e.target.value)}
+              onChange={(_id, value) => setNaturezaOperacao(value)}
               placeholder="Ex: VENDA DE MERCADORIA"
-              className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 uppercase"
+              className={`${FORM_CLS} uppercase`}
             />
           </div>
 
           {/* Destino da Operação */}
           <div>
-            <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
+            <label htmlFor="destinoOperacao" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
               Destino da Operação
             </label>
             <Select
@@ -717,7 +725,7 @@ export default function ProductInvoiceEditor({
 
           {/* Finalidade */}
           <div>
-            <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
+            <label htmlFor="finalidadeEmissao" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
               Finalidade da NF-e
             </label>
             <Select
@@ -738,26 +746,26 @@ export default function ProductInvoiceEditor({
           {/* Série e Número Previsto */}
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
+              <label htmlFor="nfeSeriePrevista" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
                 Série Prevista
               </label>
-              <input
-                type="text"
+              <InputText
+                id="nfeSeriePrevista"
                 value={seriePrevista}
-                onChange={(e) => setSeriePrevista(e.target.value)}
-                className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-center font-mono"
+                onChange={(_id, value) => setSeriePrevista(value)}
+                className={`${FORM_CLS} text-center font-mono`}
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
+              <label htmlFor="nfeNumeroPrevisto" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
                 Número Previsto
               </label>
-              <input
-                type="text"
+              <InputText
+                id="nfeNumeroPrevisto"
                 placeholder="Automático"
                 value={numeroPrevisto}
-                onChange={(e) => setNumeroPrevisto(e.target.value)}
-                className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 font-mono"
+                onChange={(_id, value) => setNumeroPrevisto(value)}
+                className={`${FORM_CLS} font-mono`}
               />
             </div>
           </div>
@@ -851,7 +859,7 @@ export default function ProductInvoiceEditor({
               id="selectedPersonId"
               value={selectedPersonId}
               hideClearButton
-              onChange={(_id, value) => handlePersonSelect({ target: { value } })}
+              onChange={(_id, value) => handlePersonSelect(value)}
               className="w-full px-3 py-1.5 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
               options={[
                 { value: '', label: 'Buscar no cadastro de clientes...' },
@@ -867,7 +875,7 @@ export default function ProductInvoiceEditor({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Tipo de Pessoa */}
           <div>
-            <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
+            <label htmlFor="destinatarioTipoPessoa" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
               Tipo de Pessoa
             </label>
             <Select
@@ -893,71 +901,71 @@ export default function ProductInvoiceEditor({
 
           {/* Documento (CNPJ/CPF ou ID Estrangeiro) */}
           <div>
-            <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
+            <label htmlFor="destinatarioDocumento" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
               {destinatario.tipoPessoa === 'ESTRANGEIRO' ? 'ID Fiscal Internacional / VAT' : 'CPF ou CNPJ *'}
             </label>
-            <input
-              type="text"
+            <InputText
+              id="destinatarioDocumento"
               value={destinatario.documento || ''}
-              onChange={(e) => setDestinatario((prev) => ({ ...prev, documento: e.target.value }))}
+              onChange={(_id, value) => setDestinatario((prev) => ({ ...prev, documento: value }))}
               placeholder={destinatario.tipoPessoa === 'ESTRANGEIRO' ? 'Ex: NL884920192B01' : '00.000.000/0000-00'}
-              className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 font-mono"
+              className={`${FORM_CLS} font-mono`}
             />
           </div>
 
           {/* Inscrição Estadual */}
           <div>
-            <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
+            <label htmlFor="destinatarioInscricaoEstadual" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
               Inscrição Estadual (IE)
             </label>
-            <input
-              type="text"
+            <InputText
+              id="destinatarioInscricaoEstadual"
               value={destinatario.inscricaoEstadual || ''}
-              onChange={(e) => setDestinatario((prev) => ({ ...prev, inscricaoEstadual: e.target.value }))}
+              onChange={(_id, value) => setDestinatario((prev) => ({ ...prev, inscricaoEstadual: value }))}
               placeholder="Isento ou Nº da IE"
-              className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 font-mono"
+              className={`${FORM_CLS} font-mono`}
             />
           </div>
 
           {/* Nome ou Razão Social */}
           <div className="md:col-span-2">
-            <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
+            <label htmlFor="destinatarioNome" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
               Nome ou Razão Social *
             </label>
-            <input
-              type="text"
+            <InputText
+              id="destinatarioNome"
               value={destinatario.nomeOuRazao || ''}
-              onChange={(e) => setDestinatario((prev) => ({ ...prev, nomeOuRazao: e.target.value }))}
+              onChange={(_id, value) => setDestinatario((prev) => ({ ...prev, nomeOuRazao: value }))}
               placeholder="Ex: Global Trading Logistics B.V."
-              className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+              className={FORM_CLS}
             />
           </div>
 
           {/* UF e Município */}
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
+              <label htmlFor="destinatarioUf" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
                 UF / Estado
               </label>
-              <input
-                type="text"
+              <InputText
+                id="destinatarioUf"
                 value={destinatario.uf || ''}
-                onChange={(e) => setDestinatario((prev) => ({ ...prev, uf: e.target.value.toUpperCase() }))}
+                onChange={(_id, value) => setDestinatario((prev) => ({ ...prev, uf: value.toUpperCase() }))}
                 placeholder="SP"
                 maxLength={2}
-                className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 uppercase text-center"
+                className={`${FORM_CLS} uppercase text-center`}
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
+              <label htmlFor="destinatarioMunicipio" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
                 Município
               </label>
-              <input
-                type="text"
+              <InputText
+                id="destinatarioMunicipio"
                 value={destinatario.municipio || ''}
-                onChange={(e) => setDestinatario((prev) => ({ ...prev, municipio: e.target.value }))}
+                onChange={(_id, value) => setDestinatario((prev) => ({ ...prev, municipio: value }))}
                 placeholder="São Paulo"
-                className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                className={FORM_CLS}
               />
             </div>
           </div>
@@ -984,12 +992,10 @@ export default function ProductInvoiceEditor({
 
         {/* Checkbox para salvar cliente no catálogo */}
         <div className="pt-2 flex items-center gap-2">
-          <input
-            type="checkbox"
+          <Checkbox
             id="chk-save-person"
             checked={savePersonToCatalog}
-            onChange={(e) => setSavePersonToCatalog(e.target.checked)}
-            className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 dark:bg-slate-800 border-gray-300"
+            onChange={(_id, checked) => setSavePersonToCatalog(checked)}
           />
           <label htmlFor="chk-save-person" className="text-xs text-gray-700 dark:text-slate-300 cursor-pointer">
             Salvar este destinatário no cadastro reutilizável de clientes
@@ -1011,23 +1017,31 @@ export default function ProductInvoiceEditor({
           </div>
 
           <div className="flex items-center gap-2">
-            <button
+            <Button
               type="button"
+              buttonType="ghost"
+              outline
+              bordered
+              size="small"
               onClick={() => setCatalogModalOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-800 dark:text-slate-200 transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold"
             >
               <FontAwesomeIcon icon={faBookOpen} className="text-blue-600" />
               <span>Catálogo de Produtos</span>
-            </button>
+            </Button>
 
-            <button
+            <Button
               type="button"
+              buttonType="primary"
+              outline
+              bordered
+              size="small"
               onClick={handleAddItem}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-50 dark:bg-blue-950/50 hover:bg-blue-100 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800 transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold"
             >
               <FontAwesomeIcon icon={faPlus} />
               <span>Nova Linha</span>
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -1061,92 +1075,92 @@ export default function ProductInvoiceEditor({
 
                   {/* Código */}
                   <td className="px-1.5 py-2">
-                    <input
-                      type="text"
+                    <InputText
+                      id={`nfe-item-${it.itemId}-codigo`}
                       value={it.codigo || ''}
-                      onChange={(e) => handleItemChange(it.itemId, 'codigo', e.target.value)}
+                      onChange={(_id, value) => handleItemChange(it.itemId, 'codigo', value)}
                       placeholder="SKU-001"
-                      className="w-full px-2 py-1 bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 rounded text-xs font-mono"
+                      className={`${INPUT_CLS} font-mono`}
                     />
                   </td>
 
                   {/* Descrição */}
                   <td className="px-1.5 py-2">
-                    <input
-                      type="text"
+                    <InputText
+                      id={`nfe-item-${it.itemId}-descricao`}
                       value={it.descricao || ''}
-                      onChange={(e) => handleItemChange(it.itemId, 'descricao', e.target.value)}
+                      onChange={(_id, value) => handleItemChange(it.itemId, 'descricao', value)}
                       placeholder="Descrição clara da mercadoria..."
-                      className="w-full px-2 py-1 bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 rounded text-xs"
+                      className={INPUT_CLS}
                     />
                   </td>
 
                   {/* NCM */}
                   <td className="px-1.5 py-2">
-                    <input
-                      type="text"
+                    <InputText
+                      id={`nfe-item-${it.itemId}-ncm`}
                       maxLength={8}
                       value={it.ncm || ''}
-                      onChange={(e) => handleItemChange(it.itemId, 'ncm', e.target.value.replace(/\D/g, ''))}
+                      onChange={(_id, value) => handleItemChange(it.itemId, 'ncm', value.replace(/\D/g, ''))}
                       placeholder="84089090"
-                      className="w-full px-2 py-1 bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 rounded text-xs font-mono text-center"
+                      className={`${INPUT_CLS} font-mono text-center`}
                     />
                   </td>
 
                   {/* CFOP */}
                   <td className="px-1.5 py-2">
-                    <input
-                      type="text"
+                    <InputText
+                      id={`nfe-item-${it.itemId}-cfop`}
                       maxLength={4}
                       value={it.cfop || ''}
-                      onChange={(e) => handleItemChange(it.itemId, 'cfop', e.target.value.replace(/\D/g, ''))}
+                      onChange={(_id, value) => handleItemChange(it.itemId, 'cfop', value.replace(/\D/g, ''))}
                       placeholder={destinoOperacao === '3' ? '7101' : '5101'}
-                      className="w-full px-2 py-1 bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 rounded text-xs font-mono text-center"
+                      className={`${INPUT_CLS} font-mono text-center`}
                     />
                   </td>
 
                   {/* Unidade */}
                   <td className="px-1.5 py-2">
-                    <input
-                      type="text"
+                    <InputText
+                      id={`nfe-item-${it.itemId}-unidade`}
                       maxLength={6}
                       value={it.unidade || ''}
-                      onChange={(e) => handleItemChange(it.itemId, 'unidade', e.target.value.toUpperCase())}
+                      onChange={(_id, value) => handleItemChange(it.itemId, 'unidade', value.toUpperCase())}
                       placeholder="UN"
-                      className="w-full px-2 py-1 bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 rounded text-xs text-center font-mono uppercase"
+                      className={`${INPUT_CLS} text-center font-mono uppercase`}
                     />
                   </td>
 
                   {/* Quantidade */}
                   <td className="px-1.5 py-2">
-                    <input
-                      type="text"
+                    <InputText
+                      id={`nfe-item-${it.itemId}-quantidade`}
                       value={it.quantidade || ''}
-                      onChange={(e) => handleItemChange(it.itemId, 'quantidade', e.target.value)}
+                      onChange={(_id, value) => handleItemChange(it.itemId, 'quantidade', value)}
                       placeholder="1.0000"
-                      className="w-full px-2 py-1 bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 rounded text-xs text-right font-mono"
+                      className={`${INPUT_CLS} text-right font-mono`}
                     />
                   </td>
 
                   {/* Valor Unitário */}
                   <td className="px-1.5 py-2">
-                    <input
-                      type="text"
+                    <InputText
+                      id={`nfe-item-${it.itemId}-valorUnitario`}
                       value={it.valorUnitario || ''}
-                      onChange={(e) => handleItemChange(it.itemId, 'valorUnitario', e.target.value)}
+                      onChange={(_id, value) => handleItemChange(it.itemId, 'valorUnitario', value)}
                       placeholder="0.0000"
-                      className="w-full px-2 py-1 bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 rounded text-xs text-right font-mono"
+                      className={`${INPUT_CLS} text-right font-mono`}
                     />
                   </td>
 
                   {/* Desconto */}
                   <td className="px-1.5 py-2">
-                    <input
-                      type="text"
+                    <InputText
+                      id={`nfe-item-${it.itemId}-desconto`}
                       value={it.desconto || ''}
-                      onChange={(e) => handleItemChange(it.itemId, 'desconto', e.target.value)}
+                      onChange={(_id, value) => handleItemChange(it.itemId, 'desconto', value)}
                       placeholder="0.00"
-                      className="w-full px-2 py-1 bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 rounded text-xs text-right font-mono text-gray-500"
+                      className={`${INPUT_CLS} text-right font-mono text-gray-500 dark:text-slate-400`}
                     />
                   </td>
 
@@ -1158,41 +1172,57 @@ export default function ProductInvoiceEditor({
                   {/* Ações da Linha */}
                   <td className="px-2 py-2 text-center whitespace-nowrap">
                     <div className="flex items-center justify-center gap-1">
-                      <button
+                      <Button
                         type="button"
+                        buttonType="ghost"
+                        outline
+                        size="small"
+                        square
                         onClick={() => toggleItemDetails(it.itemId)}
                         title="Detalhes fiscais do item"
-                        className="p-1 rounded text-gray-500 hover:text-blue-600 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
+                        className="!p-1 text-gray-500 dark:text-slate-400"
                       >
                         <FontAwesomeIcon icon={expandedItems.has(it.itemId) ? faChevronUp : faChevronDown} className="w-3.5 h-3.5" />
-                      </button>
+                      </Button>
 
-                      <button
+                      <Button
                         type="button"
+                        buttonType="ghost"
+                        outline
+                        size="small"
+                        square
                         onClick={() => handleSaveProductToCatalog(it)}
                         title="Salvar produto no catálogo reutilizável"
-                        className="p-1 rounded text-gray-500 hover:text-blue-600 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
+                        className="!p-1 text-gray-500 dark:text-slate-400"
                       >
                         <FontAwesomeIcon icon={faFloppyDisk} className="w-3.5 h-3.5" />
-                      </button>
+                      </Button>
 
-                      <button
+                      <Button
                         type="button"
+                        buttonType="ghost"
+                        outline
+                        size="small"
+                        square
                         onClick={() => handleDuplicateItem(it.itemId)}
                         title="Duplicar linha"
-                        className="p-1 rounded text-gray-500 hover:text-indigo-600 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
+                        className="!p-1 text-gray-500 dark:text-slate-400"
                       >
                         <FontAwesomeIcon icon={faCopy} className="w-3.5 h-3.5" />
-                      </button>
+                      </Button>
 
-                      <button
+                      <Button
                         type="button"
+                        buttonType="danger"
+                        outline
+                        size="small"
+                        square
                         onClick={() => handleRemoveItem(it.itemId)}
                         title="Remover produto"
-                        className="p-1 rounded text-gray-500 hover:text-red-600 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
+                        className="!p-1 text-gray-500 dark:text-slate-400"
                       >
                         <FontAwesomeIcon icon={faTrashCan} className="w-3.5 h-3.5" />
-                      </button>
+                      </Button>
                     </div>
                   </td>
                 </tr>
@@ -1295,7 +1325,7 @@ export default function ProductInvoiceEditor({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
+              <label htmlFor="modalidadeFrete" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
                 Modalidade do Frete
               </label>
               <Select
@@ -1314,68 +1344,69 @@ export default function ProductInvoiceEditor({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
+              <label htmlFor="nfeValorFrete" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
                 Valor do Frete (R$)
               </label>
-              <input
-                type="text"
+              <InputText
+                id="nfeValorFrete"
                 value={valorFrete}
-                onChange={(e) => setValorFrete(e.target.value)}
+                onChange={(_id, value) => setValorFrete(value)}
                 placeholder="0.00"
-                className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white font-mono"
+                className={`${FORM_CLS} font-mono`}
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
+              <label htmlFor="nfeValorSeguro" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
                 Valor do Seguro (R$)
               </label>
-              <input
-                type="text"
+              <InputText
+                id="nfeValorSeguro"
                 value={valorSeguro}
-                onChange={(e) => setValorSeguro(e.target.value)}
+                onChange={(_id, value) => setValorSeguro(value)}
                 placeholder="0.00"
-                className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white font-mono"
+                className={`${FORM_CLS} font-mono`}
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
+              <label htmlFor="nfeOutrasDespesas" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
                 Outras Despesas Acessórias (R$)
               </label>
-              <input
-                type="text"
+              <InputText
+                id="nfeOutrasDespesas"
                 value={outrasDespesas}
-                onChange={(e) => setOutrasDespesas(e.target.value)}
+                onChange={(_id, value) => setOutrasDespesas(value)}
                 placeholder="0.00"
-                className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white font-mono"
+                className={`${FORM_CLS} font-mono`}
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
+              <label htmlFor="nfeValorIPI" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
                 Valor do IPI (R$)
               </label>
-              <input
-                type="text"
+              <InputText
+                id="nfeValorIPI"
                 value={valorIPI}
-                onChange={(e) => setValorIPI(e.target.value)}
+                onChange={(_id, value) => setValorIPI(value)}
                 placeholder="0.00"
-                className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white font-mono"
+                className={`${FORM_CLS} font-mono`}
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
+            <label htmlFor="nfeInformacoesAdicionais" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
               Informações Complementares / Fisco
             </label>
-            <textarea
+            <InputTextArea
+              id="nfeInformacoesAdicionais"
               rows={2}
               value={informacoesAdicionais}
-              onChange={(e) => setInformacoesAdicionais(e.target.value)}
+              onChange={(_id, value) => setInformacoesAdicionais(value)}
               placeholder="Dados de exportação, número de RE, dados bancários ou observações legais..."
-              className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white"
+              className="px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 dark:border-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500"
             />
           </div>
         </div>
@@ -1445,45 +1476,58 @@ export default function ProductInvoiceEditor({
       {/* BARRA DE AÇÕES FIXA INFERIOR */}
       <div className="sticky bottom-4 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-gray-300 dark:border-slate-700 p-4 rounded-xl shadow-lg flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <button
+          <Button
             type="button"
+            buttonType="ghost"
+            outline
+            size="small"
             onClick={() => router.push('/notas')}
-            className="px-4 py-2 text-xs font-semibold text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+            className="px-4 py-2 text-xs font-semibold"
           >
             Cancelar
-          </button>
+          </Button>
 
-          <button
+          <Button
             type="button"
+            buttonType="primary"
+            outline
+            bordered
+            size="small"
             onClick={handleValidate}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 hover:bg-blue-100 rounded-lg border border-blue-200 dark:border-blue-800 transition-colors"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold"
           >
             <FontAwesomeIcon icon={faCheckDouble} />
             <span>Verificar Inconsistências</span>
-          </button>
+          </Button>
         </div>
 
         <div className="flex items-center gap-2.5">
-          <button
+          <Button
             type="button"
+            buttonType="success"
+            outline
+            bordered
+            size="small"
             onClick={handleAddToPreparation}
             disabled={saving}
-            className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 border border-emerald-300 dark:border-emerald-800 rounded-lg transition-colors disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold"
           >
             <FontAwesomeIcon icon={faBoxesStacked} />
             <span>Adicionar à Preparação N:M</span>
-          </button>
+          </Button>
 
-          <button
+          <Button
             type="button"
+            buttonType="primary"
+            size="small"
             onClick={() => handleSave(true)}
             disabled={saving}
-            className="inline-flex items-center gap-2 px-5 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors disabled:opacity-50"
+            className="inline-flex items-center gap-2 px-5 py-2 text-xs font-semibold shadow-sm"
           >
             <FontAwesomeIcon icon={faFloppyDisk} />
             <span>{saving ? 'Gravando Rascunho...' : 'Salvar Rascunho e Abrir Prévia'}</span>
             <FontAwesomeIcon icon={faArrowRight} className="w-3 h-3" />
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -1496,22 +1540,27 @@ export default function ProductInvoiceEditor({
                 <FontAwesomeIcon icon={faBookOpen} className="text-blue-600" />
                 <span>Selecionar do Catálogo de Produtos</span>
               </div>
-              <button
+              <Button
                 type="button"
+                buttonType="ghost"
+                outline
+                size="small"
+                square
                 onClick={() => setCatalogModalOpen(false)}
-                className="p-1 rounded text-gray-400 hover:text-gray-700 dark:hover:text-white"
+                title="Fechar catálogo de produtos"
+                className="!p-1 text-gray-400"
               >
                 <FontAwesomeIcon icon={faXmark} className="w-4 h-4" />
-              </button>
+              </Button>
             </div>
 
             <div className="p-4 border-b border-gray-100 dark:border-slate-800">
-              <input
-                type="text"
+              <InputText
+                id="nfeCatalogSearch"
                 placeholder="Pesquisar por código, descrição ou NCM..."
                 value={catalogSearch}
-                onChange={(e) => setCatalogSearch(e.target.value)}
-                className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                onChange={(_id, value) => setCatalogSearch(value)}
+                className="px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 dark:border-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
@@ -1535,13 +1584,15 @@ export default function ProductInvoiceEditor({
                       <span className="text-xs font-bold font-mono text-blue-700 dark:text-blue-400">
                         {formatBRL(prod.precoPadrao)}
                       </span>
-                      <button
+                      <Button
                         type="button"
+                        buttonType="primary"
+                        size="small"
                         onClick={() => handleInsertFromCatalog(prod)}
-                        className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+                        className="px-3 py-1.5 text-xs font-semibold"
                       >
                         Inserir
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 ))
@@ -1549,13 +1600,16 @@ export default function ProductInvoiceEditor({
             </div>
 
             <div className="p-3 border-t border-gray-200 dark:border-slate-800 flex justify-end">
-              <button
+              <Button
                 type="button"
+                buttonType="ghost"
+                outline
+                size="small"
                 onClick={() => setCatalogModalOpen(false)}
-                className="px-4 py-2 text-xs font-semibold text-gray-600 dark:text-slate-400 hover:bg-gray-100 rounded-lg"
+                className="px-4 py-2 text-xs font-semibold"
               >
                 Fechar
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -1576,13 +1630,18 @@ export default function ProductInvoiceEditor({
                   {validationResult.isValid ? 'Rascunho Apto' : 'Apontamentos Fiscais Encontrados'}
                 </span>
               </div>
-              <button
+              <Button
                 type="button"
+                buttonType="ghost"
+                outline
+                size="small"
+                square
                 onClick={() => setValidationDrawerOpen(false)}
-                className="p-1 rounded text-gray-400 hover:text-gray-700 dark:hover:text-white"
+                title="Fechar relatório de validação"
+                className="!p-1 text-gray-400"
               >
                 <FontAwesomeIcon icon={faXmark} className="w-4 h-4" />
-              </button>
+              </Button>
             </div>
 
             <div className="p-4 overflow-y-auto space-y-3 flex-1 text-xs">
@@ -1615,13 +1674,15 @@ export default function ProductInvoiceEditor({
             </div>
 
             <div className="p-3 border-t border-gray-200 dark:border-slate-800 flex justify-end">
-              <button
+              <Button
                 type="button"
+                buttonType="primary"
+                size="small"
                 onClick={() => setValidationDrawerOpen(false)}
-                className="px-4 py-2 text-xs font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 text-white"
+                className="px-4 py-2 text-xs font-semibold"
               >
                 Entendido, Retornar ao Editor
-              </button>
+              </Button>
             </div>
           </div>
         </div>

@@ -27,10 +27,21 @@ import { documentRepository } from '@/features/documentRepository';
 import { validateNFSe } from '@/features/validation/nfseValidator';
 import { FiscalField, FiscalSelect, FiscalGroup } from './FiscalField';
 import Select from '@/components/inputs/Select';
+import InputText from '@/components/inputs/InputText';
+import InputTextArea from '@/components/inputs/InputTextArea';
+import Checkbox from '@/components/inputs/Checkbox';
 import Button from '@/components/buttons/Button';
 import { formatBRL } from '@/lib/formatters';
 import { cleanDecimalString, decimalAdd, decimalSubtract, decimalCompare } from '@/lib/calculations/decimal';
 import { useAppContext } from '@/context/AppContext';
+
+/* Campos de formulário do editor (labels externos + inputs compactos). */
+const FORM_CLS =
+  'px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 dark:border-slate-700 rounded-lg dark:text-white focus:ring-2 focus:ring-emerald-500';
+
+/* Campos compactos das grades de retenções. */
+const COMPACT_CLS =
+  'px-2.5 py-1.5 text-xs bg-gray-50 dark:bg-slate-800 dark:border-slate-700 rounded dark:text-white focus:ring-2 focus:ring-emerald-500';
 
 export default function ServiceInvoiceEditor({
   initialData = null,
@@ -236,8 +247,7 @@ export default function ServiceInvoiceEditor({
   }, [selectedCompanyId]);
 
   // Alteração de Prestador
-  const handleCompanyChange = (e) => {
-    const compId = e.target.value;
+  const handleCompanyChange = (compId) => {
     setSelectedCompanyId(compId);
     const found = companies.find((c) => c.id === compId);
     setPrestador(found || null);
@@ -254,8 +264,7 @@ export default function ServiceInvoiceEditor({
   };
 
   // Seleção de Tomador
-  const handlePersonSelect = (e) => {
-    const personId = e.target.value;
+  const handlePersonSelect = (personId) => {
     setSelectedPersonId(personId);
     if (!personId) return;
 
@@ -536,9 +545,10 @@ export default function ServiceInvoiceEditor({
             type="button"
             buttonType="ghost"
             outline
+            bordered
             size="small"
             onClick={handleValidate}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg border border-gray-300 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-700 dark:text-slate-200 transition-colors"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold"
           >
             <FontAwesomeIcon icon={faCheckDouble} className="text-emerald-600" />
             <span>Validar NFS-e</span>
@@ -550,7 +560,7 @@ export default function ServiceInvoiceEditor({
             size="small"
             onClick={() => handleSave(true)}
             disabled={saving}
-            className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition-colors disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold shadow-xs"
           >
             <FontAwesomeIcon icon={faFloppyDisk} />
             <span>{saving ? 'Salvando...' : 'Salvar e Revisar'}</span>
@@ -574,17 +584,15 @@ export default function ServiceInvoiceEditor({
           </div>
         </div>
 
-        <label className="flex items-center gap-2.5 cursor-pointer bg-white dark:bg-slate-900 px-3.5 py-2 rounded-lg border border-emerald-300 dark:border-emerald-700 shadow-xs">
-          <input
-            type="checkbox"
+        <div className="flex items-center gap-2.5 bg-white dark:bg-slate-900 px-3.5 py-2 rounded-lg border border-emerald-300 dark:border-emerald-700 shadow-xs">
+          <Checkbox
+            id="modoSimplificadoMei"
             checked={modoSimplificadoMei}
-            onChange={(e) => setModoSimplificadoMei(e.target.checked)}
-            className="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500"
+            onChange={(_id, checked) => setModoSimplificadoMei(checked)}
+            label={modoSimplificadoMei ? 'Modo Simplificado Ativo' : 'Modo Avançado / Completo'}
+            className="[&>span]:text-xs [&>span]:font-semibold [&>span]:text-gray-800 dark:[&>span]:text-slate-200"
           />
-          <span className="text-xs font-semibold text-gray-800 dark:text-slate-200">
-            {modoSimplificadoMei ? 'Modo Simplificado Ativo' : 'Modo Avançado / Completo'}
-          </span>
-        </label>
+        </div>
       </div>
 
       {/* SEÇÃO A: Prestador de Serviços */}
@@ -596,40 +604,40 @@ export default function ServiceInvoiceEditor({
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="md:col-span-2">
-            <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
+            <label htmlFor="nfseTitulo" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
               Título do Rascunho
             </label>
-            <input
-              type="text"
+            <InputText
+              id="nfseTitulo"
               value={titulo}
-              onChange={(e) => setTitulo(e.target.value)}
+              onChange={(_id, value) => setTitulo(value)}
               placeholder="Ex: NFS-e Desenvolvimento Web e Sustentação"
-              className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500"
+              className={FORM_CLS}
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
+            <label htmlFor="nfseCompetencia" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
               Competência do Serviço *
             </label>
-            <input
-              type="text"
+            <InputText
+              id="nfseCompetencia"
               value={competencia}
-              onChange={(e) => setCompetencia(e.target.value)}
+              onChange={(_id, value) => setCompetencia(value)}
               placeholder="MM/AAAA (ex: 11/2026)"
-              className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white font-mono text-center focus:ring-2 focus:ring-emerald-500"
+              className={`${FORM_CLS} font-mono text-center`}
             />
           </div>
 
           <div className="md:col-span-2">
-            <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
+            <label htmlFor="selectedCompanyId" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
               Empresa Prestadora *
             </label>
             <Select
               id="selectedCompanyId"
               value={selectedCompanyId}
               hideClearButton
-              onChange={(_id, value) => handleCompanyChange({ target: { value } })}
+              onChange={(_id, value) => handleCompanyChange(value)}
               className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500"
               options={[
                 { value: '', label: 'Selecione uma empresa prestadora...' },
@@ -648,26 +656,26 @@ export default function ServiceInvoiceEditor({
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
+              <label htmlFor="nfseSeriePrevista" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
                 Série NFS-e
               </label>
-              <input
-                type="text"
+              <InputText
+                id="nfseSeriePrevista"
                 value={seriePrevista}
-                onChange={(e) => setSeriePrevista(e.target.value)}
-                className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white text-center font-mono"
+                onChange={(_id, value) => setSeriePrevista(value)}
+                className={`${FORM_CLS} text-center font-mono`}
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
+              <label htmlFor="nfseNumeroPrevisto" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
                 Nº Previsto
               </label>
-              <input
-                type="text"
+              <InputText
+                id="nfseNumeroPrevisto"
                 value={numeroPrevisto}
-                onChange={(e) => setNumeroPrevisto(e.target.value)}
+                onChange={(_id, value) => setNumeroPrevisto(value)}
                 placeholder="Automático"
-                className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white font-mono"
+                className={`${FORM_CLS} font-mono`}
               />
             </div>
           </div>
@@ -704,7 +712,7 @@ export default function ServiceInvoiceEditor({
               id="selectedPersonId"
               value={selectedPersonId}
               hideClearButton
-              onChange={(_id, value) => handlePersonSelect({ target: { value } })}
+              onChange={(_id, value) => handlePersonSelect(value)}
               className="w-full px-3 py-1.5 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500"
               options={[
                 { value: '', label: 'Buscar no cadastro de tomadores...' },
@@ -719,7 +727,7 @@ export default function ServiceInvoiceEditor({
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
+            <label htmlFor="tomadorTipoPessoa" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
               Tipo do Tomador
             </label>
             <Select
@@ -743,80 +751,79 @@ export default function ServiceInvoiceEditor({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
+            <label htmlFor="tomadorDocumento" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
               {tomador.tipoPessoa === 'ESTRANGEIRO' ? 'ID Fiscal Exterior' : 'CPF ou CNPJ'}
             </label>
-            <input
-              type="text"
+            <InputText
+              id="tomadorDocumento"
               value={tomador.documento || ''}
-              onChange={(e) => setTomador((prev) => ({ ...prev, documento: e.target.value }))}
+              onChange={(_id, value) => setTomador((prev) => ({ ...prev, documento: value }))}
               placeholder={tomador.tipoPessoa === 'PF' ? '000.000.000-00' : '00.000.000/0000-00'}
-              className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white font-mono"
+              className={`${FORM_CLS} font-mono`}
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
+            <label htmlFor="tomadorEmail" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
               E-mail para Envio do Espelho
             </label>
-            <input
+            <InputText
+              id="tomadorEmail"
               type="email"
               value={tomador.email || ''}
-              onChange={(e) => setTomador((prev) => ({ ...prev, email: e.target.value }))}
+              onChange={(_id, value) => setTomador((prev) => ({ ...prev, email: value }))}
               placeholder="financeiro@cliente.com.br"
-              className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white"
+              className={FORM_CLS}
             />
           </div>
 
           <div className="md:col-span-2">
-            <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
+            <label htmlFor="tomadorNome" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
               Nome ou Razão Social do Tomador *
             </label>
-            <input
-              type="text"
+            <InputText
+              id="tomadorNome"
               value={tomador.nomeOuRazao || ''}
-              onChange={(e) => setTomador((prev) => ({ ...prev, nomeOuRazao: e.target.value }))}
+              onChange={(_id, value) => setTomador((prev) => ({ ...prev, nomeOuRazao: value }))}
               placeholder="Razão social da empresa ou nome completo do tomador..."
-              className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white"
+              className={FORM_CLS}
             />
           </div>
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
+              <label htmlFor="tomadorUf" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
                 UF / Estado
               </label>
-              <input
-                type="text"
+              <InputText
+                id="tomadorUf"
                 maxLength={2}
                 value={tomador.uf || ''}
-                onChange={(e) => setTomador((prev) => ({ ...prev, uf: e.target.value.toUpperCase() }))}
+                onChange={(_id, value) => setTomador((prev) => ({ ...prev, uf: value.toUpperCase() }))}
                 placeholder="SP"
-                className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white uppercase text-center"
+                className={`${FORM_CLS} uppercase text-center`}
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
+              <label htmlFor="tomadorMunicipio" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
                 Município
               </label>
-              <input
-                type="text"
+              <InputText
+                id="tomadorMunicipio"
                 value={tomador.municipio || ''}
-                onChange={(e) => setTomador((prev) => ({ ...prev, municipio: e.target.value }))}
+                onChange={(_id, value) => setTomador((prev) => ({ ...prev, municipio: value }))}
                 placeholder="São Paulo"
-                className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white"
+                className={FORM_CLS}
               />
             </div>
           </div>
         </div>
 
         <div className="pt-2 flex items-center gap-2">
-          <input
-            type="checkbox"
+          <Checkbox
             id="chk-save-tomador"
             checked={savePersonToCatalog}
-            onChange={(e) => setSavePersonToCatalog(e.target.checked)}
-            className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-gray-300"
+            onChange={(_id, checked) => setSavePersonToCatalog(checked)}
           />
           <label htmlFor="chk-save-tomador" className="text-xs text-gray-700 dark:text-slate-300 cursor-pointer">
             Salvar este tomador no catálogo de clientes reutilizáveis
@@ -832,66 +839,71 @@ export default function ServiceInvoiceEditor({
             <span>C. Discriminação do Serviço Prestado</span>
           </div>
 
-          <button
+          <Button
             type="button"
+            buttonType="success"
+            outline
+            bordered
+            size="small"
             onClick={() => setCatalogModalOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold"
           >
             <FontAwesomeIcon icon={faBookOpen} />
             <span>Catálogo de Serviços</span>
-          </button>
+          </Button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
+            <label htmlFor="servicoCodigoTributacaoNacional" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
               Código de Tributação Nacional *
             </label>
-            <input
-              type="text"
+            <InputText
+              id="servicoCodigoTributacaoNacional"
               value={servico.codigoTributacaoNacional || ''}
-              onChange={(e) => setServico((prev) => ({ ...prev, codigoTributacaoNacional: e.target.value }))}
+              onChange={(_id, value) => setServico((prev) => ({ ...prev, codigoTributacaoNacional: value }))}
               placeholder="Ex: 01.01.01 (Análise e Desenvolvimento)"
-              className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white font-mono"
+              className={`${FORM_CLS} font-mono`}
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
+            <label htmlFor="servicoSubitemLc116" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
               Subitem da LC 116/2003
             </label>
-            <input
-              type="text"
+            <InputText
+              id="servicoSubitemLc116"
               value={servico.subitemLc116 || ''}
-              onChange={(e) => setServico((prev) => ({ ...prev, subitemLc116: e.target.value }))}
+              onChange={(_id, value) => setServico((prev) => ({ ...prev, subitemLc116: value }))}
               placeholder="Ex: 1.01"
-              className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white font-mono"
+              className={`${FORM_CLS} font-mono`}
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
+            <label htmlFor="servicoMunicipioPrestacao" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
               Município de Prestação
             </label>
-            <input
-              type="text"
+            <InputText
+              id="servicoMunicipioPrestacao"
               value={servico.municipioPrestacao || ''}
-              onChange={(e) => setServico((prev) => ({ ...prev, municipioPrestacao: e.target.value }))}
+              onChange={(_id, value) => setServico((prev) => ({ ...prev, municipioPrestacao: value }))}
               placeholder="Joinville"
-              className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white"
+              className={FORM_CLS}
             />
           </div>
 
           <div className="md:col-span-3">
-            <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
+            <label htmlFor="servicoDescricao" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
               Discriminação Detalhada dos Serviços Prestados *
             </label>
-            <textarea
+            <InputTextArea
+              id="servicoDescricao"
               rows={4}
               value={servico.descricao || ''}
-              onChange={(e) => setServico((prev) => ({ ...prev, descricao: e.target.value }))}
+              onChange={(_id, value) => setServico((prev) => ({ ...prev, descricao: value }))}
               placeholder="Descreva detalhadamente o serviço executado, tecnologias envolvidas, período de prestação e entrega contratual..."
-              className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500"
+              className={FORM_CLS}
             />
           </div>
 
@@ -914,28 +926,28 @@ export default function ServiceInvoiceEditor({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
+              <label htmlFor="nfseValorBruto" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
                 Valor Bruto dos Serviços (R$) *
               </label>
-              <input
-                type="text"
+              <InputText
+                id="nfseValorBruto"
                 value={valorBruto}
-                onChange={(e) => setValorBruto(e.target.value)}
+                onChange={(_id, value) => setValorBruto(value)}
                 placeholder="0.00"
-                className="w-full px-3 py-2 text-sm font-bold bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white font-mono"
+                className={`${FORM_CLS} font-mono text-sm font-bold`}
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
+              <label htmlFor="nfseDescontoIncondicionado" className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
                 Desconto Incondicionado (R$)
               </label>
-              <input
-                type="text"
+              <InputText
+                id="nfseDescontoIncondicionado"
                 value={valorDescontoIncondicionado}
-                onChange={(e) => setValorDescontoIncondicionado(e.target.value)}
+                onChange={(_id, value) => setValorDescontoIncondicionado(value)}
                 placeholder="0.00"
-                className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white font-mono"
+                className={`${FORM_CLS} font-mono`}
               />
             </div>
           </div>
@@ -960,83 +972,83 @@ export default function ServiceInvoiceEditor({
 
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-[11px] font-medium text-gray-600 dark:text-slate-400 mb-1">
+                  <label htmlFor="nfseIssRetido" className="block text-[11px] font-medium text-gray-600 dark:text-slate-400 mb-1">
                     ISS Retido (R$)
                   </label>
-                  <input
-                    type="text"
+                  <InputText
+                    id="nfseIssRetido"
                     value={valorIssRetido}
-                    onChange={(e) => {
-                      setValorIssRetido(e.target.value);
-                      setIssRetido(decimalCompare(cleanDecimalString(e.target.value), '0.00') > 0);
+                    onChange={(_id, value) => {
+                      setValorIssRetido(value);
+                      setIssRetido(decimalCompare(cleanDecimalString(value), '0.00') > 0);
                     }}
                     placeholder="0.00"
-                    className="w-full px-2.5 py-1.5 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded text-gray-900 dark:text-white font-mono"
+                    className={`${COMPACT_CLS} font-mono`}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-medium text-gray-600 dark:text-slate-400 mb-1">
+                  <label htmlFor="nfsePisRetido" className="block text-[11px] font-medium text-gray-600 dark:text-slate-400 mb-1">
                     PIS Retido (R$)
                   </label>
-                  <input
-                    type="text"
+                  <InputText
+                    id="nfsePisRetido"
                     value={pis}
-                    onChange={(e) => setPis(e.target.value)}
+                    onChange={(_id, value) => setPis(value)}
                     placeholder="0.00"
-                    className="w-full px-2.5 py-1.5 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded text-gray-900 dark:text-white font-mono"
+                    className={`${COMPACT_CLS} font-mono`}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-medium text-gray-600 dark:text-slate-400 mb-1">
+                  <label htmlFor="nfseCofinsRetido" className="block text-[11px] font-medium text-gray-600 dark:text-slate-400 mb-1">
                     COFINS Retido (R$)
                   </label>
-                  <input
-                    type="text"
+                  <InputText
+                    id="nfseCofinsRetido"
                     value={cofins}
-                    onChange={(e) => setCofins(e.target.value)}
+                    onChange={(_id, value) => setCofins(value)}
                     placeholder="0.00"
-                    className="w-full px-2.5 py-1.5 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded text-gray-900 dark:text-white font-mono"
+                    className={`${COMPACT_CLS} font-mono`}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-medium text-gray-600 dark:text-slate-400 mb-1">
+                  <label htmlFor="nfseIr" className="block text-[11px] font-medium text-gray-600 dark:text-slate-400 mb-1">
                     IRRF (R$)
                   </label>
-                  <input
-                    type="text"
+                  <InputText
+                    id="nfseIr"
                     value={ir}
-                    onChange={(e) => setIr(e.target.value)}
+                    onChange={(_id, value) => setIr(value)}
                     placeholder="0.00"
-                    className="w-full px-2.5 py-1.5 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded text-gray-900 dark:text-white font-mono"
+                    className={`${COMPACT_CLS} font-mono`}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-medium text-gray-600 dark:text-slate-400 mb-1">
+                  <label htmlFor="nfseCsll" className="block text-[11px] font-medium text-gray-600 dark:text-slate-400 mb-1">
                     CSLL Retida (R$)
                   </label>
-                  <input
-                    type="text"
+                  <InputText
+                    id="nfseCsll"
                     value={csll}
-                    onChange={(e) => setCsll(e.target.value)}
+                    onChange={(_id, value) => setCsll(value)}
                     placeholder="0.00"
-                    className="w-full px-2.5 py-1.5 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded text-gray-900 dark:text-white font-mono"
+                    className={`${COMPACT_CLS} font-mono`}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-medium text-gray-600 dark:text-slate-400 mb-1">
+                  <label htmlFor="nfseInss" className="block text-[11px] font-medium text-gray-600 dark:text-slate-400 mb-1">
                     INSS Retido (R$)
                   </label>
-                  <input
-                    type="text"
+                  <InputText
+                    id="nfseInss"
                     value={inss}
-                    onChange={(e) => setInss(e.target.value)}
+                    onChange={(_id, value) => setInss(value)}
                     placeholder="0.00"
-                    className="w-full px-2.5 py-1.5 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded text-gray-900 dark:text-white font-mono"
+                    className={`${COMPACT_CLS} font-mono`}
                   />
                 </div>
               </div>
@@ -1088,17 +1100,18 @@ export default function ServiceInvoiceEditor({
 
       {/* SEÇÃO E: Campos fiscais completos preservados do XML */}
       <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-xl p-5 shadow-xs space-y-3">
-        <button
+        <Button
           type="button"
+          buttonType="ghost"
           onClick={() => setShowFiscalDetails((v) => !v)}
-          className="w-full flex items-center justify-between text-sm font-bold text-gray-900 dark:text-white"
+          className="w-full flex items-center justify-between text-sm font-bold !bg-transparent dark:!bg-transparent hover:!bg-transparent dark:hover:!bg-transparent !py-0 !px-0 !ring-0"
         >
           <span className="flex items-center gap-2">
             <FontAwesomeIcon icon={faSliders} className="text-emerald-600" />
             E. Campos fiscais completos da NFS-e (ISS, PIS/COFINS, Transparência e IBS/CBS)
           </span>
           <FontAwesomeIcon icon={showFiscalDetails ? faChevronUp : faChevronDown} className="text-gray-400" />
-        </button>
+        </Button>
 
         {showFiscalDetails && (
           <div className="space-y-2 pt-2 border-t border-gray-100 dark:border-slate-800">
@@ -1123,15 +1136,15 @@ export default function ServiceInvoiceEditor({
                   <FiscalField label="Valor PIS" value={federais.valorPis} onChange={(v) => setFederais((p) => ({ ...p, valorPis: v }))} mono />
                   <FiscalField label="Valor COFINS" value={federais.valorCofins} onChange={(v) => setFederais((p) => ({ ...p, valorCofins: v }))} mono />
                   <FiscalField label="Indicador Retenção" value={federais.tpRetPisCofins} onChange={(v) => setFederais((p) => ({ ...p, tpRetPisCofins: v }))} mono />
-                  <label className="flex items-end gap-1.5 pb-1 text-[11px] text-gray-600 dark:text-slate-300">
-                    <input
-                      type="checkbox"
+                  <div className="flex items-end pb-1">
+                    <Checkbox
+                      id="federaisRetido"
                       checked={federais.retido}
-                      onChange={(e) => setFederais((p) => ({ ...p, retido: e.target.checked }))}
-                      className="w-3.5 h-3.5 rounded text-emerald-600"
+                      onChange={(_id, checked) => setFederais((p) => ({ ...p, retido: checked }))}
+                      label="Efetivamente retido"
+                      className="[&>span]:text-[11px] [&>span]:text-gray-600 dark:[&>span]:text-slate-300"
                     />
-                    Efetivamente retido
-                  </label>
+                  </div>
                 </div>
               </FiscalGroup>
 
@@ -1177,34 +1190,43 @@ export default function ServiceInvoiceEditor({
       {/* BARRA DE AÇÕES FIXA INFERIOR */}
       <div className="sticky bottom-4 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-gray-300 dark:border-slate-700 p-4 rounded-xl shadow-lg flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <button
+          <Button
             type="button"
+            buttonType="ghost"
+            outline
+            size="small"
             onClick={() => router.push('/notas')}
-            className="px-4 py-2 text-xs font-semibold text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+            className="px-4 py-2 text-xs font-semibold"
           >
             Cancelar
-          </button>
+          </Button>
 
-          <button
+          <Button
             type="button"
+            buttonType="success"
+            outline
+            bordered
+            size="small"
             onClick={handleValidate}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 rounded-lg border border-emerald-200 dark:border-emerald-800 transition-colors"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold"
           >
             <FontAwesomeIcon icon={faCheckDouble} />
             <span>Validar NFS-e</span>
-          </button>
+          </Button>
         </div>
 
-        <button
+        <Button
           type="button"
+          buttonType="primary"
+          size="small"
           onClick={() => handleSave(true)}
           disabled={saving}
-          className="inline-flex items-center gap-2 px-5 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm transition-colors disabled:opacity-50"
+          className="inline-flex items-center gap-2 px-5 py-2 text-xs font-semibold shadow-sm"
         >
           <FontAwesomeIcon icon={faFloppyDisk} />
           <span>{saving ? 'Gravando Rascunho...' : 'Salvar Rascunho e Abrir Prévia'}</span>
           <FontAwesomeIcon icon={faArrowRight} className="w-3 h-3" />
-        </button>
+        </Button>
       </div>
 
       {/* MODAL: Catálogo de Serviços */}
@@ -1216,22 +1238,27 @@ export default function ServiceInvoiceEditor({
                 <FontAwesomeIcon icon={faBookOpen} className="text-emerald-600" />
                 <span>Catálogo de Serviços Pré-Configurados</span>
               </div>
-              <button
+              <Button
                 type="button"
+                buttonType="ghost"
+                outline
+                size="small"
+                square
                 onClick={() => setCatalogModalOpen(false)}
-                className="p-1 rounded text-gray-400 hover:text-gray-700 dark:hover:text-white"
+                title="Fechar catálogo de serviços"
+                className="!p-1 text-gray-400"
               >
                 <FontAwesomeIcon icon={faXmark} className="w-4 h-4" />
-              </button>
+              </Button>
             </div>
 
             <div className="p-4 border-b border-gray-100 dark:border-slate-800">
-              <input
-                type="text"
+              <InputText
+                id="nfseCatalogSearch"
                 placeholder="Pesquisar por descrição, código tributação ou atividade..."
                 value={catalogSearch}
-                onChange={(e) => setCatalogSearch(e.target.value)}
-                className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white"
+                onChange={(_id, value) => setCatalogSearch(value)}
+                className="px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 dark:border-slate-700 dark:text-white focus:ring-2 focus:ring-emerald-500"
               />
             </div>
 
@@ -1258,13 +1285,15 @@ export default function ServiceInvoiceEditor({
                       <span className="text-xs font-bold font-mono text-emerald-700 dark:text-emerald-400">
                         {formatBRL(s.valorReferencia)}
                       </span>
-                      <button
+                      <Button
                         type="button"
+                        buttonType="success"
+                        size="small"
                         onClick={() => handleInsertServiceFromCatalog(s)}
-                        className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition-colors"
+                        className="px-3 py-1.5 text-xs font-semibold"
                       >
                         Selecionar
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 ))
@@ -1272,13 +1301,16 @@ export default function ServiceInvoiceEditor({
             </div>
 
             <div className="p-3 border-t border-gray-200 dark:border-slate-800 flex justify-end">
-              <button
+              <Button
                 type="button"
+                buttonType="ghost"
+                outline
+                size="small"
                 onClick={() => setCatalogModalOpen(false)}
-                className="px-4 py-2 text-xs font-semibold text-gray-600 dark:text-slate-400 hover:bg-gray-100 rounded-lg"
+                className="px-4 py-2 text-xs font-semibold"
               >
                 Fechar
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -1299,13 +1331,18 @@ export default function ServiceInvoiceEditor({
                   {validationResult.isValid ? 'NFS-e Pronta para Rascunho' : 'Pendências Identificadas na NFS-e'}
                 </span>
               </div>
-              <button
+              <Button
                 type="button"
+                buttonType="ghost"
+                outline
+                size="small"
+                square
                 onClick={() => setValidationDrawerOpen(false)}
-                className="p-1 rounded text-gray-400 hover:text-gray-700 dark:hover:text-white"
+                title="Fechar relatório de validação"
+                className="!p-1 text-gray-400"
               >
                 <FontAwesomeIcon icon={faXmark} className="w-4 h-4" />
-              </button>
+              </Button>
             </div>
 
             <div className="p-4 overflow-y-auto space-y-3 flex-1 text-xs">
@@ -1338,13 +1375,15 @@ export default function ServiceInvoiceEditor({
             </div>
 
             <div className="p-3 border-t border-gray-200 dark:border-slate-800 flex justify-end">
-              <button
+              <Button
                 type="button"
+                buttonType="primary"
+                size="small"
                 onClick={() => setValidationDrawerOpen(false)}
-                className="px-4 py-2 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white"
+                className="px-4 py-2 text-xs font-semibold"
               >
                 Entendido, Retornar ao Editor
-              </button>
+              </Button>
             </div>
           </div>
         </div>

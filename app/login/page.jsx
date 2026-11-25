@@ -4,6 +4,11 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
+import Button from '@/components/buttons/Button';
+import InputEmail from '@/components/inputs/InputEmail';
+import InputPassword from '@/components/inputs/InputPassword';
+import Checkbox from '@/components/inputs/Checkbox';
+
 export default function LoginPage() {
   const [formData, setFormData] = useState({
     email: '',
@@ -14,11 +19,17 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const router = useRouter();
 
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
+  const handleFieldChange = (field) => (id, value) => {
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [field]: value
+    }));
+  };
+
+  const handleRememberMeChange = (id, checked) => {
+    setFormData(prev => ({
+      ...prev,
+      rememberMe: checked
     }));
   };
 
@@ -70,52 +81,33 @@ export default function LoginPage() {
             )}
 
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Endereço de email
-              </label>
-              <input
+              <InputEmail
                 id="email"
                 name="email"
-                type="email"
-                autoComplete="email"
-                required
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                label="Endereço de email"
                 placeholder="seu@email.com"
                 value={formData.email}
-                onChange={handleChange}
+                onChange={handleFieldChange('email')}
               />
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Senha
-              </label>
-              <input
+              <InputPassword
                 id="password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                placeholder="Sua senha"
+                label="Senha"
                 value={formData.password}
-                onChange={handleChange}
+                onChange={handleFieldChange('password')}
               />
             </div>
 
             <div className="flex items-center justify-between">
               <div className="flex items-center">
-                <input
+                <Checkbox
                   id="rememberMe"
-                  name="rememberMe"
-                  type="checkbox"
-                  className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                  label="Lembrar de mim"
                   checked={formData.rememberMe}
-                  onChange={handleChange}
+                  onChange={handleRememberMeChange}
                 />
-                <label htmlFor="rememberMe" className="ml-2 block text-sm text-gray-900">
-                  Lembrar de mim
-                </label>
               </div>
 
               <div className="text-sm">
@@ -126,13 +118,15 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <button
+              <Button
                 type="submit"
+                buttonType="primary"
+                block
                 disabled={isLoading}
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex justify-center items-center"
               >
                 {isLoading ? 'Entrando...' : 'Entrar'}
-              </button>
+              </Button>
             </div>
           </form>
 

@@ -1,5 +1,6 @@
 import { cn } from "@/assets/utils";
 import { TooltipComponent } from "../Layouts/TooltipComponent";
+import Button from "./Button";
 
 const ButtonGroup = ({ buttons, small, className, vertical }) => {
 	const handleClick = (callback) => {
@@ -24,19 +25,20 @@ const ButtonGroup = ({ buttons, small, className, vertical }) => {
 						}
 						asChild
 					>
-						<button
-							type="button"
+						<Button
+							buttonType="secondary"
+							bordered
+							size={small ? "small" : "medium"}
 							onClick={() => handleClick(btn?.onclick)}
 							disabled={btn.disabled}
 							className={cn(
-								"text-sm font-medium bg-white border border-gray-300 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-transparent focus:text-blue-700",
-								small ? " px-2 py-1 " : "px-4 py-2",
+								"border-gray-300 dark:border-slate-500 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:text-blue-700",
 								btn.className,
 								btn.disabled && "cursor-not-allowed opacity-50"
 							)}
 						>
 							{btn.label}
-						</button>
+						</Button>
 					</TooltipComponent>
 				</div>
 			);

@@ -1,15 +1,26 @@
 'use client';
 
+import { useId } from 'react';
+import { cn } from '@/assets/utils';
 import Select from '@/components/inputs/Select';
 import InputText from '@/components/inputs/InputText';
 
 /**
  * Campos compactos reutilizáveis para os editores fiscais (NF-e / NFS-e).
  * Mantêm rótulos curtos, tipografia consistente e suporte a valores somente leitura.
+ *
+ * Implementação: delegam para os componentes base (`InputText` / `Select`), sem
+ * estilos de input próprios. Os valores fiscais são mantidos como string para
+ * preservar exatamente a precisão decimal (ex.: "1.0000", "0.00") — por isso não
+ * usamos `InputNumber` (type="number") aqui.
  */
 
-const baseInput =
-  'w-full px-2 py-1 text-xs bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none';
+/* Afina o input base (p-2 text-sm) para o layout compacto tipo planilha. */
+const compactField =
+  'w-full px-2 py-1.5 text-xs bg-white dark:bg-slate-800 dark:border-slate-700 rounded text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500';
+
+const readOnlyField =
+  'bg-gray-100 dark:bg-slate-900 text-gray-500 dark:text-slate-400 cursor-not-allowed';
 
 export function FiscalField({
   label,
@@ -22,36 +33,49 @@ export function FiscalField({
   readOnly = false,
   className = '',
 }) {
+  const fieldId = useId();
+
   return (
     <div className={className}>
-      <label className="block text-[10px] font-semibold uppercase text-gray-500 dark:text-slate-400 mb-0.5">
+      <label
+        htmlFor={fieldId}
+        className="block text-[10px] font-semibold uppercase text-gray-500 dark:text-slate-400 mb-0.5"
+      >
         {label}
       </label>
       <InputText
+        id={fieldId}
         type={type}
         value={value ?? ''}
         onChange={(_id, val) => onChange && onChange(val)}
         placeholder={placeholder}
         maxLength={maxLength}
         readOnly={readOnly}
-        className={`${baseInput} ${mono ? 'font-mono' : ''} ${readOnly ? 'bg-gray-100 dark:bg-slate-900 text-gray-500 cursor-not-allowed' : ''}`}
+        small
+        className={cn(compactField, mono && 'font-mono', readOnly && readOnlyField)}
       />
     </div>
   );
 }
 
 export function FiscalSelect({ label, value, onChange, options = [], className = '' }) {
+  const fieldId = useId();
+
   return (
     <div className={className}>
-      <label className="block text-[10px] font-semibold uppercase text-gray-500 dark:text-slate-400 mb-0.5">
+      <label
+        htmlFor={fieldId}
+        className="block text-[10px] font-semibold uppercase text-gray-500 dark:text-slate-400 mb-0.5"
+      >
         {label}
       </label>
       <Select
+        id={fieldId}
         hideClearButton
-        containerClassName="relative"
+        containerClassName="relative w-full"
         value={value ?? ''}
         onChange={(_id, val) => onChange && onChange(val)}
-        className={baseInput}
+        className={compactField}
         options={options}
       />
     </div>

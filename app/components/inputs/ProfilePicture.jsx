@@ -1576,15 +1576,15 @@ const ProfilePicture = ({ init, id, onChange, currentImage, ...props }) => {
                                 <div className="text-white text-center">
                                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
                                     <p className="mb-4">Carregando câmera...</p>
-                                    <button
+                                    <Button
                                         onClick={() => {
                                             console.log('Forçando saída do loading...');
                                             setCameraLoading(false);
                                         }}
-                                        className="text-xs bg-white bg-opacity-20 px-3 py-1 rounded hover:bg-opacity-30"
+                                        className="text-xs bg-white bg-opacity-20 px-3 py-1 hover:bg-opacity-30"
                                     >
                                         Continuar mesmo assim
-                                    </button>
+                                    </Button>
                                 </div>
                             </div>
                         )}
