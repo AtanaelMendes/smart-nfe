@@ -1,5 +1,8 @@
 'use client';
 
+import Select from '@/components/inputs/Select';
+import InputText from '@/components/inputs/InputText';
+
 /**
  * Campos compactos reutilizáveis para os editores fiscais (NF-e / NFS-e).
  * Mantêm rótulos curtos, tipografia consistente e suporte a valores somente leitura.
@@ -24,10 +27,10 @@ export function FiscalField({
       <label className="block text-[10px] font-semibold uppercase text-gray-500 dark:text-slate-400 mb-0.5">
         {label}
       </label>
-      <input
+      <InputText
         type={type}
         value={value ?? ''}
-        onChange={(e) => onChange && onChange(e.target.value)}
+        onChange={(_id, val) => onChange && onChange(val)}
         placeholder={placeholder}
         maxLength={maxLength}
         readOnly={readOnly}
@@ -43,17 +46,14 @@ export function FiscalSelect({ label, value, onChange, options = [], className =
       <label className="block text-[10px] font-semibold uppercase text-gray-500 dark:text-slate-400 mb-0.5">
         {label}
       </label>
-      <select
+      <Select
+        hideClearButton
+        containerClassName="relative"
         value={value ?? ''}
-        onChange={(e) => onChange && onChange(e.target.value)}
+        onChange={(_id, val) => onChange && onChange(val)}
         className={baseInput}
-      >
-        {options.map((opt) => (
-          <option key={opt.value} value={opt.value}>
-            {opt.label}
-          </option>
-        ))}
-      </select>
+        options={options}
+      />
     </div>
   );
 }

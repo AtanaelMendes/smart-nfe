@@ -22,6 +22,8 @@ const Select = ({
     disabled,
     hint,
     helperText,
+    className,
+    containerClassName = 'w-full relative',
 }) => {
     const handleChange = (evt) => {
         if (typeof onChange == "function") {
@@ -61,11 +63,11 @@ const Select = ({
 
     return (
         <>
-            <div className="w-full relative">
+            <div className={containerClassName}>
                 {label && (
-                    <div className='flex absolute top-[-9px] left-2 w-fit z-10 text-xs px-0.5 rounded-md mb-0 pb-0 text-nowrap before:bg-white before:top-0.5 before:left-0 before:absolute before:w-full before:h-[12px] before:-z-10 before:content-[""] before:rounded-lg'>
+                    <div className='flex absolute top-[-9px] left-2 w-fit z-10 text-xs px-0.5 rounded-md mb-0 pb-0 text-nowrap before:bg-white dark:before:bg-slate-800 before:top-0.5 before:left-0 before:absolute before:w-full before:h-[12px] before:-z-10 before:content-[""] before:rounded-lg'>
                         <label htmlFor={id}>
-                            <FieldLabel className={cn(required ? 'ml-4' : 'ml-0 mb-0 pb-0', 'text-gray-500')}>
+                            <FieldLabel className={cn(required ? 'ml-4' : 'ml-0 mb-0 pb-0', 'text-gray-500 dark:text-slate-400')}>
                                 {label || ""}
                             </FieldLabel>
                         </label>
@@ -91,10 +93,10 @@ const Select = ({
                     disabled={disabled}
                     name={name || id}
                     onChange={handleChange}
-                    className={`
-                        text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 border
-                        ${hasError() ? "border-red-500" : "border-gray-300"} block w-full p-2
-                        ${disabled ? "bg-gray-100 cursor-not-allowed" : null}
+                    className={className || `
+                        text-gray-900 dark:text-slate-100 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 border
+                        ${hasError() ? "border-red-500" : "border-gray-300 dark:border-slate-600"} bg-white dark:bg-slate-800 block w-full p-2
+                        ${disabled ? "bg-gray-100 dark:bg-slate-900 cursor-not-allowed" : null}
                     `}
                 >
                     {placeholder && (

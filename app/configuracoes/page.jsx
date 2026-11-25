@@ -19,6 +19,7 @@ import {
 
 import AppLayout from '@/components/Layouts/AppLayout';
 import Button from '@/components/buttons/Button';
+import Select from '@/components/inputs/Select';
 import Dialog from '@/components/Layouts/Dialog';
 import { useAppContext } from '@/context/AppContext';
 import { localStorageService } from '@/lib/storage/localStorageService';
@@ -146,15 +147,19 @@ export default function ConfiguracoesPage() {
                 Espaçamento das células para notas com dezenas de itens na conferência
               </span>
             </div>
-            <select
+            <Select
+              id="tableDensity"
               value={localSettings.tableDensity}
-              onChange={(e) => setLocalSettings({ ...localSettings, tableDensity: e.target.value })}
+              hideClearButton
+              containerClassName="relative"
+              onChange={(id, val) => setLocalSettings({ ...localSettings, tableDensity: val })}
               className="text-xs py-1.5 px-3 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 font-medium"
-            >
-              <option value="compact">Compacta (Alta densidade — Recomendada)</option>
-              <option value="normal">Confortável / Normal</option>
-              <option value="relaxed">Espaçosa</option>
-            </select>
+              options={[
+                { value: 'compact', label: 'Compacta (Alta densidade — Recomendada)' },
+                { value: 'normal', label: 'Confortável / Normal' },
+                { value: 'relaxed', label: 'Espaçosa' },
+              ]}
+            />
           </div>
 
           {/* Itens por Página */}
@@ -167,15 +172,19 @@ export default function ConfiguracoesPage() {
                 Quantidade padrão de documentos e itens exibidos por bloco
               </span>
             </div>
-            <select
+            <Select
+              id="rowsPerPage"
               value={localSettings.rowsPerPage}
-              onChange={(e) => setLocalSettings({ ...localSettings, rowsPerPage: Number(e.target.value) })}
+              hideClearButton
+              containerClassName="relative"
+              onChange={(id, val) => setLocalSettings({ ...localSettings, rowsPerPage: Number(val) })}
               className="text-xs py-1.5 px-3 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 font-medium"
-            >
-              <option value={10}>10 itens por página</option>
-              <option value={25}>25 itens por página</option>
-              <option value={50}>50 itens por página</option>
-            </select>
+              options={[
+                { value: 10, label: '10 itens por página' },
+                { value: 25, label: '25 itens por página' },
+                { value: 50, label: '50 itens por página' },
+              ]}
+            />
           </div>
 
           {/* Salvamento Automático (AutoSave) */}

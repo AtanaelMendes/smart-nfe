@@ -7,6 +7,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import React, { useState, useEffect } from 'react'
+import Select from '@/components/inputs/Select'
 
 export const Pagination = ({
 	data,
@@ -80,18 +81,15 @@ export const Pagination = ({
 							>
 								Itens por página:
 							</label>
-							<select
+							<Select
 								id='itemsPerPage'
 								value={itemsPerPageState}
-								onChange={event => setItemsPerPageState(Number(event.target.value))}
-								className='border border-gray-300 rounded-md p-1 text-sm'
-							>
-								{[10, 20, 50, 100].map(size => (
-									<option key={size} value={size}>
-										{size}
-									</option>
-								))}
-							</select>
+								hideClearButton
+								containerClassName='relative inline-block'
+								onChange={(_id, value) => setItemsPerPageState(Number(value))}
+								className='border border-gray-300 dark:border-slate-600 rounded-md p-1 text-sm bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100'
+								options={[10, 20, 50, 100].map(size => ({ value: size, label: size }))}
+							/>
 						</>
 					)}
 				</div>

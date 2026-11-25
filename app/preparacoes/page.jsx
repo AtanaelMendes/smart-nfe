@@ -20,6 +20,7 @@ import {
 import AppLayout from '@/components/Layouts/AppLayout';
 import DataTable from '@/components/table/DataTable';
 import Button from '@/components/buttons/Button';
+import Select from '@/components/inputs/Select';
 import Dialog from '@/components/Layouts/Dialog';
 import { useAppContext } from '@/context/AppContext';
 import { preparationRepository } from '@/features/preparationRepository';
@@ -115,7 +116,7 @@ export default function PreparacoesPage() {
           <span className="font-bold text-slate-900 dark:text-slate-100 text-sm">
             {item.numero}
           </span>
-          <span className="text-xs text-slate-500 truncate max-w-[200px]" title={item.titulo}>
+          <span className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-[200px]" title={item.titulo}>
             {item.titulo}
           </span>
         </div>
@@ -279,7 +280,7 @@ export default function PreparacoesPage() {
               onClick={handleReset}
               title="Restaurar dados demonstrativos"
             >
-              <FontAwesomeIcon icon={faRotateRight} className="w-3.5 h-3.5 mr-1 text-slate-500" />
+              <FontAwesomeIcon icon={faRotateRight} className="w-3.5 h-3.5 mr-1 text-slate-500 dark:text-slate-300" />
               Restaurar
             </Button>
             <Button
@@ -307,28 +308,36 @@ export default function PreparacoesPage() {
           </div>
 
           <div className="flex items-center gap-2 w-full sm:w-auto">
-            <select
+            <Select
+              id="typeFilter"
               value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}
+              hideClearButton
+              containerClassName="relative"
+              onChange={(id, val) => setTypeFilter(val)}
               className="py-1.5 px-2 text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
-            >
-              <option value="ALL">Todos os tipos</option>
-              <option value="agrupamento">Agrupamento (N → 1)</option>
-              <option value="divisao">Divisão (1 → M)</option>
-              <option value="mista">Mista (N → M)</option>
-            </select>
+              options={[
+                { value: 'ALL', label: 'Todos os tipos' },
+                { value: 'agrupamento', label: 'Agrupamento (N → 1)' },
+                { value: 'divisao', label: 'Divisão (1 → M)' },
+                { value: 'mista', label: 'Mista (N → M)' },
+              ]}
+            />
 
-            <select
+            <Select
+              id="statusFilter"
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              hideClearButton
+              containerClassName="relative"
+              onChange={(id, val) => setStatusFilter(val)}
               className="py-1.5 px-2 text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
-            >
-              <option value="ALL">Todos os status</option>
-              <option value="draft">Rascunho</option>
-              <option value="active">Ativa</option>
-              <option value="completed">Concluída</option>
-              <option value="cancelled">Cancelada</option>
-            </select>
+              options={[
+                { value: 'ALL', label: 'Todos os status' },
+                { value: 'draft', label: 'Rascunho' },
+                { value: 'active', label: 'Ativa' },
+                { value: 'completed', label: 'Concluída' },
+                { value: 'cancelled', label: 'Cancelada' },
+              ]}
+            />
           </div>
         </div>
 

@@ -29,6 +29,8 @@ import { catalogsRepository } from '@/features/catalogsRepository';
 import { documentRepository } from '@/features/documentRepository';
 import { validateNFe } from '@/features/validation/nfeValidator';
 import { FiscalField, FiscalSelect, FiscalGroup } from './FiscalField';
+import Select from '@/components/inputs/Select';
+import Button from '@/components/buttons/Button';
 import { formatBRL } from '@/lib/formatters';
 import { cleanDecimalString, decimalAdd, decimalSubtract, decimalCompare } from '@/lib/calculations/decimal';
 import { calculateInvoiceTotals, calculateItemTotal } from '@/lib/calculations/invoiceTotals';
@@ -582,24 +584,29 @@ export default function ProductInvoiceEditor({
         </div>
 
         <div className="flex items-center gap-2">
-          <button
+          <Button
             type="button"
+            buttonType="ghost"
+            outline
+            size="small"
             onClick={handleValidate}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg border border-gray-300 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-700 dark:text-slate-200 transition-colors"
           >
             <FontAwesomeIcon icon={faCheckDouble} className="text-blue-600" />
             <span>Validar Dados</span>
-          </button>
+          </Button>
 
-          <button
+          <Button
             type="button"
+            buttonType="primary"
+            size="small"
             onClick={() => handleSave(true)}
             disabled={saving}
             className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 text-white shadow-xs transition-colors disabled:opacity-50"
           >
             <FontAwesomeIcon icon={faFloppyDisk} />
             <span>{saving ? 'Salvando...' : 'Salvar e Revisar'}</span>
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -643,18 +650,20 @@ export default function ProductInvoiceEditor({
             <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
               Empresa Emitente (Origem) *
             </label>
-            <select
+            <Select
+              id="selectedCompanyId"
               value={selectedCompanyId}
-              onChange={handleCompanyChange}
+              hideClearButton
+              onChange={(_id, value) => handleCompanyChange({ target: { value } })}
               className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Selecione uma empresa cadastrada...</option>
-              {companies.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.razaoSocial} — CNPJ: {c.cnpj} ({c.uf})
-                </option>
-              ))}
-            </select>
+              options={[
+                { value: '', label: 'Selecione uma empresa cadastrada...' },
+                ...companies.map((c) => ({
+                  value: c.id,
+                  label: `${c.razaoSocial} — CNPJ: ${c.cnpj} (${c.uf})`,
+                })),
+              ]}
+            />
             {emitente && (
               <p className="text-[11px] text-gray-500 dark:text-slate-400 mt-1">
                 IE: {emitente.inscricaoEstadual || 'Isenta'} • {emitente.municipio}/{emitente.uf} • Regime: {emitente.regimeTributario}
@@ -681,10 +690,11 @@ export default function ProductInvoiceEditor({
             <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
               Destino da Operação
             </label>
-            <select
+            <Select
+              id="destinoOperacao"
               value={destinoOperacao}
-              onChange={(e) => {
-                const newDest = e.target.value;
+              hideClearButton
+              onChange={(_id, newDest) => {
                 setDestinoOperacao(newDest);
                 // Se mudar para Exterior (3), atualiza CFOPs para 7xxx
                 if (newDest === '3') {
@@ -697,11 +707,12 @@ export default function ProductInvoiceEditor({
                 }
               }}
               className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="1">1 - Operação Interna (Mesmo Estado)</option>
-              <option value="2">2 - Operação Interestadual</option>
-              <option value="3">3 - Operação com Exterior (Exportação)</option>
-            </select>
+              options={[
+                { value: '1', label: '1 - Operação Interna (Mesmo Estado)' },
+                { value: '2', label: '2 - Operação Interestadual' },
+                { value: '3', label: '3 - Operação com Exterior (Exportação)' },
+              ]}
+            />
           </div>
 
           {/* Finalidade */}
@@ -709,16 +720,19 @@ export default function ProductInvoiceEditor({
             <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
               Finalidade da NF-e
             </label>
-            <select
+            <Select
+              id="finalidadeEmissao"
               value={finalidadeEmissao}
-              onChange={(e) => setFinalidadeEmissao(e.target.value)}
+              hideClearButton
+              onChange={(_id, value) => setFinalidadeEmissao(value)}
               className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="1">1 - NF-e Normal</option>
-              <option value="2">2 - NF-e Complementar</option>
-              <option value="3">3 - NF-e de Ajuste</option>
-              <option value="4">4 - Devolução de Mercadoria</option>
-            </select>
+              options={[
+                { value: '1', label: '1 - NF-e Normal' },
+                { value: '2', label: '2 - NF-e Complementar' },
+                { value: '3', label: '3 - NF-e de Ajuste' },
+                { value: '4', label: '4 - Devolução de Mercadoria' },
+              ]}
+            />
           </div>
 
           {/* Série e Número Previsto */}
@@ -833,18 +847,20 @@ export default function ProductInvoiceEditor({
           </div>
 
           <div className="w-64">
-            <select
+            <Select
+              id="selectedPersonId"
               value={selectedPersonId}
-              onChange={handlePersonSelect}
+              hideClearButton
+              onChange={(_id, value) => handlePersonSelect({ target: { value } })}
               className="w-full px-3 py-1.5 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Buscar no cadastro de clientes...</option>
-              {persons.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.nomeOuRazao} ({p.tipoPessoa} - {p.uf || p.pais})
-                </option>
-              ))}
-            </select>
+              options={[
+                { value: '', label: 'Buscar no cadastro de clientes...' },
+                ...persons.map((p) => ({
+                  value: p.id,
+                  label: `${p.nomeOuRazao} (${p.tipoPessoa} - ${p.uf || p.pais})`,
+                })),
+              ]}
+            />
           </div>
         </div>
 
@@ -854,22 +870,25 @@ export default function ProductInvoiceEditor({
             <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
               Tipo de Pessoa
             </label>
-            <select
+            <Select
+              id="destinatarioTipoPessoa"
               value={destinatario.tipoPessoa || 'PJ'}
-              onChange={(e) =>
+              hideClearButton
+              onChange={(_id, value) =>
                 setDestinatario((prev) => ({
                   ...prev,
-                  tipoPessoa: e.target.value,
-                  pais: e.target.value === 'ESTRANGEIRO' ? 'Exterior' : 'Brasil',
-                  paisCodigo: e.target.value === 'ESTRANGEIRO' ? 'EX' : 'BR',
+                  tipoPessoa: value,
+                  pais: value === 'ESTRANGEIRO' ? 'Exterior' : 'Brasil',
+                  paisCodigo: value === 'ESTRANGEIRO' ? 'EX' : 'BR',
                 }))
               }
               className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="PJ">Pessoa Jurídica (CNPJ)</option>
-              <option value="PF">Pessoa Física (CPF)</option>
-              <option value="ESTRANGEIRO">Destinatário no Exterior</option>
-            </select>
+              options={[
+                { value: 'PJ', label: 'Pessoa Jurídica (CNPJ)' },
+                { value: 'PF', label: 'Pessoa Física (CPF)' },
+                { value: 'ESTRANGEIRO', label: 'Destinatário no Exterior' },
+              ]}
+            />
           </div>
 
           {/* Documento (CNPJ/CPF ou ID Estrangeiro) */}
@@ -1279,16 +1298,19 @@ export default function ProductInvoiceEditor({
               <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
                 Modalidade do Frete
               </label>
-              <select
+              <Select
+                id="modalidadeFrete"
                 value={modalidadeFrete}
-                onChange={(e) => setModalidadeFrete(e.target.value)}
+                hideClearButton
+                onChange={(_id, value) => setModalidadeFrete(value)}
                 className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="0">0 - Contratação por Conta do Remetente (CIF)</option>
-                <option value="1">1 - Contratação por Conta do Destinatário (FOB)</option>
-                <option value="2">2 - Transporte por Conta de Terceiros</option>
-                <option value="9">9 - Sem Ocorrência de Transporte</option>
-              </select>
+                options={[
+                  { value: '0', label: '0 - Contratação por Conta do Remetente (CIF)' },
+                  { value: '1', label: '1 - Contratação por Conta do Destinatário (FOB)' },
+                  { value: '2', label: '2 - Transporte por Conta de Terceiros' },
+                  { value: '9', label: '9 - Sem Ocorrência de Transporte' },
+                ]}
+              />
             </div>
 
             <div>

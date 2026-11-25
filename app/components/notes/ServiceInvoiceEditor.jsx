@@ -26,6 +26,8 @@ import { catalogsRepository } from '@/features/catalogsRepository';
 import { documentRepository } from '@/features/documentRepository';
 import { validateNFSe } from '@/features/validation/nfseValidator';
 import { FiscalField, FiscalSelect, FiscalGroup } from './FiscalField';
+import Select from '@/components/inputs/Select';
+import Button from '@/components/buttons/Button';
 import { formatBRL } from '@/lib/formatters';
 import { cleanDecimalString, decimalAdd, decimalSubtract, decimalCompare } from '@/lib/calculations/decimal';
 import { useAppContext } from '@/context/AppContext';
@@ -530,24 +532,29 @@ export default function ServiceInvoiceEditor({
         </div>
 
         <div className="flex items-center gap-2">
-          <button
+          <Button
             type="button"
+            buttonType="ghost"
+            outline
+            size="small"
             onClick={handleValidate}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg border border-gray-300 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-700 dark:text-slate-200 transition-colors"
           >
             <FontAwesomeIcon icon={faCheckDouble} className="text-emerald-600" />
             <span>Validar NFS-e</span>
-          </button>
+          </Button>
 
-          <button
+          <Button
             type="button"
+            buttonType="primary"
+            size="small"
             onClick={() => handleSave(true)}
             disabled={saving}
             className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition-colors disabled:opacity-50"
           >
             <FontAwesomeIcon icon={faFloppyDisk} />
             <span>{saving ? 'Salvando...' : 'Salvar e Revisar'}</span>
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -618,18 +625,20 @@ export default function ServiceInvoiceEditor({
             <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
               Empresa Prestadora *
             </label>
-            <select
+            <Select
+              id="selectedCompanyId"
               value={selectedCompanyId}
-              onChange={handleCompanyChange}
+              hideClearButton
+              onChange={(_id, value) => handleCompanyChange({ target: { value } })}
               className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500"
-            >
-              <option value="">Selecione uma empresa prestadora...</option>
-              {companies.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.razaoSocial} — CNPJ: {c.cnpj} {c.isMei ? '(MEI)' : ''}
-                </option>
-              ))}
-            </select>
+              options={[
+                { value: '', label: 'Selecione uma empresa prestadora...' },
+                ...companies.map((c) => ({
+                  value: c.id,
+                  label: `${c.razaoSocial} — CNPJ: ${c.cnpj} ${c.isMei ? '(MEI)' : ''}`,
+                })),
+              ]}
+            />
             {prestador && (
               <p className="text-[11px] text-gray-500 dark:text-slate-400 mt-1">
                 IM: {prestador.inscricaoMunicipal || 'N/A'} • {prestador.municipio}/{prestador.uf} • Regime: {prestador.regimeTributario}
@@ -691,18 +700,20 @@ export default function ServiceInvoiceEditor({
           </div>
 
           <div className="w-64">
-            <select
+            <Select
+              id="selectedPersonId"
               value={selectedPersonId}
-              onChange={handlePersonSelect}
+              hideClearButton
+              onChange={(_id, value) => handlePersonSelect({ target: { value } })}
               className="w-full px-3 py-1.5 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500"
-            >
-              <option value="">Buscar no cadastro de tomadores...</option>
-              {persons.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.nomeOuRazao} ({p.tipoPessoa})
-                </option>
-              ))}
-            </select>
+              options={[
+                { value: '', label: 'Buscar no cadastro de tomadores...' },
+                ...persons.map((p) => ({
+                  value: p.id,
+                  label: `${p.nomeOuRazao} (${p.tipoPessoa})`,
+                })),
+              ]}
+            />
           </div>
         </div>
 
@@ -711,21 +722,24 @@ export default function ServiceInvoiceEditor({
             <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
               Tipo do Tomador
             </label>
-            <select
+            <Select
+              id="tomadorTipoPessoa"
               value={tomador.tipoPessoa || 'PJ'}
-              onChange={(e) =>
+              hideClearButton
+              onChange={(_id, value) =>
                 setTomador((prev) => ({
                   ...prev,
-                  tipoPessoa: e.target.value,
-                  pais: e.target.value === 'ESTRANGEIRO' ? 'Exterior' : 'Brasil',
+                  tipoPessoa: value,
+                  pais: value === 'ESTRANGEIRO' ? 'Exterior' : 'Brasil',
                 }))
               }
               className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white"
-            >
-              <option value="PJ">Pessoa Jurídica (Empresa com CNPJ)</option>
-              <option value="PF">Pessoa Física (Cliente com CPF)</option>
-              <option value="ESTRANGEIRO">Tomador no Exterior</option>
-            </select>
+              options={[
+                { value: 'PJ', label: 'Pessoa Jurídica (Empresa com CNPJ)' },
+                { value: 'PF', label: 'Pessoa Física (Cliente com CPF)' },
+                { value: 'ESTRANGEIRO', label: 'Tomador no Exterior' },
+              ]}
+            />
           </div>
 
           <div>

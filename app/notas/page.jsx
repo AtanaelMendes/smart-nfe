@@ -21,6 +21,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import AppLayout from '@/components/Layouts/AppLayout';
 import Dialog from '@/components/Layouts/Dialog';
+import Select from '@/components/inputs/Select';
 import { documentRepository } from '@/features/documentRepository';
 import { catalogsRepository } from '@/features/catalogsRepository';
 import { formatBRL, formatDateBR } from '@/lib/formatters';
@@ -208,44 +209,52 @@ export default function NotasListPage() {
 
             {/* Tipo de Documento */}
             <div>
-              <select
+              <Select
+                id="filterType"
                 value={filterType}
-                onChange={(e) => setFilterType(e.target.value)}
+                hideClearButton
+                onChange={(id, val) => setFilterType(val)}
                 className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800/80 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Todos os tipos (NF-e & NFS-e)</option>
-                <option value="NFE">NF-e de Produtos (Modelo 55)</option>
-                <option value="NFSE">NFS-e de Serviços (Padrão Nacional)</option>
-              </select>
+                options={[
+                  { value: '', label: 'Todos os tipos (NF-e & NFS-e)' },
+                  { value: 'NFE', label: 'NF-e de Produtos (Modelo 55)' },
+                  { value: 'NFSE', label: 'NFS-e de Serviços (Padrão Nacional)' },
+                ]}
+              />
             </div>
 
             {/* Status */}
             <div>
-              <select
+              <Select
+                id="filterStatus"
                 value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
+                hideClearButton
+                onChange={(id, val) => setFilterStatus(val)}
                 className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800/80 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Todas as situações</option>
-                <option value="DRAFT">Rascunho</option>
-                <option value="READY_TO_EMIT">Pronto para Emissão</option>
-              </select>
+                options={[
+                  { value: '', label: 'Todas as situações' },
+                  { value: 'DRAFT', label: 'Rascunho' },
+                  { value: 'READY_TO_EMIT', label: 'Pronto para Emissão' },
+                ]}
+              />
             </div>
 
             {/* Empresa Emitente */}
             <div>
-              <select
+              <Select
+                id="filterCompany"
                 value={filterCompany}
-                onChange={(e) => setFilterCompany(e.target.value)}
+                hideClearButton
+                onChange={(id, val) => setFilterCompany(val)}
                 className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800/80 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Todas as empresas emitentes</option>
-                {companies.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.nomeFantasia || c.razaoSocial} ({c.tipo})
-                  </option>
-                ))}
-              </select>
+                options={[
+                  { value: '', label: 'Todas as empresas emitentes' },
+                  ...companies.map((c) => ({
+                    value: c.id,
+                    label: `${c.nomeFantasia || c.razaoSocial} (${c.tipo})`,
+                  })),
+                ]}
+              />
             </div>
           </div>
         </div>

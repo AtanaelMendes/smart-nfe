@@ -7,7 +7,12 @@
       "Shell(node --no-warnings /tmp/commandcode-1000/-workspaces-smart-nfe/014c33bc-f7be-4b92-9c02-e3376f526394/scratchpad/check2.mjs)",
       "Shell(npx eslint app/components/notes app/features app/lib/calculations app/documentos/importar/page.jsx 2 >& 1)",
       "Shell(npm:*)",
-      "Shell(grep:*)"
+      "Shell(grep:*)",
+      "Shell(npx eslint \"app/components/buttons/Button.jsx\" \"app/preparacoes/page.jsx\")",
+      "Shell(npx eslint app/components/inputs/Select.jsx app/preparacoes/page.jsx app/preparacoes/nova/page.jsx app/documentos/page.jsx app/notas/page.jsx app/configuracoes/page.jsx app/components/notes/ProductInvoiceEditor.jsx app/components/notes/ServiceInvoiceEditor.jsx app/components/notes/FiscalField.jsx app/components/Layouts/Pagination.jsx)",
+      "Shell(npx eslint app/components/notes/FiscalField.jsx)",
+      "Shell(if:*)",
+      "Shell({:*)"
     ],
     "deny": [],
     "defaultMode": "default"

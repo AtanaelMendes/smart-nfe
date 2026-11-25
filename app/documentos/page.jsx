@@ -25,6 +25,7 @@ import {
 import AppLayout from '@/components/Layouts/AppLayout';
 import DataTable from '@/components/table/DataTable';
 import Button from '@/components/buttons/Button';
+import Select from '@/components/inputs/Select';
 import Dialog from '@/components/Layouts/Dialog';
 import { useAppContext } from '@/context/AppContext';
 
@@ -566,33 +567,39 @@ export default function DocumentosPage() {
 
             {/* Status Dropdown */}
             <div>
-              <select
+              <Select
+                id="statusFilter"
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
+                hideClearButton
+                onChange={(id, val) => setStatusFilter(val)}
                 className="w-full py-1.5 px-2 text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
-              >
-                <option value="ALL">Todos os status</option>
-                <option value="importado">Importado</option>
-                <option value="em_conferencia">Em Conferência</option>
-                <option value="conferido">Conferido</option>
-                <option value="em_preparacao">Em Preparação</option>
-                <option value="com_inconsistencias">Com Inconsistências</option>
-                <option value="utilizado">Totalmente Utilizado</option>
-              </select>
+                options={[
+                  { value: 'ALL', label: 'Todos os status' },
+                  { value: 'importado', label: 'Importado' },
+                  { value: 'em_conferencia', label: 'Em Conferência' },
+                  { value: 'conferido', label: 'Conferido' },
+                  { value: 'em_preparacao', label: 'Em Preparação' },
+                  { value: 'com_inconsistencias', label: 'Com Inconsistências' },
+                  { value: 'utilizado', label: 'Totalmente Utilizado' },
+                ]}
+              />
             </div>
 
             {/* Visual Grouping */}
             <div>
-              <select
+              <Select
+                id="visualGrouping"
                 value={visualGrouping}
-                onChange={(e) => setVisualGrouping(e.target.value)}
+                hideClearButton
+                onChange={(id, val) => setVisualGrouping(val)}
                 className="w-full py-1.5 px-2 text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-medium text-blue-700 dark:text-blue-400"
-              >
-                <option value="list">Agrupamento: Lista Geral</option>
-                <option value="customer">Agrupar por Cliente de Exportação</option>
-                <option value="supplier">Agrupar por Fornecedor</option>
-                <option value="status">Agrupar por Situação</option>
-              </select>
+                options={[
+                  { value: 'list', label: 'Agrupamento: Lista Geral' },
+                  { value: 'customer', label: 'Agrupar por Cliente de Exportação' },
+                  { value: 'supplier', label: 'Agrupar por Fornecedor' },
+                  { value: 'status', label: 'Agrupar por Situação' },
+                ]}
+              />
             </div>
           </div>
 
@@ -600,44 +607,51 @@ export default function DocumentosPage() {
           <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t border-slate-100 dark:border-slate-700/60 text-xs">
             <div className="flex flex-wrap items-center gap-2">
               {/* Customer Filter */}
-              <select
+              <Select
+                id="customerFilter"
                 value={customerFilter}
-                onChange={(e) => setCustomerFilter(e.target.value)}
+                hideClearButton
+                containerClassName="relative"
+                onChange={(id, val) => setCustomerFilter(val)}
                 className="py-1 px-2 text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
-              >
-                <option value="ALL">Todos os clientes</option>
-                <option value="UNASSIGNED">Sem cliente atribuído</option>
-                {EXPORT_CUSTOMERS.map((cust) => (
-                  <option key={cust.id} value={cust.id}>
-                    {cust.name} ({cust.country})
-                  </option>
-                ))}
-              </select>
+                options={[
+                  { value: 'ALL', label: 'Todos os clientes' },
+                  { value: 'UNASSIGNED', label: 'Sem cliente atribuído' },
+                  ...EXPORT_CUSTOMERS.map((cust) => ({
+                    value: cust.id,
+                    label: `${cust.name} (${cust.country})`,
+                  })),
+                ]}
+              />
 
               {/* Supplier Filter */}
-              <select
+              <Select
+                id="supplierFilter"
                 value={supplierFilter}
-                onChange={(e) => setSupplierFilter(e.target.value)}
+                hideClearButton
+                containerClassName="relative"
+                onChange={(id, val) => setSupplierFilter(val)}
                 className="py-1 px-2 text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 max-w-[180px] truncate"
-              >
-                <option value="ALL">Todos fornecedores</option>
-                {uniqueSuppliers.map((supp) => (
-                  <option key={supp} value={supp}>
-                    {supp}
-                  </option>
-                ))}
-              </select>
+                options={[
+                  { value: 'ALL', label: 'Todos fornecedores' },
+                  ...uniqueSuppliers.map((supp) => ({ value: supp, label: supp })),
+                ]}
+              />
 
               {/* Type Filter */}
-              <select
+              <Select
+                id="typeFilter"
                 value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value)}
+                hideClearButton
+                containerClassName="relative"
+                onChange={(id, val) => setTypeFilter(val)}
                 className="py-1 px-2 text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
-              >
-                <option value="ALL">XML e PDF</option>
-                <option value="XML">Apenas XML</option>
-                <option value="PDF">Apenas PDF</option>
-              </select>
+                options={[
+                  { value: 'ALL', label: 'XML e PDF' },
+                  { value: 'XML', label: 'Apenas XML' },
+                  { value: 'PDF', label: 'Apenas PDF' },
+                ]}
+              />
 
               {/* Balance Checkbox */}
               <label className="flex items-center gap-1.5 text-slate-700 dark:text-slate-300 cursor-pointer select-none">
@@ -748,18 +762,20 @@ export default function DocumentosPage() {
             <label className="font-bold text-slate-700 dark:text-slate-200">
               Selecione o Cliente de Exportação:
             </label>
-            <select
+            <Select
+              id="selectedCustomerId"
               value={selectedCustomerId}
-              onChange={(e) => setSelectedCustomerId(e.target.value)}
+              hideClearButton
+              onChange={(id, val) => setSelectedCustomerId(val)}
               className="w-full p-2 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-xs"
-            >
-              <option value="">— Remover cliente atribuído —</option>
-              {EXPORT_CUSTOMERS.map((cust) => (
-                <option key={cust.id} value={cust.id}>
-                  {cust.name} — {cust.country} ({cust.foreignId})
-                </option>
-              ))}
-            </select>
+              options={[
+                { value: '', label: '— Remover cliente atribuído —' },
+                ...EXPORT_CUSTOMERS.map((cust) => ({
+                  value: cust.id,
+                  label: `${cust.name} — ${cust.country} (${cust.foreignId})`,
+                })),
+              ]}
+            />
           </div>
         </div>
       </Dialog>

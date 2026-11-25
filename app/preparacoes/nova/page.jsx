@@ -28,6 +28,7 @@ import {
 
 import AppLayout from '@/components/Layouts/AppLayout';
 import Button from '@/components/buttons/Button';
+import Select from '@/components/inputs/Select';
 import Dialog from '@/components/Layouts/Dialog';
 import { useAppContext } from '@/context/AppContext';
 import { invoiceRepository } from '@/features/invoiceRepository';
@@ -969,18 +970,21 @@ function NovaPreparacaoInner() {
 
               {/* Table Filters */}
               <div className="flex items-center gap-2 text-xs">
-                <select
+                <Select
+                  id="filterOriginInTable"
                   value={filterOriginInTable}
-                  onChange={(e) => setFilterOriginInTable(e.target.value)}
+                  hideClearButton
+                  containerClassName="relative"
+                  onChange={(id, val) => setFilterOriginInTable(val)}
                   className="py-1 px-2 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-xs"
-                >
-                  <option value="ALL">Todas as origens</option>
-                  {selectedInvoices.map((inv) => (
-                    <option key={inv.id} value={inv.id}>
-                      NF-e {inv.numero} ({inv.emitente?.razaoSocial?.substring(0, 15)}...)
-                    </option>
-                  ))}
-                </select>
+                  options={[
+                    { value: 'ALL', label: 'Todas as origens' },
+                    ...selectedInvoices.map((inv) => ({
+                      value: inv.id,
+                      label: `NF-e ${inv.numero} (${inv.emitente?.razaoSocial?.substring(0, 15)}...)`,
+                    })),
+                  ]}
+                />
               </div>
             </div>
 

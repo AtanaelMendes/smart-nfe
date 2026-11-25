@@ -4,28 +4,28 @@ import React from 'react';
 const btnType = (outline, bordered, buttonType) => {
 	const variants = {
 		primary: cn(
-			outline ? 'text-primary hover:bg-blue-200' : 'bg-primary text-white hover:bg-blue-700',
+			outline ? 'text-primary hover:bg-blue-200 dark:hover:bg-blue-900' : 'bg-primary text-white hover:bg-blue-700',
 			bordered && 'border border-primary', 'focus:ring-blue-300'
 		),
 		secondary: cn(
-			outline ? 'text-gray-900 hover:bg-gray-600 hover:text-white' : 'bg-white text-gray-900 bg-gray-300',
-			bordered && 'border border-gray-500', 'focus:ring-gray-300'
+			outline ? 'text-gray-900 dark:text-slate-100 hover:bg-gray-600 hover:text-white' : 'bg-white text-gray-900 dark:bg-slate-700 dark:text-slate-100',
+			bordered && 'border border-gray-500 dark:border-slate-500', 'focus:ring-gray-300'
 		),
 		success: cn(
-			outline ? 'text-green-500 hover:bg-green-200' : 'bg-green-500 hover:bg-green-400 text-white transition-colors',
+			outline ? 'text-green-500 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900' : 'bg-green-500 hover:bg-green-400 text-white transition-colors',
 			bordered && 'border border-green-600', 'focus:ring-green-300'
 		),
 		danger: cn(
-			outline ? 'text-red-600 hover:bg-red-500 hover:text-white transition-colors' : 'bg-red-600 text-white',
+			outline ? 'text-red-600 dark:text-red-400 hover:bg-red-500 hover:text-white transition-colors' : 'bg-red-600 text-white',
 			bordered && 'border border-red-600', 'focus:ring-red-300'
 		),
 		warning: cn(
-			outline ? 'text-yellow-500 hover:bg-yellow-200' : 'bg-yellow-500 text-white',
+			outline ? 'text-yellow-500 dark:text-yellow-400 hover:bg-yellow-200 dark:hover:bg-yellow-900' : 'bg-yellow-500 text-white',
 			bordered && 'border border-yellow-500', 'focus:ring-yellow-300'
 		),
 		ghost: cn(
-			outline ? 'text-gray-900 hover:bg-gray-200' : 'bg-white text-gray-900',
-			bordered && 'border border-gray-300', 'focus:ring-gray-300'
+			outline ? 'text-gray-900 dark:text-slate-100 hover:bg-gray-200 dark:hover:bg-slate-700' : 'bg-white text-gray-900 dark:bg-slate-800 dark:text-slate-100',
+			bordered && 'border border-gray-300 dark:border-slate-600', 'focus:ring-gray-300'
 		),
 	};
 
