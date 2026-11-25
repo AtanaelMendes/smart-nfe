@@ -186,13 +186,13 @@ export default function DataTable({
   return (
     <div
       className={cn(
-        'flex w-full flex-col bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-lg shadow-xs overflow-hidden',
+        'flex w-full flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-sm overflow-hidden',
         containerClassName
       )}
     >
       {/* Barra de Ferramentas Superior */}
       {(mainText || action || searchable) && (
-        <div className="bg-slate-100 dark:bg-slate-800/70 border-b border-gray-200 dark:border-slate-800 px-4 py-2.5 flex items-center justify-between gap-4 flex-wrap">
+        <div className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 px-4 py-2.5 flex items-center justify-between gap-4 flex-wrap">
           <div className="font-semibold text-slate-800 dark:text-slate-100 text-sm">
             {mainText}
           </div>
@@ -216,7 +216,7 @@ export default function DataTable({
       {/* Tabela de Dados */}
       <div className="relative overflow-x-auto w-full">
         <table className={cn('w-full text-left text-slate-700 dark:text-slate-200', tableClassName)}>
-          <thead className="bg-slate-50 dark:bg-slate-800/90 text-slate-600 dark:text-slate-300 uppercase font-semibold border-b border-gray-200 dark:border-slate-800 sticky top-0">
+          <thead className="bg-slate-50 dark:bg-slate-800/90 text-slate-600 dark:text-slate-300 font-medium border-b border-gray-200 dark:border-slate-800 sticky top-0">
             <tr className={cn(headerClassName)}>
               {effectiveColumns.map((col, index) => renderHeaderCell(col, index))}
             </tr>
@@ -245,7 +245,7 @@ export default function DataTable({
                   <Fragment key={resolveRowKey(row, rowIndex)}>
                     <tr
                       className={cn(
-                        'odd:bg-white even:bg-slate-50/50 dark:odd:bg-slate-900 dark:even:bg-slate-800/40 hover:bg-blue-50/60 dark:hover:bg-slate-800/80 transition-colors',
+                        'bg-white dark:bg-slate-900 hover:bg-blue-50/60 dark:hover:bg-blue-400/5 transition-colors',
                         resolveClass(rowClassName, row, rowIndex)
                       )}
                     >

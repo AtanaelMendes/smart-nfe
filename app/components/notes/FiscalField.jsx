@@ -1,7 +1,6 @@
 'use client';
 
 import { useId } from 'react';
-import { cn } from '@/assets/utils';
 import Select from '@/components/inputs/Select';
 import InputText from '@/components/inputs/InputText';
 
@@ -14,13 +13,6 @@ import InputText from '@/components/inputs/InputText';
  * preservar exatamente a precisão decimal (ex.: "1.0000", "0.00") — por isso não
  * usamos `InputNumber` (type="number") aqui.
  */
-
-/* Afina o input base (p-2 text-sm) para o layout compacto tipo planilha. */
-const compactField =
-  'w-full px-2 py-1.5 text-xs bg-white dark:bg-slate-800 dark:border-slate-700 rounded text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500';
-
-const readOnlyField =
-  'bg-gray-100 dark:bg-slate-900 text-gray-500 dark:text-slate-400 cursor-not-allowed';
 
 export function FiscalField({
   label,
@@ -46,8 +38,7 @@ export function FiscalField({
         placeholder={placeholder}
         maxLength={maxLength}
         readOnly={readOnly}
-        small
-        className={cn(compactField, mono && 'font-mono', readOnly && readOnlyField)}
+        className={mono ? 'font-mono' : undefined}
       />
     </div>
   );
@@ -65,7 +56,6 @@ export function FiscalSelect({ label, value, onChange, options = [], className =
         containerClassName="relative w-full"
         value={value ?? ''}
         onChange={(_id, val) => onChange && onChange(val)}
-        className={compactField}
         options={options}
       />
     </div>

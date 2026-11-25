@@ -144,7 +144,7 @@ export default function InputFile({
   return (
     <div className="w-full">
       <div
-        className={`border-2 rounded-lg border-dashed px-4 py-3 transition-colors ${
+        className={`border rounded-lg border-dashed px-5 py-5 outline-none transition-colors focus-visible:border-blue-600 focus-visible:ring-2 focus-visible:ring-blue-500/20 dark:focus-visible:border-blue-400 ${
           disabled
             ? 'bg-gray-100 dark:bg-slate-800/40 cursor-not-allowed text-gray-400 border-gray-300 dark:border-slate-700'
             : `cursor-pointer ${
@@ -152,7 +152,7 @@ export default function InputFile({
                   ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/40'
                   : selectedFile
                     ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-950/30'
-                    : 'bg-gray-50 dark:bg-slate-800/60 border-slate-300 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50/50 dark:hover:bg-slate-800'
+                    : 'bg-transparent dark:bg-transparent border-slate-300 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50/50 dark:hover:bg-slate-800'
               }`
         }`}
         onDragOver={handleDragOver}

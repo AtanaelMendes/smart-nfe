@@ -62,12 +62,12 @@ const ButtonDropDown = ({ id, label, small, type, block, className, items }) => 
                 </Button>
             </div>
 
-            {isOpen && (<div id="dropdownChildren" ref={menuRef} className={`z-10 bg-white dark:bg-slate-800 rounded shadow-lg absolute w-fit min-w-[100px] max-w-[200px] mt-1`}>
+            {isOpen && (<div id="dropdownChildren" ref={menuRef} className={`z-10 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-lg absolute w-fit min-w-[100px] max-w-[200px] mt-1`}>
                 <ul className="space-y-1 self-end block p-1 w-full divide-y divide-gray-200 dark:divide-slate-700">
                     {items.map((item, index) => (
                         <li key={index} className={`
                             self-end px-2 py-1
-                            ${item.hoverClassName || "hover:bg-blue-200 hover:text-primary hover:rounded cursor-pointer"} 
+                            ${item.hoverClassName || "hover:bg-blue-50 dark:hover:bg-blue-400/10 hover:text-blue-700 dark:hover:text-blue-300 rounded cursor-pointer"}
                             transition-colors duration-300 ease-in-out`}>
                             <div className={`${item.itemClassName || ""} flex items-center p-1`} onClick={() => { item.action(); setIsOpen(false); }} >
                                 {item.icon && <FontAwesomeIcon icon={item.icon} className='mr-2' width="16" height="16" />}

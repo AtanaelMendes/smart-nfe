@@ -36,12 +36,10 @@ import { cleanDecimalString, decimalAdd, decimalSubtract, decimalCompare } from 
 import { useAppContext } from '@/context/AppContext';
 
 /* Campos de formulário do editor (labels externos + inputs compactos). */
-const FORM_CLS =
-  'px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 dark:border-slate-700 rounded-lg dark:text-white focus:ring-2 focus:ring-emerald-500';
+const FORM_CLS = 'h-12';
 
 /* Campos compactos das grades de retenções. */
-const COMPACT_CLS =
-  'px-2.5 py-1.5 text-xs bg-gray-50 dark:bg-slate-800 dark:border-slate-700 rounded dark:text-white focus:ring-2 focus:ring-emerald-500';
+const COMPACT_CLS = 'h-10 px-2.5 text-sm';
 
 export default function ServiceInvoiceEditor({
   initialData = null,
@@ -632,7 +630,7 @@ export default function ServiceInvoiceEditor({
               value={selectedCompanyId}
               hideClearButton
               onChange={(_id, value) => handleCompanyChange(value)}
-              className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500"
+              className="w-full h-12"
               options={[
                 { value: '', label: 'Selecione uma empresa prestadora...' },
                 ...companies.map((c) => ({
@@ -703,7 +701,7 @@ export default function ServiceInvoiceEditor({
               value={selectedPersonId}
               hideClearButton
               onChange={(_id, value) => handlePersonSelect(value)}
-              className="w-full px-3 py-1.5 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500"
+              className="w-full"
               options={[
                 { value: '', label: 'Buscar no cadastro de tomadores...' },
                 ...persons.map((p) => ({
@@ -729,7 +727,7 @@ export default function ServiceInvoiceEditor({
                   pais: value === 'ESTRANGEIRO' ? 'Exterior' : 'Brasil',
                 }))
               }
-              className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white"
+              className="w-full h-12"
               options={[
                 { value: 'PJ', label: 'Pessoa Jurídica (Empresa com CNPJ)' },
                 { value: 'PF', label: 'Pessoa Física (Cliente com CPF)' },
@@ -1210,7 +1208,7 @@ export default function ServiceInvoiceEditor({
                 placeholder="Pesquisar por descrição, código tributação ou atividade..."
                 value={catalogSearch}
                 onChange={(_id, value) => setCatalogSearch(value)}
-                className="px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 dark:border-slate-700 dark:text-white focus:ring-2 focus:ring-emerald-500"
+                className=""
               />
             </div>
 

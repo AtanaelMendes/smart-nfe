@@ -964,12 +964,12 @@ export default function DivisaoNotasPage({ params }) {
                       <span className="w-5 h-5 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center text-[10px] flex-shrink-0">
                         {suffix}
                       </span>
-                      <InputText
+                      <InputText small
                         id={`note-nome-${note.id}`}
                         value={note.nome}
                         onChange={(_id, value) => handleNoteMetadataChange(note.id, 'nome', value)}
                         placeholder="Nome da Nota Destino"
-                        className="font-bold text-xs text-slate-900 dark:text-slate-100 bg-transparent border-0 border-b border-transparent hover:border-slate-300 focus:border-blue-500 rounded-none px-1 py-0.5 w-full"
+                        className="font-bold w-full"
                       />
                     </div>
 
@@ -1000,7 +1000,7 @@ export default function DivisaoNotasPage({ params }) {
                           handleNoteMetadataChange(note.id, 'razaoSocial', value)
                         }
                         placeholder="Nome da empresa destinatária"
-                        className="w-full px-2 py-1 text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:border-blue-500"
+                        className="w-full"
                       />
                     </div>
 
@@ -1015,7 +1015,7 @@ export default function DivisaoNotasPage({ params }) {
                             handleNoteMetadataChange(note.id, 'cnpj', value)
                           }
                           placeholder="CNPJ ou ID Estrangeiro"
-                          className="w-full px-2 py-1 text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:border-blue-500"
+                          className="w-full"
                         />
                       </div>
                       <div>
@@ -1035,7 +1035,7 @@ export default function DivisaoNotasPage({ params }) {
                             }
                           }}
                           placeholder="Ex: SP / Brasil ou Holanda"
-                          className="w-full px-2 py-1 text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:border-blue-500"
+                          className="w-full"
                         />
                       </div>
                     </div>

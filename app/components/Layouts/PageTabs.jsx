@@ -13,10 +13,10 @@ const PageTabs = ({ pageTabs, onClick, wordWrap, scrollable }) => {
             <li
                 key={tabData.id + "-tab"}
                 className={cn(
-                    "object-contain hover:bg-blue-600 mx-0.5 mt-0.5 rounded-t-lg relative h-8 xl:h-10 transition-colors duration-200",
+                    "object-contain hover:bg-blue-50 dark:hover:bg-blue-400/10 mx-0.5 mt-0.5 rounded-t-md relative h-10 transition-colors duration-150",
                     tabData.active
-                        ? "border-yellow-300 bg-blue-600"
-                        : "border border-slate-300",
+                        ? "border-blue-600 bg-blue-50 dark:border-blue-400 dark:bg-blue-400/10"
+                        : "border border-transparent",
                     tabData?.contador >= 0 && "mt-3",
                     tabData.visible ? "" : "hidden"
                 )}
@@ -28,11 +28,11 @@ const PageTabs = ({ pageTabs, onClick, wordWrap, scrollable }) => {
                     }}
                     className={cn(
                         (!tabData.active && tabData?.blink) && "after:bg-danger after:animate-ping after:absolute after:bottom-1 after:left-4 after:rounded-t-lg after:w-1/2 after:h-3/5",
-                        "relative inline-block h-8 xl:h-10 px-1 py-0 text-xs border-b-4 rounded-t-lg hover:text-white hover:drop-shadow-text-subtle-dark hover:border-yellow-300 transition-colors duration-200",
+                        "relative inline-block h-10 px-3 py-0 text-sm border-b-2 rounded-t-md hover:text-blue-700 dark:hover:text-blue-300 hover:border-blue-600 dark:hover:border-blue-400 transition-colors duration-150",
                         wordWrap ? "word-wrap" : "whitespace-nowrap",
                         tabData.active
-                            ? "text-white border-yellow-300 drop-shadow-text-subtle-dark"
-                            : "text-slate-600 border-slate-400"
+                            ? "text-blue-700 dark:text-blue-300 border-blue-600 dark:border-blue-400"
+                            : "text-slate-600 dark:text-slate-300 border-transparent"
                     )}
                     title={tabData.name}
                 >
@@ -50,7 +50,7 @@ const PageTabs = ({ pageTabs, onClick, wordWrap, scrollable }) => {
                     <Button
                         type="button"
                         className={`
-                            bg-white absolute -top-2 -right-1.5 rounded-full cursor-pointer p-0.5 shadow border border-slate-300 z-40 transition-transform duration-200 h-[18px]
+                            bg-white dark:bg-slate-800 dark:text-slate-200 absolute -top-2 -right-1.5 rounded-full cursor-pointer p-0.5 shadow border border-transparent z-40 transition-transform duration-200 h-[18px]
                             ${tabData.active && reload ? " animate-spin " : " "}
                             ${tabData.active ? " " : " hidden"}
                         `}
@@ -74,7 +74,7 @@ const PageTabs = ({ pageTabs, onClick, wordWrap, scrollable }) => {
                         type="button"
                         className={`
                             text-primary
-                            bg-white absolute -top-2 -right-1.5 rounded-full cursor-pointer p-0.5 shadow border border-slate-300 z-40 transition-transform duration-200 h-[18px]
+                            bg-white dark:bg-slate-800 dark:text-slate-200 absolute -top-2 -right-1.5 rounded-full cursor-pointer p-0.5 shadow border border-transparent z-40 transition-transform duration-200 h-[18px]
                         `}
                         onClick={() => {
                             tabData.closeCallback();
@@ -136,7 +136,7 @@ const PageTabs = ({ pageTabs, onClick, wordWrap, scrollable }) => {
     }
 
     return (
-        <div className={`${scrollable ? "overflow-x-auto" : "overflow-x-hidden"} overflow-y-hidden pr-2 shadow-md`}>
+        <div className={`${scrollable ? "overflow-x-auto" : "overflow-x-hidden"} overflow-y-hidden pr-2 border-b border-slate-200 dark:border-slate-700`}>
             <ul className="flex text-xs font-medium mt-[5px]">
                 {TABS}
             </ul>

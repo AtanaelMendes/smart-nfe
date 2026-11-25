@@ -36,9 +36,9 @@ const ModalGrid = ({
     };
 
     const getModalType = () => {
-        if (danger) return "bg-red-500 text-white";
-        if (warning) return "bg-orange-400";
-        return " bg-primary text-white ";
+        if (danger) return "bg-red-50 text-red-800 dark:bg-red-400/10 dark:text-red-300";
+        if (warning) return "bg-amber-50 text-amber-800 dark:bg-amber-400/10 dark:text-amber-300";
+        return "bg-white text-slate-900 dark:bg-slate-900 dark:text-slate-100";
     };
 
     const closeModal = () => {
@@ -63,12 +63,12 @@ const ModalGrid = ({
 
     const CloseBtn = () => (
         <Button
-            className="absolute top-2 right-2 rounded-full p-0 cursor-pointer hover:bg-white/10 xl:p-2"
+            className="absolute top-3 right-3 h-8 min-h-0 w-8 rounded-full p-0"
             onClick={closeModal}
             title="Fechar modal"
         >
             <svg
-                className={cn("w-5 h-5", warning ? "" : "fill-white")}
+                className="h-4 w-4 fill-current"
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 320 512"
             >
@@ -86,15 +86,15 @@ const ModalGrid = ({
 
     return (
         <div
-            className={`fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 ${customMargin}`}
+            className={`fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 backdrop-blur-xs p-4 ${customMargin}`}
             id={id}
             onClick={dismissible && !title ? closeModal : undefined}
         >
             <div
                 className={cn(
-                    "relative rounded-lg flex flex-col max-h-screen",
+                    "relative rounded-xl flex flex-col max-h-[calc(100dvh-2rem)] shadow-xl",
                     modalSizes[size],
-                    background || "bg-white"
+                    background || "bg-white text-slate-900 dark:bg-slate-900 dark:text-slate-100"
                 )}
                 onClick={(e) => e.stopPropagation()}
             >
@@ -102,7 +102,7 @@ const ModalGrid = ({
                 {title && (
                     <div
                         className={cn(
-                            "relative p-2 xl:p-4 flex justify-between items-center",
+                            "relative p-5 pr-14 flex justify-between items-center",
                             getModalType(),
                             size !== "full" ? "rounded-t-lg" : ""
                         )}
@@ -127,7 +127,7 @@ const ModalGrid = ({
                 {/* Footer */}
                 {(footer || btnCancel || btnSubmit) && (
                     <div
-                        className={cn("z-10 p-1 xl:p-2 border-t border-slate-300 bg-white flex items-center", size !== "full" ? "rounded-b-lg" : "", footerClass || "")}>
+                        className={cn("z-10 p-1 xl:p-2 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 flex items-center justify-end gap-2", size !== "full" ? "rounded-b-lg" : "", footerClass || "")}>
                         {btnCancel && (
                             <div>
                                 <Button buttonType="danger" outline={btnSubmit} onClick={closeModal} size="small">

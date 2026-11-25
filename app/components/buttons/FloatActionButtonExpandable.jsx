@@ -19,7 +19,7 @@ const FloatActionButtonExpandable = () => {
                         pill
                         onClick={() => alert('Chat clicked!')}
                         title="Ligar"
-                        className="!px-4 !py-2 font-bold shadow-lg"
+                        className="h-10 w-10 !p-0 shadow-md"
                     >
                         <FontAwesomeIcon icon={faPhone} width="16" height="16" />
                     </Button>
@@ -28,7 +28,7 @@ const FloatActionButtonExpandable = () => {
                         pill
                         onClick={() => alert('Phone clicked!')}
                         title="Mensagem"
-                        className="!px-4 !py-2 font-bold shadow-lg"
+                        className="h-10 w-10 !p-0 shadow-md"
                     >
                         <FontAwesomeIcon icon={faMessage} width="16" height="16" />
                     </Button>
@@ -37,7 +37,7 @@ const FloatActionButtonExpandable = () => {
                         pill
                         onClick={() => alert('Email clicked!')}
                         title="E-mail"
-                        className="!px-4 !py-2 font-bold shadow-lg"
+                        className="h-10 w-10 !p-0 shadow-md"
                     >
                         <FontAwesomeIcon icon={faMailBulk} width="16" height="16" />
                     </Button>
@@ -48,7 +48,7 @@ const FloatActionButtonExpandable = () => {
                 pill
                 onClick={toggleExpand}
                 title={isExpanded ? 'Fechar ações' : 'Abrir ações'}
-                className="!px-4 !py-4 font-bold shadow-lg"
+                className="h-14 w-14 !p-0 shadow-lg hover:shadow-xl"
             >
                 {isExpanded ? <FontAwesomeIcon icon={faX} width="16" height="16" /> : <FontAwesomeIcon icon={faPlus} width="16" height="16" />}
             </Button>

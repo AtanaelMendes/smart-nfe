@@ -39,9 +39,9 @@ const Radio = ({ onChange, onClick, id, checked, value, name, required, classNam
                 value={value || ""}
                 name={name || id}
                 required={required || ""}
-                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 focus:ring-2"
+                className="h-[18px] w-[18px] cursor-pointer accent-blue-600 outline-none focus-visible:ring-4 focus-visible:ring-blue-500/20 dark:accent-blue-400 dark:[color-scheme:dark]"
             />
-            <label htmlFor={id} className="ms-2 text-sm font-medium text-gray-900 select-none">
+            <label htmlFor={id} className="ms-2.5 cursor-pointer text-sm text-slate-700 dark:text-slate-200 select-none">
                 {label}
             </label>
         </div>

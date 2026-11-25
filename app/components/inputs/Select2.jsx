@@ -1,10 +1,6 @@
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
-import { FieldLabel } from "@/components/Layouts/Typography";
-import { useCallback, useEffect, useState } from "react";
+import Fieldset from "./Fieldset";
+import { useEffect, useState } from "react";
 import Select from "react-tailwindcss-select";
-import { TooltipComponent } from "../Layouts/TooltipComponent";
-import { cn } from "@/assets/utils";
 
 const Select2 = (props) => {
   const [options, setOptions] = useState([]);
@@ -29,14 +25,6 @@ const Select2 = (props) => {
       props?.required.hasOwnProperty(props.id) &&
       props.required[props.id].error
     );
-  }
-
-  function renderError() {
-    if (!hasError()) return;
-    let errorMsg =
-      props?.required[props.id].errorMsg || "Este campo é obrigatório";
-
-    return <div className="text-xs text-red-600">{errorMsg}</div>;
   }
 
   useEffect(() => {
@@ -73,37 +61,10 @@ const Select2 = (props) => {
   }, [options, props?.value]);
 
   return (
-    <div className="w-full relative">
-      {props?.label && <div className='flex absolute top-[-9px] left-2 w-fit z-10 text-xs px-0.5 rounded-md mb-0 pb-0 text-nowrap before:bg-white before:top-0.5 before:left-0 before:absolute before:w-full before:h-[12px] before:-z-10 before:content-[""] before:rounded-lg'>
-        <label htmlFor={props.id} className="inline-flex">
-          <FieldLabel className={cn(props?.required ? 'ml-4' : 'ml-0 mb-0 pb-0', 'text-gray-500')}>
-            {props?.label || ""}
-          </FieldLabel>
-          {props?.hint && (
-            <>
-              <TooltipComponent
-                content={
-                  <div className="text-xs z-20 max-w-[300px]">{props.hint}</div>
-                }
-                asChild
-              >
-                <FontAwesomeIcon
-                  icon={faInfoCircle}
-                  width="16"
-                  height="16"
-                  color="blue"
-                  className="self-start ml-2"
-                  tabIndex={-1}
-                />
-              </TooltipComponent>
-            </>
-          )}
-        </label>
-      </div>}
-
-      <div className={`rounded border ${hasError() ? "border-red-500" : "border-white"} ${props.className || ""}`}>
+    <Fieldset control id={props.id} label={props.label} required={!!props.required} disabled={props.disabled} error={hasError() ? props.required[props.id].errorMsg || 'Este campo é obrigatório' : undefined} helperText={props.helperText} hint={props.hint}>
         <Select
           id={props.id}
+          isDisabled={props.disabled}
           options={options}
           isClearable={true}
           isSearchable={true}
@@ -114,27 +75,13 @@ const Select2 = (props) => {
           noOptionsMessage={"Nenhum registro encontrado"}
 					// <- HELP - 553263: Estavam passando className (singular), mas o componente espera classNames (plural) para sobrescrever as partes internas.
 					classNames={{
-            menuButton: ({ isDisabled }) =>
-              `flex text-sm text-gray-900 border border-gray-300 rounded-lg shadow-sm transition-all duration-300 focus:outline-none h-[36px] ${
-                isDisabled
-                  ? "bg-gray-200"
-                  : "bg-white hover:border-gray-400 focus:border-blue-500 focus:ring focus:ring-blue-500/20"
-              }`,
-							/**	
-							 * <- HELP - 553263: ESTE é o overlay das opções (dropdown)
-							 * No código da lib o dropdown usa classNames?.menu e, se não vier, cai no default "absolute z-10 ..."
-							 * */ 
-            menu:
-              "absolute z-20 w-full bg-white shadow-lg border rounded py-1 mt-1.5 text-sm text-gray-700",
+            menuButton: ({ isDisabled }) => `flex min-h-12 rounded-md border-0 bg-transparent text-sm text-slate-900 dark:text-slate-100 focus:outline-none ${isDisabled ? 'cursor-not-allowed opacity-50' : ''}`,
+            menu: 'absolute z-30 mt-1.5 w-full rounded-lg border border-slate-200 bg-white py-1 text-sm text-slate-700 shadow-lg dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200',
             // (opcional) limitar altura:
             list: "max-h-64 overflow-y-auto",
           }}
         />
-      </div>
-      {renderError()}
-      {props?.helperText && <div className="text-xs text-blue-600 absolute bottom-[-12px] right-0"> {props.helperText} </div>}
-    </div>
+    </Fieldset>
   );
 };
-
 export default Select2;

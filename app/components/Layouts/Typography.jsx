@@ -28,7 +28,7 @@ export const Label = ({children, className}) => {
 
 export const Caption = ({children, className}) => {
     return (
-        <span className={cn(`text-xs text-slate-400`, className)}>
+        <span className={cn(`text-xs leading-4 text-slate-500 dark:text-slate-400`, className)}>
             { !empty(children) ? children : "" }
         </span>
     );
@@ -38,7 +38,7 @@ export const FieldLabel = ({ children, className, required }) => {
     return (
         <div className="inline-flex">
             {required && <FontAwesomeIcon icon={faAsterisk} width="10" height="10" color="red" className="self-start mr-1" />}
-            <span className={cn('block mb-0.5 xl:mb-1 text-sm font-medium text-gray-900', className)}>
+            <span className={cn('block text-sm font-medium leading-5 text-slate-700 dark:text-slate-200', className)}>
                 { !empty(children) ? children : "" }
             </span>
         </div>

@@ -211,18 +211,18 @@ export default function NotasListPage() {
                 onChange={(id, val) => setSearchQuery(val)}
                 placeholder="Buscar por título, número ou cliente..."
                 small
-                className="pl-9 pr-3 py-2 bg-gray-50 dark:bg-slate-800/80 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-white placeholder-gray-400"
+                className="pl-9 pr-3"
               />
             </div>
 
             {/* Tipo de Documento */}
             <div>
-              <Select
+              <Select small
                 id="filterType"
                 value={filterType}
                 hideClearButton
                 onChange={(id, val) => setFilterType(val)}
-                className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800/80 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full"
                 options={[
                   { value: '', label: 'Todos os tipos (NF-e & NFS-e)' },
                   { value: 'NFE', label: 'NF-e de Produtos (Modelo 55)' },
@@ -233,12 +233,12 @@ export default function NotasListPage() {
 
             {/* Status */}
             <div>
-              <Select
+              <Select small
                 id="filterStatus"
                 value={filterStatus}
                 hideClearButton
                 onChange={(id, val) => setFilterStatus(val)}
-                className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800/80 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full"
                 options={[
                   { value: '', label: 'Todas as situações' },
                   { value: 'DRAFT', label: 'Rascunho' },
@@ -249,12 +249,12 @@ export default function NotasListPage() {
 
             {/* Empresa Emitente */}
             <div>
-              <Select
+              <Select small
                 id="filterCompany"
                 value={filterCompany}
                 hideClearButton
                 onChange={(id, val) => setFilterCompany(val)}
-                className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800/80 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full"
                 options={[
                   { value: '', label: 'Todas as empresas emitentes' },
                   ...companies.map((c) => ({

@@ -568,23 +568,23 @@ export default function DocumentosPage() {
             {/* Search Input */}
             <div className="relative col-span-1 sm:col-span-2">
               <FontAwesomeIcon icon={faMagnifyingGlass} className="absolute left-3 top-2.5 z-10 text-slate-400 w-3.5 h-3.5 pointer-events-none" />
-              <InputText
+              <InputText small
                 id="documentosSearch"
                 value={rawSearchTerm}
                 placeholder="Buscar por NF-e, fornecedor, CNPJ, produto ou NCM..."
                 onChange={(id, value) => setRawSearchTerm(value)}
-                className="pl-9 pr-3 py-1.5 text-xs rounded border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-blue-500"
+                className="pl-9 pr-3"
               />
             </div>
 
             {/* Status Dropdown */}
             <div>
-              <Select
+              <Select small
                 id="statusFilter"
                 value={statusFilter}
                 hideClearButton
                 onChange={(id, val) => setStatusFilter(val)}
-                className="w-full py-1.5 px-2 text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
+                className="w-full"
                 options={[
                   { value: 'ALL', label: 'Todos os status' },
                   { value: 'importado', label: 'Importado' },
@@ -599,12 +599,12 @@ export default function DocumentosPage() {
 
             {/* Visual Grouping */}
             <div>
-              <Select
+              <Select small
                 id="visualGrouping"
                 value={visualGrouping}
                 hideClearButton
                 onChange={(id, val) => setVisualGrouping(val)}
-                className="w-full py-1.5 px-2 text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-medium text-blue-700 dark:text-blue-400"
+                className="w-full font-medium text-blue-700"
                 options={[
                   { value: 'list', label: 'Agrupamento: Lista Geral' },
                   { value: 'customer', label: 'Agrupar por Cliente de Exportação' },
@@ -619,13 +619,13 @@ export default function DocumentosPage() {
           <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t border-slate-100 dark:border-slate-700/60 text-xs">
             <div className="flex flex-wrap items-center gap-2">
               {/* Customer Filter */}
-              <Select
+              <Select small
                 id="customerFilter"
                 value={customerFilter}
                 hideClearButton
                 containerClassName="relative"
                 onChange={(id, val) => setCustomerFilter(val)}
-                className="py-1 px-2 text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
+                className=""
                 options={[
                   { value: 'ALL', label: 'Todos os clientes' },
                   { value: 'UNASSIGNED', label: 'Sem cliente atribuído' },
@@ -637,13 +637,13 @@ export default function DocumentosPage() {
               />
 
               {/* Supplier Filter */}
-              <Select
+              <Select small
                 id="supplierFilter"
                 value={supplierFilter}
                 hideClearButton
                 containerClassName="relative"
                 onChange={(id, val) => setSupplierFilter(val)}
-                className="py-1 px-2 text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 max-w-[180px] truncate"
+                className="max-w-[180px] truncate"
                 options={[
                   { value: 'ALL', label: 'Todos fornecedores' },
                   ...uniqueSuppliers.map((supp) => ({ value: supp, label: supp })),
@@ -651,13 +651,13 @@ export default function DocumentosPage() {
               />
 
               {/* Type Filter */}
-              <Select
+              <Select small
                 id="typeFilter"
                 value={typeFilter}
                 hideClearButton
                 containerClassName="relative"
                 onChange={(id, val) => setTypeFilter(val)}
-                className="py-1 px-2 text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
+                className=""
                 options={[
                   { value: 'ALL', label: 'XML e PDF' },
                   { value: 'XML', label: 'Apenas XML' },
@@ -775,13 +775,13 @@ export default function DocumentosPage() {
           </p>
 
           <div className="space-y-1">
-            <Select
+            <Select small
               id="selectedCustomerId"
               label="Selecione o Cliente de Exportação:"
               value={selectedCustomerId}
               hideClearButton
               onChange={(id, val) => setSelectedCustomerId(val)}
-              className="w-full p-2 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-xs"
+              className="w-full"
               options={[
                 { value: '', label: '— Remover cliente atribuído —' },
                 ...EXPORT_CUSTOMERS.map((cust) => ({

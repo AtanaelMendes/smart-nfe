@@ -1,10 +1,10 @@
 import SmallLoading from "../Layouts/SmallLoading";
-import { FieldLabel } from "@/components/Layouts/Typography";
+import Fieldset, { fieldInputClass, getFieldError } from "./Fieldset";
+import Button from "../buttons/Button";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faAsterisk, faInfoCircle, faX } from "@fortawesome/free-solid-svg-icons";
-import { useCallback, useEffect, useState } from "react";
+import { faX } from "@fortawesome/free-solid-svg-icons";
+import { useCallback, useEffect, useState, useId } from "react";
 import { cn } from "@/assets/utils";
-import { TooltipComponent } from "../Layouts/TooltipComponent";
 
 const InputText = ({
     value,
@@ -12,7 +12,7 @@ const InputText = ({
     onChange,
     onBlur,
     placeholder,
-    id,
+    id: providedId,
     name,
     required,
     mask,
@@ -28,12 +28,17 @@ const InputText = ({
     className,
     type,
     onKeyDown,
+    error,
+    endAdornment,
+    containerClassName,
     ...rest
 }) => {
-    const [inputVal, setInputVal] = useState(value || "");
+    const generatedId = useId();
+    const id = providedId || generatedId;
+    const [inputVal, setInputVal] = useState(value ?? "");
 
     useEffect(() => {
-        setInputVal(getMaskedValue(value || ""));
+        setInputVal(getMaskedValue(value ?? ""));
     }, [value]);
 
     const maskCPF = (val) => {
@@ -152,7 +157,8 @@ const InputText = ({
         }
     };
 
-    const getMaskedValue = (string) => {
+    const getMaskedValue = (value) => {
+        const string = String(value ?? "");
         switch (mask) {
             case "altura":
                 return maskAltura(string);
@@ -175,111 +181,38 @@ const InputText = ({
         }
     };
 
-    const hasError = () => required?.hasOwnProperty(id) && required[id].error;
-
-    function renderError() {
-        if (!hasError()) return;
-        let errorMsg = required[id]?.errorMsg || "Este campo é obrigatório";
-
-        return <div className="text-xs text-red-600">{errorMsg}</div>;
-    }
+    const errorMessage = getFieldError(required, id, error);
+    const isRequired = required === true || !!required?.[id];
+    const describedBy = [rest['aria-describedby'], (errorMessage || helperText) && `${id}-feedback`].filter(Boolean).join(' ') || undefined;
 
     return (
-        <>
-            <div className={`relative w-full`}>
-                {label && (
-                    <div className='flex absolute top-[-9px] left-2 w-fit z-10 text-xs px-0.5 rounded-md mb-0 pb-0 text-nowrap before:bg-white dark:before:bg-slate-800 before:top-0.5 before:left-0 before:absolute before:w-full before:h-[12px] before:-z-10 before:content-[""] before:rounded-lg'>
-                        <label htmlFor={id}>
-                            <FieldLabel className={cn(required ? 'ml-4' : 'ml-0 mb-0 pb-0', 'text-gray-500 dark:text-slate-400')}>
-                                {label || ""}
-                            </FieldLabel>
-                        </label>
-                        {required && (
-                            <FontAwesomeIcon
-                                icon={faAsterisk}
-                                width="8"
-                                height="8"
-                                color="red"
-                                className="self-start absolute"
-                            />
-                        )}
-                        {hint && (
-                            <>
-                            <TooltipComponent
-                                        asChild
-                                        content={hint}
-                                        usePortal={false}
-                                >
-                                    <FontAwesomeIcon
-                                        icon={faInfoCircle}
-                                        width="16"
-                                        height="16"
-                                        color="blue"
-                                        className="self-start ml-2"
-                                        tabIndex={-1}
-                                    />
-                                </TooltipComponent>
-                            </>
-                        )}
-                    </div>
-                )}
-                <input
-                    id={id}
-                    type={type || "text"}
-                    name={name || id}
-                    required={required}
-                    disabled={disabled}
-                    readOnly={readOnly}
-                    onBlur={handleBlur}
-                    onChange={handleChange}
-                    onKeyDown={handleKeyDown}
-                    maxLength={maxLength || ""}
-                    value={getMaskedValue(inputVal)}
-                    placeholder={placeholder || ""}
-                    className={cn(
-                        `block w-full p-2 rounded-lg border text-gray-900 dark:text-slate-100 text-sm bg-white dark:bg-slate-800 dark:placeholder-slate-400 focus:ring-blue-500 focus:border-blue-500`,
-                        hasError() ? "border-red-500" : "border-gray-300 dark:border-slate-600",
-                        mask === "currency" ? "pl-6" : "",
-                        small ? " py-1.5 pr-1.5 text-xs " : "",
-                        large ? " py-3 pr-3 text-base " : "",
-                        disabled ? "bg-gray-100 dark:bg-slate-900 cursor-not-allowed" : "",
-                        className
-                    )}
-                    {...rest}
-                />
-                 {clearable && inputVal && (
-                    <div
-                        onClick={clearValue}
-                        className={cn(
-                            "absolute top-1/2 -translate-y-1/2 right-2",
-                            "w-5 h-5 flex items-center justify-center",
-                            "cursor-pointer rounded-full",
-                            "text-gray-400 hover:text-blue-500",
-                            "hover:bg-gray-100 active:bg-gray-200",
-                            "transition-all duration-150 ease-in-out",
-                            disabled || readOnly ? "hidden" : ""
-                        )}
-                    >
-                        <FontAwesomeIcon 
-                            icon={faX} 
-                            width="10" 
-                            height="10"
-                            className="transform hover:scale-110 transition-transform duration-150" 
-                        />
-                    </div>
-                )}
-                {loading && (
-                    <div className="absolute bottom-[8px] right-[8px]">
-                        <SmallLoading active={loading} />
-                    </div>
-                )}
-                {mask === "currency" && (
-                    <div className={`absolute ${small ? 'bottom-[4px]' : 'bottom-[9px]'} left-[8px] text-gray-900 text-sm`}>R$</div>
-                )}
-                {helperText && <div className="text-xs text-blue-600 absolute bottom-[-12px] right-0"> {helperText} </div>}
-            </div>
-            {renderError()}
-        </>
+        <Fieldset control id={id} label={label} required={isRequired} error={errorMessage} disabled={disabled} readOnly={readOnly} hint={hint} helperText={helperText} className={containerClassName}>
+            <input
+                {...rest}
+                id={id}
+                type={type || "text"}
+                name={name || id}
+                required={isRequired}
+                disabled={disabled}
+                readOnly={readOnly}
+                onBlur={handleBlur}
+                onChange={handleChange}
+                onKeyDown={handleKeyDown}
+                maxLength={maxLength}
+                value={getMaskedValue(inputVal)}
+                placeholder={placeholder || ""}
+                aria-invalid={!!errorMessage || undefined}
+                aria-describedby={describedBy}
+                className={fieldInputClass({ small, large, className: cn(mask === 'currency' && 'pl-10', (clearable || loading || endAdornment) && 'pr-12', className) })}
+            />
+            {clearable && inputVal && !disabled && !readOnly && !loading && <Button
+                buttonType="ghost" size="small" title="Limpar campo" aria-label="Limpar campo"
+                onClick={clearValue} className="absolute right-2 top-1/2 h-7 min-h-0 w-7 -translate-y-1/2 rounded-full p-0"
+            ><FontAwesomeIcon icon={faX} className="h-3 w-3" /></Button>}
+            {loading && <div className="absolute right-3 top-1/2 -translate-y-1/2"><SmallLoading active={loading} /></div>}
+            {mask === 'currency' && <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-slate-500 dark:text-slate-400">R$</span>}
+            {endAdornment && <div className="absolute right-2 top-1/2 -translate-y-1/2">{endAdornment}</div>}
+        </Fieldset>
     );
 };
 

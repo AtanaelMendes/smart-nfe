@@ -99,7 +99,7 @@ export default function Dialog({
       <div
         className={`w-full ${
           small ? 'max-w-md' : 'max-w-lg'
-        } bg-white dark:bg-slate-900 rounded-lg shadow-xl border border-gray-200 dark:border-slate-800 overflow-hidden flex flex-col`}
+        } bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-gray-200 dark:border-slate-800 overflow-hidden flex flex-col`}
       >
         {/* Cabeçalho */}
         <div className="bg-blue-600 dark:bg-blue-700 px-4 py-3 text-white font-semibold flex items-center justify-between">

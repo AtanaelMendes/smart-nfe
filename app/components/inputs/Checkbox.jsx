@@ -1,39 +1,9 @@
-export default function Checkbox({
-    id,
-    checked,
-    disabled,
-    value,
-    required,
-    label,
-    onChange,
-    className,
-}) {
-    const handleChange = (evt) => {
-        if (typeof onChange == "function") {
-            onChange(evt.target.id, evt.target.checked);
-        }
-    };
+import { cn } from '@/assets/utils';
 
-    return (
-        <label className={`flex items-center cursor-pointer ${className || ""}`}>
-            <input
-                id={id}
-                name={id}
-                type="checkbox"
-                onChange={handleChange}
-                checked={checked}
-                disabled={disabled}
-                value={value}
-                required={required}
-                className={`w-4 h-4 text-blue-600 ${
-                    disabled ? "bg-gray-100" : "bg-white"
-                } border-gray-300 rounded cursor-pointer focus:ring-blue-500 focus:ring-2`}
-            />
-            {label && (
-                <span className="ms-2 text-sm font-medium text-gray-900">
-                    {label}
-                </span>
-            )}
-        </label>
-    );
+export default function Checkbox({ id, checked, disabled, value, required, label, onChange, className, ...rest }) {
+    return <label className={cn('inline-flex min-h-8 items-center gap-2.5 text-sm leading-5 text-slate-700 dark:text-slate-200', disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer', className)}>
+        <input {...rest} id={id} name={rest.name || id} type="checkbox" onChange={(event) => onChange?.(event.target.id, event.target.checked)} checked={checked} disabled={disabled} value={value} required={required === true || !!required?.[id]}
+            className="h-[18px] w-[18px] shrink-0 cursor-inherit rounded border-2 border-slate-400 accent-blue-600 outline-none transition-shadow focus-visible:ring-4 focus-visible:ring-blue-500/20 dark:accent-blue-400 dark:[color-scheme:dark]" />
+        {label && <span>{label}</span>}
+    </label>;
 }

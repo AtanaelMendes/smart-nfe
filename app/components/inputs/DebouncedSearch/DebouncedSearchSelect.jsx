@@ -227,11 +227,11 @@ const DebouncedSearchSelectNormal = ({ onChange, value, urlGet, optId, optLabel,
 			loading={loading}
 			classNames={{
 				menuButton: ({ isDisabled }) =>
-					`flex text-sm text-gray-900 border border-gray-300 rounded-lg shadow-sm transition-all duration-300 focus:outline-none min-h-[36px] max-h-[90px] overflow-y-auto ${isDisabled
-						? 'bg-gray-200 cursor-not-allowed'
-						: 'bg-white hover:border-gray-400 focus:border-blue-500 focus:ring focus:ring-blue-500/20'
+					`flex text-sm text-slate-900 dark:text-slate-100 border border-slate-400/70 dark:border-slate-600 rounded-md transition-colors duration-150 focus:outline-none min-h-12 max-h-[90px] overflow-y-auto ${isDisabled
+						? 'bg-slate-100 dark:bg-slate-800 cursor-not-allowed opacity-50'
+						: 'bg-transparent hover:border-slate-700 dark:hover:border-slate-300 focus:border-blue-600 focus:ring-1 focus:ring-blue-600 dark:focus:border-blue-400'
 					}`,
-					menu: "absolute z-20 w-full bg-white shadow-lg border rounded py-1 mt-1.5 text-sm text-gray-700",
+					menu: "absolute z-30 w-full bg-white dark:bg-slate-900 shadow-lg border border-slate-200 dark:border-slate-700 rounded-lg py-1 mt-1.5 text-sm text-slate-700 dark:text-slate-200",
 					list: "max-h-48 overflow-y-auto", // (opcional) limitar altura:
 			}}
 		/>
@@ -266,7 +266,7 @@ export const DebouncedSearchSelect = ({
 		if (!hasError()) return
 		let errorMsg = formValidate[id].errorMsg || 'Este campo é obrigatório'
 
-		return <div className='text-xs text-red-600'>{errorMsg}</div>
+		return <div className='text-xs text-red-600 dark:text-red-400'>{errorMsg}</div>
 	}
 
 	return (
@@ -277,7 +277,7 @@ export const DebouncedSearchSelect = ({
 				<DebouncedSearchSelectNormal isMultiple={isMultiple} isDisabled={isDisabled} {...props} />
 			)}
 			{renderError()}
-			{helperText && <div className='text-xs text-blue-600'> {helperText} </div>}
+			{helperText && <div className='mt-1.5 px-3.5 text-xs text-slate-500 dark:text-slate-400'> {helperText} </div>}
 		</>
 	)
 }

@@ -1,95 +1,32 @@
-import { faCaretDown, faExternalLink, faInfoCircle, faSortDown } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import React, { useState, useEffect, useRef } from "react";
-import { FieldLabel } from "../Layouts/Typography";
-import { TooltipComponent } from "../Layouts/TooltipComponent";
-import { cn } from "@/assets/utils";
+import { useEffect, useId, useRef, useState } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faChevronDown, faExternalLink } from '@fortawesome/free-solid-svg-icons';
+import Button from '../buttons/Button';
+import Fieldset, { fieldInputClass } from './Fieldset';
 
-const CustomDropdown = ({ id, label, options, onSelect, placeholder, showIconLink, hint }) => {
+const CustomDropdown = ({ id: providedId, label, options = [], onSelect, placeholder, showIconLink, hint }) => {
+    const generatedId = useId();
+    const id = providedId || generatedId;
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef(null);
-
-    const handleSelect = (value) => {
-        setIsOpen(false);
-
-        if (typeof onSelect === 'function') {
-            onSelect(value);
-        }
-    };
-
     useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-                setIsOpen(false);
-            }
-        };
-
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => {
-            document.removeEventListener("mousedown", handleClickOutside);
-        };
+        const closeOutside = (event) => { if (!dropdownRef.current?.contains(event.target)) setIsOpen(false); };
+        document.addEventListener('mousedown', closeOutside);
+        return () => document.removeEventListener('mousedown', closeOutside);
     }, []);
-
-    return (
-        <>
-            <div className="flex relative">
-                {label && (
-                    <div className="flex relative">
-                        <label>
-                            <FieldLabel>{label}</FieldLabel>
-                        </label>
-                    </div>
-                )}
-                {hint && (
-                    <>
-                        <TooltipComponent
-                            content={
-                                <div className="text-xs z-[100] max-w-[300px]">{hint}</div>
-                            }
-                            asChild
-                            usePortal={false}
-                        >
-                            <span className="ml-2 mt-1">
-                                <FontAwesomeIcon
-                                    icon={faInfoCircle}
-                                    width="16"
-                                    height="16"
-                                    color="blue"
-                                    className="self-start"
-                                    tabIndex={-1}
-                                    aria-hidden={false}
-                                />
-                            </span>
-                        </TooltipComponent>
-                    </>
-                )}
-            </div>
-            <div id={id} className="w-full relative" ref={dropdownRef}>
-                <div
-                    className="flex justify-between items-center border rounded-lg p-1 cursor-pointer bg-white shadow-md"
-                    onClick={() => setIsOpen(!isOpen)}
-                >
-                    <span className="text-gray-700 text-sm p-1">{placeholder ? placeholder : "Selecione um item"}</span>
-                    {<FontAwesomeIcon className="text-slate-500 me-2 text-center" icon={showIconLink ? faExternalLink : faCaretDown} width={"16"} height={"16"} />}
-                </div>
-
-                <div className={cn("absolute w-full bg-white border rounded-lg shadow-lg z-10", isOpen ? '' : 'hidden')}>
-                    {options.map((option) => (
-                        <div
-                            key={`${id}-${option.value}`}
-                            className="flex justify-between items-center px-3 py-1 border hover:bg-gray-100 cursor-pointer"
-                            onClick={() => handleSelect(option.value)}
-                        >
-                            <span className="text-gray-600 font-semibold text-sm">{option.label}</span>
-                            <span className="bg-primary text-white text-xs font-semibold min-w-[28px] h-[28px] flex items-center justify-center rounded-full">
-                                {option.count}
-                            </span>
-                        </div>
-                    ))}
-                </div>
-            </div>
-        </>
-    );
+    return <div ref={dropdownRef} className="relative w-full" onKeyDown={(event) => { if (event.key === 'Escape') setIsOpen(false); }}>
+        <Fieldset control id={id} label={label} hint={hint}>
+            <Button id={id} buttonType="ghost" block aria-haspopup="menu" aria-expanded={isOpen} onClick={() => setIsOpen((previous) => !previous)}
+                className={fieldInputClass({ className: 'flex justify-between gap-3 text-left font-normal tracking-normal hover:bg-transparent dark:hover:bg-transparent focus-visible:ring-0' })}>
+                <span className="truncate">{placeholder || 'Selecione um item'}</span>
+                <FontAwesomeIcon icon={showIconLink ? faExternalLink : faChevronDown} className="h-3.5 w-3.5 shrink-0 text-slate-500 dark:text-slate-400" />
+            </Button>
+        </Fieldset>
+        {isOpen && <div role="menu" className="absolute z-30 mt-1.5 max-h-64 w-full overflow-y-auto rounded-lg border border-slate-200 bg-white py-1 shadow-lg dark:border-slate-700 dark:bg-slate-900">
+            {options.map((option) => <Button role="menuitem" key={option.value} buttonType="ghost" block onClick={() => { onSelect?.(option.value); setIsOpen(false); }} className="justify-between rounded-none px-4 py-2.5 text-left font-normal tracking-normal">
+                <span>{option.label}</span><span className="ml-3 rounded-full bg-blue-50 px-2 text-xs text-blue-700 dark:bg-blue-400/15 dark:text-blue-300">{option.count}</span>
+            </Button>)}
+        </div>}
+    </div>;
 };
-
 export default CustomDropdown;

@@ -1,5 +1,4 @@
 import { cn } from '@/assets/utils'
-import { FieldLabel } from '../Layouts/Typography'
 
 const RangeSlider = ({
 	value,
@@ -30,7 +29,7 @@ const RangeSlider = ({
 				<span
 					key={index}
 					className={cn(
-						'text-sm font-medium text-gray-900 -bottom-6 start-0',
+						'text-sm font-medium text-slate-700 dark:text-slate-300 -bottom-6 start-0',
 						disabled ? 'cursor-not-allowed' : 'cursor-pointer'
 					)}
 					onClick={() => {
@@ -45,14 +44,8 @@ const RangeSlider = ({
 
 	return (
 		<div className={cn('w-full relative', className)}>
-			{label && (
-				<div className='flex absolute top-[-9px] left-2 w-fit z-10 text-xs px-0.5 rounded-md mb-0 pb-0 text-nowrap before:bg-white before:top-0.5 before:left-0 before:absolute before:w-full before:h-[12px] before:-z-10 before:content-[""] before:rounded-lg'>
-					<FieldLabel className={cn(required ? 'ml-4' : 'ml-0 mb-0 pb-0', 'text-gray-500')}>
-						{label}
-					</FieldLabel>
-				</div>
-			)}
-			<div className='relative w-full border rounded-lg p-2'>
+            {label && <label htmlFor={id} className="mb-3 block text-sm font-medium text-slate-700 dark:text-slate-200">{label}{required && ' *'}</label>}
+			<div className='relative w-full px-1 py-2'>
 				<input
 					id={id}
 					min={min}
@@ -63,7 +56,7 @@ const RangeSlider = ({
 					disabled={disabled}
 					onChange={onChange && handleChange}
 					className={cn(
-						'w-full h-2 bg-gray-200 rounded-lg',
+						'w-full h-1.5 rounded-full bg-slate-200 accent-blue-600 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-500 dark:bg-slate-700 dark:accent-blue-400',
 						disabled ? 'cursor-not-allowed' : 'cursor-pointer'
 					)}
 				/>

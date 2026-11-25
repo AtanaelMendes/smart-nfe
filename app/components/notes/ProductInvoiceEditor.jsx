@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useId } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -41,8 +41,8 @@ import { cleanDecimalString, decimalAdd, decimalSubtract, decimalCompare } from 
 import { calculateInvoiceTotals, calculateItemTotal } from '@/lib/calculations/invoiceTotals';
 import { useAppContext } from '@/context/AppContext';
 
-const INITIAL_EMPTY_ITEM = () => ({
-  itemId: `item-nfe-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+const INITIAL_EMPTY_ITEM = (itemId) => ({
+  itemId: itemId || `item-nfe-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
   item: 1,
   codigo: '',
   descricao: '',
@@ -77,8 +77,8 @@ const INITIAL_EMPTY_ITEM = () => ({
  * Garante que itens importados ou antigos possuam o contrato completo de tributos
  * e identificadores estáveis para edição.
  */
-function withItemDefaults(item, index) {
-  const base = INITIAL_EMPTY_ITEM();
+function withItemDefaults(item, index, fallbackId) {
+  const base = INITIAL_EMPTY_ITEM(fallbackId);
   const trib = item?.tributos || {};
   return {
     ...base,
@@ -95,18 +95,17 @@ function withItemDefaults(item, index) {
   };
 }
 
-const INPUT_CLS =
-  'w-full px-2 py-1 text-xs bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none';
+const INPUT_CLS = 'h-10 px-2.5 text-sm';
 
 /* Campos de formulário (blocos de identificação, emitente, destinatário, totais). */
-const FORM_CLS =
-  'px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 dark:border-slate-700 rounded-lg dark:text-white focus:ring-2 focus:ring-blue-500';
+const FORM_CLS = 'h-12';
 
 export default function ProductInvoiceEditor({
   initialData = null,
   mode = 'create', // 'create' | 'edit'
 }) {
   const router = useRouter();
+  const initialItemId = `item-nfe-${useId()}`;
   const { toast } = useAppContext();
 
   // Estados dos Cadastros Base
@@ -157,11 +156,11 @@ export default function ProductInvoiceEditor({
   const [savePersonToCatalog, setSavePersonToCatalog] = useState(false);
 
   // Itens
-  const [itens, setItens] = useState(
+  const [itens, setItens] = useState(() => (
     Array.isArray(initialData?.itens) && initialData.itens.length > 0
-      ? initialData.itens.map((it, idx) => withItemDefaults(it, idx))
-      : [INITIAL_EMPTY_ITEM()]
-  );
+      ? initialData.itens.map((it, idx) => withItemDefaults(it, idx, `${initialItemId}-${idx}`))
+      : [INITIAL_EMPTY_ITEM(initialItemId)]
+  ));
 
   const [expandedItems, setExpandedItems] = useState(() => new Set());
 
@@ -933,7 +932,7 @@ export default function ProductInvoiceEditor({
               value={dataPrevistaEmissao}
               onChange={(_id, value) => setDataPrevistaEmissao(value)}
               small
-              className="px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 dark:text-white"
+              className="h-12"
             />
           </div>
 
@@ -945,7 +944,7 @@ export default function ProductInvoiceEditor({
               value={selectedCompanyId}
               hideClearButton
               onChange={(_id, value) => handleCompanyChange(value)}
-              className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+              className="w-full h-12"
               options={[
                 { value: '', label: 'Selecione uma empresa cadastrada...' },
                 ...companies.map((c) => ({
@@ -992,7 +991,7 @@ export default function ProductInvoiceEditor({
                   );
                 }
               }}
-              className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+              className="w-full h-12"
               options={[
                 { value: '1', label: '1 - Operação Interna (Mesmo Estado)' },
                 { value: '2', label: '2 - Operação Interestadual' },
@@ -1009,7 +1008,7 @@ export default function ProductInvoiceEditor({
               value={finalidadeEmissao}
               hideClearButton
               onChange={(_id, value) => setFinalidadeEmissao(value)}
-              className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+              className="w-full h-12"
               options={[
                 { value: '1', label: '1 - NF-e Normal' },
                 { value: '2', label: '2 - NF-e Complementar' },
@@ -1132,7 +1131,7 @@ export default function ProductInvoiceEditor({
               value={selectedPersonId}
               hideClearButton
               onChange={(_id, value) => handlePersonSelect(value)}
-              className="w-full px-3 py-1.5 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+              className="w-full"
               options={[
                 { value: '', label: 'Buscar no cadastro de clientes...' },
                 ...persons.map((p) => ({
@@ -1160,7 +1159,7 @@ export default function ProductInvoiceEditor({
                   paisCodigo: value === 'ESTRANGEIRO' ? 'EX' : 'BR',
                 }))
               }
-              className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+              className="w-full h-12"
               options={[
                 { value: 'PJ', label: 'Pessoa Jurídica (CNPJ)' },
                 { value: 'PF', label: 'Pessoa Física (CPF)' },
@@ -1338,7 +1337,7 @@ export default function ProductInvoiceEditor({
                 value={modalidadeFrete}
                 hideClearButton
                 onChange={(_id, value) => setModalidadeFrete(value)}
-                className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                className="w-full h-12"
                 options={[
                   { value: '0', label: '0 - Contratação por Conta do Remetente (CIF)' },
                   { value: '1', label: '1 - Contratação por Conta do Destinatário (FOB)' },
@@ -1401,7 +1400,7 @@ export default function ProductInvoiceEditor({
               value={informacoesAdicionais}
               onChange={(_id, value) => setInformacoesAdicionais(value)}
               placeholder="Dados de exportação, número de RE, dados bancários ou observações legais..."
-              className="px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 dark:border-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500"
+              className=""
             />
           </div>
         </div>
@@ -1555,7 +1554,7 @@ export default function ProductInvoiceEditor({
                 placeholder="Pesquisar por código, descrição ou NCM..."
                 value={catalogSearch}
                 onChange={(_id, value) => setCatalogSearch(value)}
-                className="px-3 py-2 text-xs bg-gray-50 dark:bg-slate-800 dark:border-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500"
+                className=""
               />
             </div>
 

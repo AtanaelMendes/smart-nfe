@@ -3,15 +3,15 @@ import { faPlus, faSave, faX } from "@fortawesome/free-solid-svg-icons";
 import { cn } from "@/assets/utils";
 import Button from "./Button";
 
-const baseIconStyles = "drop-shadow";
+const baseIconStyles = "";
 
 // Classes de posicionamento/dimensão compartilhadas por todos os FABs.
 // O Button cuida da forma (pill), variante de cor e estados de foco/disabled.
 const fabClassName = ({ small, absolute, disableZIndex, disabled, className }) =>
     cn(
-        "drop-shadow transition duration-300 ease-in-out",
+        "shadow-lg hover:shadow-xl transition-shadow duration-150 ease-out",
         !disableZIndex && "z-[999]",
-        small ? "!p-2" : "!p-4",
+        small ? "h-10 min-w-10 !p-2" : "h-14 min-w-14 !p-4",
         absolute ? "absolute" : "fixed",
         disabled && "opacity-50 cursor-not-allowed",
         className

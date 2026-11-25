@@ -32,7 +32,7 @@ const ButtonGroup = ({ buttons, small, className, vertical }) => {
 							onClick={() => handleClick(btn?.onclick)}
 							disabled={btn.disabled}
 							className={cn(
-								"border-gray-300 dark:border-slate-500 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:text-blue-700",
+								"border-slate-300 dark:border-slate-600 hover:bg-blue-50 dark:hover:bg-blue-400/10 hover:text-blue-700 dark:hover:text-blue-300 focus:z-10",
 								btn.className,
 								btn.disabled && "cursor-not-allowed opacity-50"
 							)}
@@ -46,7 +46,7 @@ const ButtonGroup = ({ buttons, small, className, vertical }) => {
 	};
 
 	return (
-		<div className={`flex ${vertical ? "flex-col" : "flex-row"}`}>
+		<div className={`flex ${vertical ? "flex-col gap-1" : "flex-row gap-1"}`}>
 			{renderButtons()}
 		</div>
 	);

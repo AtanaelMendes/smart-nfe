@@ -10,7 +10,7 @@ const ButtonRadioGroup = ({ id, options, value, onChange, className }) => {
     }, [onChange]);
 
     return (
-        <div className={cn("inline-flex rounded-lg border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800", className)}>
+        <div className={cn("inline-flex rounded-lg border border-slate-300 dark:border-slate-600 bg-transparent overflow-hidden", className)}>
             {options?.map((option, index) => (
                 <Button
                     key={`${id}_${index}`}
@@ -23,7 +23,7 @@ const ButtonRadioGroup = ({ id, options, value, onChange, className }) => {
                         index === options.length - 1 && "rounded-r-lg",
                         index > 0 && "border-l border-gray-200 dark:border-slate-600",
                         value == option.value
-                            ? "shadow-sm"
+                            ? "shadow-none"
                             : "hover:bg-gray-50 hover:text-gray-900 dark:hover:bg-slate-700 dark:hover:text-slate-100"
                     )}
                 >

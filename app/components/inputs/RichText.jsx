@@ -163,7 +163,7 @@ export default function RichText({ id, label, value, onChange, required, maxLeng
     return (
         <>
             {label && (
-                <label htmlFor={id} className={`${small ? 'mb-0.5 text-xs' : 'mb-2'} text-sm font-medium text-gray-900 inline-flex`}>
+                <label htmlFor={id} className={`${small ? 'mb-0.5 text-xs' : 'mb-2'} text-sm font-medium text-slate-700 dark:text-slate-200 inline-flex`}>
                     {required && (
                         <FontAwesomeIcon
                             icon={faAsterisk}
@@ -176,7 +176,7 @@ export default function RichText({ id, label, value, onChange, required, maxLeng
                     {label}
                 </label>
             )}
-            <div className="border rounded shadow relative">
+            <div className="relative overflow-hidden rounded-md border border-slate-400/70 focus-within:border-blue-600 focus-within:ring-1 focus-within:ring-blue-600 dark:border-slate-600 dark:focus-within:border-blue-400 dark:focus-within:ring-blue-400 [&_.sun-editor]:border-0 [&_.se-toolbar]:bg-slate-50 dark:[&_.sun-editor]:bg-slate-900 dark:[&_.se-toolbar]:bg-slate-800 dark:[&_.se-toolbar]:outline-slate-700 dark:[&_.se-btn]:text-slate-200 dark:[&_.se-btn:hover]:bg-slate-700 dark:[&_.sun-editor-editable]:bg-slate-900 dark:[&_.sun-editor-editable]:text-slate-100 dark:[&_.se-resizing-bar]:bg-slate-800">
                 <SunEditor
                     getSunEditorInstance={handleEditorInstance}
                     setContents={editorContent}

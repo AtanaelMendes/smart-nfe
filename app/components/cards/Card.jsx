@@ -10,7 +10,7 @@ export const CardActions = ({ children, align }) => {
         left: "text-left"
     }
     return (
-        <div className={"inline-block w-full max-h-14 p-1 xl:p-2 border-t-2 dark:border-gray-700 "+position[(align || "left")]}>
+        <div className={"inline-block w-full max-h-14 p-1 xl:p-2 border-t border-slate-200 dark:border-slate-700 "+position[(align || "left")]}>
             {children}
         </div>
     );
@@ -22,7 +22,7 @@ export const CardTitle = ({ children, primary, success, warning, danger, color, 
         if (color === 'success' || success) return 'bg-success text-white';
         if (color === 'warning' || warning) return 'bg-warning text-white';
         if (color === 'danger' || danger) return 'bg-danger text-white';
-        return 'text-gray-500';
+        return 'text-slate-700 dark:text-slate-200';
     }
 
     const handleClick = () => {
@@ -32,11 +32,11 @@ export const CardTitle = ({ children, primary, success, warning, danger, color, 
     };
 
     return (
-        <div className={cn(`mb-2 text-lg xl:text-xl font-bold tracking-tight w-full p-1 xl:p-2 border-b-2 dark:border-gray-700 relative rounded-t-lg h-fit`, getColor())}>
+        <div className={cn(`mb-2 text-lg xl:text-xl font-bold tracking-tight w-full p-1 xl:p-2 border-b border-slate-200 dark:border-slate-700 relative rounded-t-lg h-fit`, getColor())}>
             {button && <div className='float-right z-10 rounded-full p-1 hover:bg-drop-shadow-4 dark:hover:bg-gray-700 cursor-pointer drop-shadow' onClick={handleClick}>
                 <FontAwesomeIcon icon={faEllipsisVertical} width="20" height="20" />
             </div>}
-            <span className='drop-shadow'>
+            <span>
                 {children}
             </span>
         </div>
@@ -86,7 +86,7 @@ export const CardImage = ({ src, alt, height, title, button, onClick }) => {
 
 const Card = ({ children, width, className }) => {
     return (
-        <div className={cn(`flex flex-row flex-wrap bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow`, width || "w-full", className )}>
+        <div className={cn(`flex flex-row flex-wrap bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm`, width || "w-full", className )}>
             {children}
         </div>
     );

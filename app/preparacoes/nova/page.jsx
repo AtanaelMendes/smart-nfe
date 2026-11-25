@@ -905,7 +905,7 @@ function NovaPreparacaoInner() {
                   onChange={(id, value) => setOriginSearch(value)}
                   placeholder="Buscar notas disponíveis..."
                   small
-                  className="pl-9 pr-3 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
+                  className="pl-9 pr-3"
                 />
               </div>
             </div>
@@ -1137,11 +1137,11 @@ function NovaPreparacaoInner() {
                           {index + 1}
                         </span>
                         <div className="w-full max-w-[260px]">
-                          <InputText
+                          <InputText small
                             id={`destino-nome-${dest.id}`}
                             value={dest.nome}
                             onChange={(id, value) => updateDestinationName(dest.id, value)}
-                            className="py-1 px-2 font-bold text-slate-900 dark:text-slate-100 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800"
+                            className="font-bold"
                           />
                         </div>
                       </div>
@@ -1222,13 +1222,13 @@ function NovaPreparacaoInner() {
 
               {/* Table Filters */}
               <div className="flex items-center gap-2 text-xs">
-                <Select
+                <Select small
                   id="filterOriginInTable"
                   value={filterOriginInTable}
                   hideClearButton
                   containerClassName="relative"
                   onChange={(id, val) => setFilterOriginInTable(val)}
-                  className="py-1 px-2 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-xs"
+                  className=""
                   options={[
                     { value: 'ALL', label: 'Todas as origens' },
                     ...selectedInvoices.map((inv) => ({

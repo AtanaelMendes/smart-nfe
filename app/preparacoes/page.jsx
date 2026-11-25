@@ -308,18 +308,18 @@ export default function PreparacoesPage() {
               onChange={(id, value) => setSearchTerm(value)}
               placeholder="Buscar por número, título ou cliente..."
               small
-              className="pl-9 pr-3 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
+              className="pl-9 pr-3"
             />
           </div>
 
           <div className="flex items-center gap-2 w-full sm:w-auto">
-            <Select
+            <Select small
               id="typeFilter"
               value={typeFilter}
               hideClearButton
               containerClassName="relative"
               onChange={(id, val) => setTypeFilter(val)}
-              className="py-1.5 px-2 text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
+              className=""
               options={[
                 { value: 'ALL', label: 'Todos os tipos' },
                 { value: 'agrupamento', label: 'Agrupamento (N → 1)' },
@@ -328,13 +328,13 @@ export default function PreparacoesPage() {
               ]}
             />
 
-            <Select
+            <Select small
               id="statusFilter"
               value={statusFilter}
               hideClearButton
               containerClassName="relative"
               onChange={(id, val) => setStatusFilter(val)}
-              className="py-1.5 px-2 text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
+              className=""
               options={[
                 { value: 'ALL', label: 'Todos os status' },
                 { value: 'draft', label: 'Rascunho' },

@@ -1117,12 +1117,12 @@ export default function ConferenciaPage({ params }) {
 
             <div className="relative w-64">
               <FontAwesomeIcon icon={faMagnifyingGlass} className="absolute left-2.5 top-2 z-10 text-slate-400 w-3 h-3 pointer-events-none" />
-              <InputText
+              <InputText small
                 id="conferenciaSearch"
                 value={searchTerm}
                 placeholder="Buscar código, descrição ou NCM..."
                 onChange={(id, value) => setSearchTerm(value)}
-                className="pl-8 pr-2 py-1 text-xs rounded border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
+                className="pl-8 pr-2"
               />
             </div>
           </div>

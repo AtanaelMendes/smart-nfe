@@ -7,16 +7,16 @@ import React, { useState } from 'react';
 const AccordionItem = ({ title, subTitle, content, isOpen, onClick }) => {
     return (
         <div>
-            <div className={`ms-4 me-4 border p-1 shadow bg-blue-600 text-white hover:bg-blue-500 ${isOpen ? "rounded-t-lg border-b-0" : "mb-3 rounded-lg"}`}>
+            <div className={`ms-4 me-4 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 ${isOpen ? "rounded-t-lg border-b-0" : "mb-3 rounded-lg"}`}>
                 <Button
                     onClick={onClick}
-                    className="flex items-center justify-between w-full py-1 px-3 text-sm font-medium gap-3 rounded-lg text-white hover:text-white"
+                    className="flex items-center justify-between w-full min-h-12 py-3 px-4 text-sm font-medium gap-3 rounded-lg text-slate-800 dark:text-slate-100"
                 >
-                    <span><FieldLabel className="!mb-0 text-white">{title}</FieldLabel> - <Caption className={"text-white"}>{subTitle}</Caption></span>
+                    <span><FieldLabel className="!mb-0 text-slate-800 dark:text-slate-100">{title}</FieldLabel> - <Caption className={"text-slate-500 dark:text-slate-400"}>{subTitle}</Caption></span>
                     <FontAwesomeIcon className={`ease-in-out duration-300 ${isOpen ? "rotate-180" : ""}`} icon={faChevronDown} width="18" height="18" />
                 </Button>
             </div>
-            {isOpen && <div className="mb-3 ms-4 me-4 border shadow-md p-2 px-4 rounded-b-lg text-sm" dangerouslySetInnerHTML={{ __html: content }} />}
+            {isOpen && <div className="mb-3 ms-4 me-4 border border-t-0 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 p-4 rounded-b-lg text-sm" dangerouslySetInnerHTML={{ __html: content }} />}
         </div>
     );
 };

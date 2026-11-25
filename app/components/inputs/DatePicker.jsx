@@ -2,11 +2,10 @@ import React, { useState, useRef, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCalendar } from "@fortawesome/free-regular-svg-icons";
 import {
-    faAsterisk,
     faChevronCircleLeft,
     faChevronCircleRight,
 } from "@fortawesome/free-solid-svg-icons";
-import { FieldLabel } from "@/components/Layouts/Typography";
+import InputText from "./InputText";
 import Button from "@/components/buttons/Button";
 import { cn } from "@/assets/utils";
 
@@ -57,8 +56,8 @@ const Calendar = ({ year, month, onSelectDate, selectedDate }) => {
     const weekDays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"];
 
     return (
-        <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-4 w-80">
-            <div className="text-center font-semibold text-gray-700 mb-4">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg p-4 w-80">
+            <div className="text-center font-medium text-slate-700 dark:text-slate-200 mb-4">
                 {monthNames[month]} {year}
             </div>
 
@@ -81,7 +80,7 @@ const Calendar = ({ year, month, onSelectDate, selectedDate }) => {
                             !day && "invisible",
                             day && selectedDate?.getDate() === day && selectedDate?.getMonth() === month && selectedDate?.getFullYear() === year
                                 ? "bg-blue-500 text-white"
-                                : "hover:bg-gray-100 text-gray-700"
+                                : "hover:bg-blue-50 dark:hover:bg-blue-400/10 text-slate-700 dark:text-slate-200"
                         )}
                     >
                         {day}
@@ -146,54 +145,14 @@ const DatePicker = ({ label, onChange, id, maxDate, defaultDate, required }) => 
 
     return (
         <div ref={pickerRef} className="relative">
-            {label && (
-                <div className="flex flex-row gap-1 mb-2">
-                    {required && (
-                        <FontAwesomeIcon
-                            icon={faAsterisk}
-                            width="10"
-                            height="10"
-                            color="red"
-                            className="self-start"
-                        />
-                    )}
-                    <label htmlFor={id}>
-                        <FieldLabel>
-                            {label || ""}
-                        </FieldLabel>
-                    </label>
-                </div>
-            )}
-
-            <div
-                className={cn(
-                    "flex bg-gray-50 border border-gray-300 rounded-lg p-2 cursor-pointer",
-                    show && "border-blue-500 border-2"
-                )}
-                onClick={() => setShow(!show)}
-            >
-                <div className="flex items-center mr-2">
-                    <FontAwesomeIcon
-                        icon={faCalendar}
-                        width="20"
-                        height="20"
-                        className={cn(show ? "text-blue-500" : "text-slate-500")}
-                    />
-                </div>
-                <input
-                    type="text"
-                    id={id}
-                    value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
-                    placeholder="Selecione uma data"
-                    className="outline-none bg-transparent w-full text-gray-700"
-                    readOnly
-                />
-            </div>
+            <InputText id={id} label={label} required={required} value={inputValue} readOnly
+                placeholder="Selecione uma data" onClick={() => setShow((previous) => !previous)}
+                aria-haspopup="dialog" aria-expanded={show}
+                endAdornment={<Button buttonType="ghost" size="small" onClick={() => setShow((previous) => !previous)} title="Abrir calendário" aria-label="Abrir calendário" className="h-8 min-h-0 w-8 rounded-full p-0"><FontAwesomeIcon icon={faCalendar} className="h-4 w-4" /></Button>} />
 
             {show && (
                 <div className="absolute top-full mt-2 z-50">
-                    <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-4">
+                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg p-4">
                         <div className="flex justify-between items-center mb-4">
                             <Button
                                 onClick={handlePrevMonth}
@@ -203,10 +162,10 @@ const DatePicker = ({ label, onChange, id, maxDate, defaultDate, required }) => 
                                     icon={faChevronCircleLeft}
                                     width="20"
                                     height="20"
-                                    className="text-slate-500"
+                                    className="text-slate-500 dark:text-slate-400"
                                 />
                             </Button>
-                            <span className="font-semibold text-gray-700">
+                            <span className="font-medium text-slate-700 dark:text-slate-200">
                                 {new Date(currentYear, currentMonth).toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}
                             </span>
                             <Button
@@ -217,7 +176,7 @@ const DatePicker = ({ label, onChange, id, maxDate, defaultDate, required }) => 
                                     icon={faChevronCircleRight}
                                     width="20"
                                     height="20"
-                                    className="text-slate-500"
+                                    className="text-slate-500 dark:text-slate-400"
                                 />
                             </Button>
                         </div>

@@ -143,13 +143,13 @@ export default function ConfiguracoesPage() {
                 Espaçamento das células para notas com dezenas de itens na conferência
               </span>
             </div>
-            <Select
+            <Select small
               id="tableDensity"
               value={localSettings.tableDensity}
               hideClearButton
               containerClassName="relative"
               onChange={(id, val) => setLocalSettings({ ...localSettings, tableDensity: val })}
-              className="text-xs py-1.5 px-3 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 font-medium"
+              className="font-medium"
               options={[
                 { value: 'compact', label: 'Compacta (Alta densidade — Recomendada)' },
                 { value: 'normal', label: 'Confortável / Normal' },
@@ -168,13 +168,13 @@ export default function ConfiguracoesPage() {
                 Quantidade padrão de documentos e itens exibidos por bloco
               </span>
             </div>
-            <Select
+            <Select small
               id="rowsPerPage"
               value={localSettings.rowsPerPage}
               hideClearButton
               containerClassName="relative"
               onChange={(id, val) => setLocalSettings({ ...localSettings, rowsPerPage: Number(val) })}
-              className="text-xs py-1.5 px-3 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 font-medium"
+              className="font-medium"
               options={[
                 { value: 10, label: '10 itens por página' },
                 { value: 25, label: '25 itens por página' },

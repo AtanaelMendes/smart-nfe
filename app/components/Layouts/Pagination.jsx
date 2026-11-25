@@ -81,13 +81,13 @@ export const Pagination = ({
 							>
 								Itens por página:
 							</label>
-							<Select
+							<Select small
 								id='itemsPerPage'
 								value={itemsPerPageState}
 								hideClearButton
 								containerClassName='relative inline-block'
 								onChange={(_id, value) => setItemsPerPageState(Number(value))}
-								className='border border-gray-300 dark:border-slate-600 rounded-md p-1 text-sm bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100'
+								className=""
 								options={[10, 20, 50, 100].map(size => ({ value: size, label: size }))}
 							/>
 						</>

@@ -2,54 +2,36 @@ import { cn } from '@/assets/utils';
 import React, { forwardRef } from 'react';
 
 const btnType = (outline, bordered, buttonType) => {
-	const variants = {
-		primary: cn(
-			outline ? 'text-primary hover:bg-blue-200 dark:hover:bg-blue-900' : 'bg-primary text-white hover:bg-blue-700',
-			bordered && 'border border-primary', 'focus:ring-blue-300'
-		),
-		secondary: cn(
-			outline ? 'text-gray-900 dark:text-slate-100 hover:bg-gray-600 hover:text-white' : 'bg-white text-gray-900 dark:bg-slate-700 dark:text-slate-100',
-			bordered && 'border border-gray-500 dark:border-slate-500', 'focus:ring-gray-300'
-		),
-		success: cn(
-			outline ? 'text-green-500 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900' : 'bg-green-500 hover:bg-green-400 text-white transition-colors',
-			bordered && 'border border-green-600', 'focus:ring-green-300'
-		),
-		danger: cn(
-			outline ? 'text-red-600 dark:text-red-400 hover:bg-red-500 hover:text-white transition-colors' : 'bg-red-600 text-white',
-			bordered && 'border border-red-600', 'focus:ring-red-300'
-		),
-		warning: cn(
-			outline ? 'text-yellow-500 dark:text-yellow-400 hover:bg-yellow-200 dark:hover:bg-yellow-900' : 'bg-yellow-500 text-white',
-			bordered && 'border border-yellow-500', 'focus:ring-yellow-300'
-		),
-		ghost: cn(
-			outline ? 'text-gray-900 dark:text-slate-100 hover:bg-gray-200 dark:hover:bg-slate-700' : 'bg-white text-gray-900 dark:bg-slate-800 dark:text-slate-100',
-			bordered && 'border border-gray-300 dark:border-slate-600', 'focus:ring-gray-300'
-		),
-	};
+    const outlined = outline || bordered;
+    const variants = {
+        primary: outlined
+            ? 'border-blue-600/60 text-blue-700 hover:border-blue-700 hover:bg-blue-600/5 dark:border-blue-400/60 dark:text-blue-300 dark:hover:border-blue-300 dark:hover:bg-blue-400/10'
+            : 'border-transparent bg-blue-600 text-white shadow-sm hover:bg-blue-700 hover:shadow-md dark:bg-blue-500 dark:hover:bg-blue-400',
+        secondary: outlined
+            ? 'border-slate-400/70 text-slate-700 hover:border-slate-600 hover:bg-slate-900/5 dark:border-slate-500 dark:text-slate-200 dark:hover:border-slate-300 dark:hover:bg-white/5'
+            : 'border-transparent bg-slate-100 text-slate-800 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600',
+        success: outlined
+            ? 'border-emerald-600/60 text-emerald-700 hover:border-emerald-700 hover:bg-emerald-600/5 dark:border-emerald-400/60 dark:text-emerald-300 dark:hover:bg-emerald-400/10'
+            : 'border-transparent bg-emerald-700 text-white shadow-sm hover:bg-emerald-800 hover:shadow-md dark:bg-emerald-600 dark:hover:bg-emerald-500',
+        danger: outlined
+            ? 'border-red-600/60 text-red-700 hover:border-red-700 hover:bg-red-600/5 dark:border-red-400/60 dark:text-red-300 dark:hover:bg-red-400/10'
+            : 'border-transparent bg-red-600 text-white shadow-sm hover:bg-red-700 hover:shadow-md dark:bg-red-500 dark:hover:bg-red-400',
+        warning: outlined
+            ? 'border-amber-600/60 text-amber-800 hover:border-amber-700 hover:bg-amber-600/5 dark:border-amber-400/60 dark:text-amber-300 dark:hover:bg-amber-400/10'
+            : 'border-transparent bg-amber-500 text-slate-950 shadow-sm hover:bg-amber-400 hover:shadow-md',
+        ghost: 'border-transparent bg-transparent text-slate-600 shadow-none hover:bg-slate-900/5 dark:text-slate-300 dark:hover:bg-white/10',
+    };
+    return variants[buttonType] || variants.ghost;
+};
 
-	return variants[buttonType] || variants.secondary;
-}
-
-export const generateButtonClass = (
-	buttonType,
-	pill,
-	square,
-	size,
-	block,
-	outline,
-	bordered,
-	disabled
-) => {
-	const baseClasses = 'focus:outline-none font-medium text-sm focus:ring-4 hover:transition-colors';
-	const shapeClasses = square ? '' : pill ? 'rounded-full' : 'rounded';
-	const sizeClasses = size === 'small' ? 'py-1 px-2' : 'py-2 px-4';
-	const blockClasses = block ? 'w-full' : 'w-fit';
-	const styleType = buttonType ? btnType(outline, bordered, buttonType) : '';
-	const disabledClasses = disabled ? 'opacity-50 cursor-not-allowed' : '';
-	return cn(baseClasses, shapeClasses, sizeClasses, blockClasses, styleType, disabledClasses);
-}
+export const generateButtonClass = (buttonType, pill, square, size, block, outline, bordered, disabled) => cn(
+    'relative inline-flex shrink-0 select-none items-center justify-center gap-1.5 whitespace-nowrap border text-sm font-medium leading-5 tracking-wide outline-none transition-[background-color,border-color,color,box-shadow] duration-150 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-blue-300 dark:focus-visible:ring-offset-slate-900 motion-reduce:transition-none',
+    square ? 'rounded-none' : pill ? 'rounded-full' : 'rounded-md',
+    size === 'small' ? 'min-h-8 px-3 py-1 text-xs' : size === 'large' ? 'min-h-12 px-6 py-3' : 'min-h-10 px-4 py-2',
+    block ? 'w-full' : 'w-fit',
+    btnType(outline, bordered, buttonType),
+    disabled ? 'pointer-events-none cursor-not-allowed opacity-40 shadow-none' : 'cursor-pointer active:brightness-95',
+);
 
 /**
  * Componente Button renderiza um elemento de botão personalizável.
@@ -92,7 +74,7 @@ const Button = forwardRef(({
 		if (type === 'button' && evt) {
 			evt.stopPropagation();
 		}
-		onClick && onClick();
+		onClick && onClick(evt);
 	}
 
 	return (
@@ -103,7 +85,7 @@ const Button = forwardRef(({
 				generateButtonClass(buttonType, pill, square, size, block, outline, bordered, disabled),
 				className
 			)}
-			onClick={handleClick.bind(null, this)}
+			onClick={handleClick}
 			disabled={disabled}
 			title={title}
 			{...rest}
