@@ -280,7 +280,7 @@ export const documentRepository = {
       let newDoc = {
         ...deepClone(data),
         id,
-        origin: 'MANUAL',
+        origin: data.origin || 'MANUAL',
         status: data.status || 'DRAFT',
         createdAt: data.createdAt || now,
         updatedAt: now,
@@ -289,7 +289,7 @@ export const documentRepository = {
       // Recalcula totais específicos
       if (newDoc.documentType === 'NFE') {
         newDoc = recalculateNFeTotals(newDoc);
-      } else {
+      } else if (!newDoc.valores?.preservarValoresOriginais) {
         newDoc = recalculateNFSeValues(newDoc);
       }
 
@@ -327,7 +327,7 @@ export const documentRepository = {
 
       if (updated.documentType === 'NFE') {
         updated = recalculateNFeTotals(updated);
-      } else {
+      } else if (!updated.valores?.preservarValoresOriginais) {
         updated = recalculateNFSeValues(updated);
       }
 

@@ -33,6 +33,11 @@ import { useAppContext } from '@/context/AppContext';
 import { invoiceRepository } from '@/features/invoiceRepository';
 import { preparationRepository } from '@/features/preparationRepository';
 import {
+  completePreparation,
+  validatePreparationCompletion,
+  PreparationCompletionError,
+} from '@/features/preparationCompletionService';
+import {
   cleanDecimalString,
   decimalAdd,
   decimalSubtract,
@@ -75,6 +80,7 @@ function NovaPreparacaoInner() {
     titulo: 'Preparação de Exportação',
     status: 'draft',
     clienteExportacao: null,
+    emitente: null,
     sourceInvoiceIds: [],
     destinos: [
       { id: 'dest-01', nome: 'Exportação 1 - Principal', observacoes: '', clienteId: null },
@@ -112,6 +118,7 @@ function NovaPreparacaoInner() {
               titulo: existing.titulo || 'Preparação de Exportação',
               status: existing.status || 'draft',
               clienteExportacao: existing.clienteExportacao || null,
+              emitente: existing.emitente || null,
               sourceInvoiceIds: existing.sourceInvoiceIds || (existing.origens ? existing.origens.map((o) => o.invoiceId || o.id) : []),
               destinos: Array.isArray(existing.destinos) && existing.destinos.length > 0
                 ? existing.destinos
@@ -142,6 +149,20 @@ function NovaPreparacaoInner() {
   const selectedInvoices = useMemo(() => {
     return allInvoices.filter((inv) => preparation.sourceInvoiceIds.includes(inv.id));
   }, [allInvoices, preparation.sourceInvoiceIds]);
+
+  // Emitentes distintos presentes nas origens (para seleção da empresa que emite a saída)
+  const availableEmitentes = useMemo(() => {
+    const map = new Map();
+    selectedInvoices.forEach((inv) => {
+      const emit = inv.emitente;
+      if (!emit) return;
+      const key = emit.cnpj || emit.razaoSocial;
+      if (key && !map.has(key)) map.set(key, emit);
+    });
+    return Array.from(map.values());
+  }, [selectedInvoices]);
+
+  const [completionIssues, setCompletionIssues] = useState(null);
 
   // Operation Mode: N -> 1 (agrupamento), 1 -> M (divisao), N -> M (mista)
   const operationMode = useMemo(() => {
@@ -444,13 +465,83 @@ function NovaPreparacaoInner() {
         }));
         toast.success(`Preparação ${created.numero} criada com sucesso!`);
       }
-
-      if (finalStatus === 'active') {
-        router.push('/preparacoes');
-      }
     } catch (err) {
       console.error('Erro ao salvar preparação:', err);
       toast.error('Erro ao salvar preparação.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Monta o payload persistível a partir do estado atual do editor
+  const buildPreparationPayload = (status) => ({
+    ...preparation,
+    tipo: operationMode,
+    status,
+    valorTotal: grandTotal,
+    origens: selectedInvoices.map((inv) => ({
+      invoiceId: inv.id,
+      numero: inv.numero,
+      emitente: inv.emitente?.razaoSocial,
+      destinatario: inv.destinatario?.nome,
+      chaveAcesso: inv.chaveAcesso,
+      isRealImport: inv.isRealImport,
+    })),
+  });
+
+  const handleValidate = async () => {
+    try {
+      const result = await validatePreparationCompletion(preparation);
+      setCompletionIssues(result);
+      if (result.isValid) {
+        toast.success('Validação concluída: a preparação está apta a ser concluída.');
+      } else {
+        toast.error(`${result.errors.length} impedimento(s) encontrado(s) para concluir.`);
+      }
+      return result;
+    } catch (err) {
+      toast.error('Erro ao validar a preparação.');
+      return null;
+    }
+  };
+
+  const handleComplete = async () => {
+    if (preparation.sourceInvoiceIds.length === 0) {
+      toast.error('Selecione pelo menos uma NF-e de origem.');
+      setActiveStep('origens');
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+
+      // 1. Persiste o estado atual (rascunho/ativo) antes de materializar
+      const payload = buildPreparationPayload(preparation.id ? 'active' : 'draft');
+      let prepId = preparation.id;
+      if (prepId) {
+        await preparationRepository.update(prepId, payload);
+      } else {
+        const created = await preparationRepository.create(payload);
+        prepId = created.id;
+        setPreparation((prev) => ({ ...prev, id: created.id, numero: created.numero }));
+      }
+
+      // 2. Conclui: valida, materializa as notas e transiciona para completed
+      const result = await completePreparation(prepId);
+      setCompletionIssues(null);
+
+      toast.success(
+        `${result.preparedInvoices.length} nota(s) preparada(s) gerada(s) e publicada(s) em Notas Preparadas.`
+      );
+      router.push(`/notas-preparadas?preparationId=${prepId}`);
+    } catch (err) {
+      if (err instanceof PreparationCompletionError) {
+        setCompletionIssues({ isValid: false, errors: err.errors || [], warnings: [] });
+        toast.error(err.errors?.[0]?.message || err.message);
+      } else {
+        console.error('Erro ao concluir preparação:', err);
+        toast.error('Erro ao concluir a preparação.');
+      }
     } finally {
       setIsSaving(false);
     }
@@ -510,7 +601,7 @@ function NovaPreparacaoInner() {
             <Button
               buttonType="primary"
               size="small"
-              onClick={() => handleSave('active')}
+              onClick={handleComplete}
               disabled={isSaving || preparation.sourceInvoiceIds.length === 0}
             >
               <FontAwesomeIcon icon={faCheck} className="mr-1" />
@@ -718,6 +809,43 @@ function NovaPreparacaoInner() {
                   </div>
                 );
               })}
+            </div>
+
+            <div className="pt-2 border-t border-slate-200 dark:border-slate-700 space-y-2">
+              <div>
+                <h3 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                  Empresa Emitente da Saída
+                </h3>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  Vários fornecedores de origem não determinam automaticamente o emitente. Selecione a empresa responsável pelas notas de saída.
+                </p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                {availableEmitentes.map((emit) => {
+                  const key = emit.cnpj || emit.razaoSocial;
+                  const isSelected = (preparation.emitente?.cnpj || preparation.emitente?.razaoSocial) === key;
+                  return (
+                    <div
+                      key={key}
+                      onClick={() => setPreparation((prev) => ({ ...prev, emitente: emit }))}
+                      className={`p-2.5 rounded-lg border cursor-pointer text-xs transition-all ${
+                        isSelected
+                          ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-900/20 ring-1 ring-blue-500'
+                          : 'border-slate-200 dark:border-slate-700 hover:border-slate-400'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-bold text-slate-900 dark:text-slate-100 truncate">{emit.razaoSocial || 'Emitente'}</span>
+                        {isSelected && <FontAwesomeIcon icon={faCircleCheck} className="text-blue-600 w-3.5 h-3.5 shrink-0" />}
+                      </div>
+                      <span className="text-[11px] text-slate-500 font-mono block mt-0.5">{emit.cnpj || emit.cpf || '—'}</span>
+                    </div>
+                  );
+                })}
+                {availableEmitentes.length === 0 && (
+                  <span className="text-xs text-slate-400 italic">Selecione origens para listar os emitentes disponíveis.</span>
+                )}
+              </div>
             </div>
 
             <div className="flex justify-between pt-3">
@@ -1074,17 +1202,51 @@ function NovaPreparacaoInner() {
               })}
             </div>
 
+            {completionIssues && (
+              <div className={`rounded-lg border p-3 space-y-1.5 text-xs ${
+                completionIssues.isValid
+                  ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800'
+                  : 'bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800'
+              }`}>
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-slate-900 dark:text-slate-100">
+                    {completionIssues.isValid ? 'Validação aprovada — preparação apta a concluir' : 'Impedimentos para conclusão'}
+                  </span>
+                  <Button buttonType="secondary" size="small" outline onClick={handleValidate} disabled={isSaving}>
+                    <FontAwesomeIcon icon={faListCheck} className="mr-1" />
+                    Revalidar
+                  </Button>
+                </div>
+                {Array.isArray(completionIssues.errors) && completionIssues.errors.map((err, idx) => (
+                  <p key={`err-${idx}`} className="flex items-start gap-1.5 text-rose-700 dark:text-rose-300">
+                    <FontAwesomeIcon icon={faTriangleExclamation} className="w-3 h-3 mt-0.5 shrink-0" />
+                    <span>{err.message}</span>
+                  </p>
+                ))}
+                {Array.isArray(completionIssues.warnings) && completionIssues.warnings.map((warn, idx) => (
+                  <p key={`warn-${idx}`} className="flex items-start gap-1.5 text-amber-700 dark:text-amber-300">
+                    <FontAwesomeIcon icon={faTriangleExclamation} className="w-3 h-3 mt-0.5 shrink-0" />
+                    <span>{warn.message}</span>
+                  </p>
+                ))}
+              </div>
+            )}
+
             <div className="flex justify-between pt-4 border-t border-slate-200 dark:border-slate-700">
               <Button buttonType="secondary" size="small" outline onClick={() => setActiveStep('alocacao')}>
                 <FontAwesomeIcon icon={faArrowLeft} className="mr-1.5" />
                 Voltar para Alocação
               </Button>
               <div className="flex items-center gap-2">
+                <Button buttonType="secondary" size="small" outline onClick={handleValidate} disabled={isSaving}>
+                  <FontAwesomeIcon icon={faListCheck} className="mr-1.5" />
+                  Validar
+                </Button>
                 <Button buttonType="secondary" size="small" outline onClick={() => handleSave('draft')} disabled={isSaving}>
                   <FontAwesomeIcon icon={faFloppyDisk} className="mr-1.5" />
                   Salvar Rascunho
                 </Button>
-                <Button buttonType="primary" size="small" onClick={() => handleSave('active')} disabled={isSaving}>
+                <Button buttonType="primary" size="small" onClick={handleComplete} disabled={isSaving}>
                   <FontAwesomeIcon icon={faCheck} className="mr-1.5" />
                   Concluir Preparação
                 </Button>

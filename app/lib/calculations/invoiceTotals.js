@@ -73,12 +73,15 @@ export function calculateInvoiceTotals(
   let freightVal = '0.00';
   let insuranceVal = '0.00';
   let otherExpensesVal = '0.00';
+  let ipiVal = '0.00';
 
   if (typeof discountOrOptions === 'object' && discountOrOptions !== null) {
     discountVal = discountOrOptions.discount ?? discountOrOptions.valorDesconto ?? '0.00';
     freightVal = discountOrOptions.freight ?? discountOrOptions.valorFrete ?? '0.00';
     insuranceVal = discountOrOptions.insurance ?? discountOrOptions.valorSeguro ?? '0.00';
     otherExpensesVal = discountOrOptions.otherExpenses ?? discountOrOptions.outrasDespesas ?? '0.00';
+    // IPI é somado ao total da nota quando informado (não está embutido em vProd).
+    ipiVal = discountOrOptions.ipi ?? discountOrOptions.valorIPI ?? '0.00';
   } else {
     discountVal = discountOrOptions || '0.00';
     freightVal = freightStr || '0.00';
@@ -105,12 +108,14 @@ export function calculateInvoiceTotals(
   const totalFreight = roundDecimal(freightVal, 2);
   const totalInsurance = roundDecimal(insuranceVal, 2);
   const totalOtherExpenses = roundDecimal(otherExpensesVal, 2);
+  const totalIPI = roundDecimal(ipiVal, 2);
 
-  // Fórmula SEFAZ: Total NF = Produtos - Desconto + Frete + Seguro + Outras Despesas
+  // Fórmula SEFAZ: Total NF = Produtos - Desconto + Frete + Seguro + Outras Despesas + IPI
   const afterDiscount = decimalSubtract(totalProducts, totalDiscount, 2);
   const withFreight = decimalAdd(afterDiscount, totalFreight, 2);
   const withInsurance = decimalAdd(withFreight, totalInsurance, 2);
-  const totalInvoice = decimalAdd(withInsurance, totalOtherExpenses, 2);
+  const withOther = decimalAdd(withInsurance, totalOtherExpenses, 2);
+  const totalInvoice = decimalAdd(withOther, totalIPI, 2);
 
   return {
     totalProducts,
@@ -118,6 +123,7 @@ export function calculateInvoiceTotals(
     totalFreight,
     totalInsurance,
     totalOtherExpenses,
+    totalIPI,
     totalInvoice,
     // Aliases em português para interoperabilidade
     valorProdutos: totalProducts,
@@ -125,6 +131,7 @@ export function calculateInvoiceTotals(
     valorFrete: totalFreight,
     valorSeguro: totalInsurance,
     outrasDespesas: totalOtherExpenses,
+    valorIPI: totalIPI,
     valorTotalNota: totalInvoice,
   };
 }

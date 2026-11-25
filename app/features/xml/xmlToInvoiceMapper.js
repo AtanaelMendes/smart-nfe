@@ -265,6 +265,7 @@ export function mapXmlToInvoice(extractedData) {
   const valorSeguro = normalizeMonetary(totalObj.valorSeguro ?? totalObj.vSeg ?? '0.00');
   const valorDesconto = normalizeMonetary(totalObj.valorDesconto ?? totalObj.vDesc ?? '0.00');
   const outrasDespesas = normalizeMonetary(totalObj.outrasDespesas ?? totalObj.vOutro ?? '0.00');
+  const valorIPI = normalizeMonetary(totalObj.valorIPI ?? totalObj.vIPI ?? '0.00');
   let valorTotalNota = normalizeMonetary(totalObj.valorTotalNota ?? totalObj.vNF);
 
   // Reconciliação se produtos totalizados estiverem zerados e existirem itens
@@ -283,6 +284,7 @@ export function mapXmlToInvoice(extractedData) {
       valorFrete,
       valorSeguro,
       outrasDespesas,
+      valorIPI,
     });
     valorTotalNota = calc.valorTotalNota;
   }
@@ -325,6 +327,7 @@ export function mapXmlToInvoice(extractedData) {
       valorSeguro,
       valorDesconto,
       outrasDespesas,
+      valorIPI,
       valorTotalNota,
       pesoLiquido,
       pesoBruto,

@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Shell(sed:*)",
+      "Shell(node --no-warnings /tmp/commandcode-1000/-workspaces-smart-nfe/014c33bc-f7be-4b92-9c02-e3376f526394/scratchpad/check1.mjs)",
+      "Shell(node --no-warnings /tmp/commandcode-1000/-workspaces-smart-nfe/014c33bc-f7be-4b92-9c02-e3376f526394/scratchpad/check2.mjs)"
+    ],
+    "deny": [],
+    "defaultMode": "default"
+  }
+}

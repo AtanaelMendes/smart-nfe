@@ -5,3 +5,6 @@
 export * from './accessKeyValidator.js';
 export * from './xmlToInvoiceMapper.js';
 export * from './nfeXmlParser.js';
+export * from './nfseXmlParser.js';
+export * from './nfseToDocumentMapper.js';
+export * from './xmlLayoutDetector.js';

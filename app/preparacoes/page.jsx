@@ -23,6 +23,7 @@ import Button from '@/components/buttons/Button';
 import Dialog from '@/components/Layouts/Dialog';
 import { useAppContext } from '@/context/AppContext';
 import { preparationRepository } from '@/features/preparationRepository';
+import { reopenPreparation } from '@/features/preparationCompletionService';
 import { formatBRL } from '@/lib/formatters/currency';
 import { formatDateBR } from '@/lib/formatters/dates';
 
@@ -70,6 +71,16 @@ export default function PreparacoesPage() {
     await preparationRepository.resetDemoData();
     await loadData();
     toast.success('Preparações demonstrativas restauradas!');
+  };
+
+  const handleReopen = async (prep) => {
+    try {
+      await reopenPreparation(prep.id);
+      toast.success(`Preparação ${prep.numero} reaberta. As notas geradas foram removidas e o saldo liberado.`);
+      await loadData();
+    } catch {
+      toast.error('Não foi possível reabrir a preparação.');
+    }
   };
 
   const filteredPreparations = useMemo(() => {
@@ -201,14 +212,26 @@ export default function PreparacoesPage() {
       align: 'center',
       render: (item) => (
         <div className="flex items-center justify-center gap-1.5">
+          {item.status === 'completed' && (
+            <Button
+              buttonType="success"
+              size="small"
+              outline
+              onClick={() => router.push(`/notas-preparadas?preparationId=${item.id}`)}
+              title="Ver notas preparadas geradas"
+            >
+              <FontAwesomeIcon icon={faArrowRight} className="mr-1" />
+              Notas
+            </Button>
+          )}
           <Button
             buttonType="primary"
             size="small"
             outline
-            onClick={() => router.push(`/preparacoes/nova?id=${item.id}`)}
+            onClick={() => (item.status === 'completed' ? handleReopen(item) : router.push(`/preparacoes/nova?id=${item.id}`))}
           >
             <FontAwesomeIcon icon={faPenToSquare} className="mr-1" />
-            Editar
+            {item.status === 'completed' ? 'Reabrir' : 'Editar'}
           </Button>
           <button
             onClick={() => setDeleteDialog({ open: true, preparation: item })}
@@ -220,7 +243,7 @@ export default function PreparacoesPage() {
         </div>
       ),
     },
-  ], [router]);
+  ], [router, handleReopen]);
 
   return (
     <AppLayout breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Preparações' }]}>
