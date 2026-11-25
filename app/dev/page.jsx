@@ -23,8 +23,6 @@ import Radio from '@/components/inputs/Radio';
 import InputFile from '@/components/inputs/InputFile';
 import InputTextArea from '@/components/inputs/InputTextArea';
 import InputCPF from '@/components/inputs/InputCPF';
-import InputPIS from '@/components/inputs/InputPIS';
-import InputNIT from '@/components/inputs/InputNIT';
 import Card from '@/components/cards/Card';
 import { CardTitle, CardActions, CardImage, CardBody } from '@/components/cards/Card';
 import Accordion from '@/components/Layouts/Accordion';
@@ -117,8 +115,6 @@ export default function DevPage() {
     const [dateValue, setDateValue] = useState('');
     const [monthValue, setMonthValue] = useState('');
     const [cpfValue, setCpfValue] = useState('');
-    const [pisValue, setPisValue] = useState('');
-    const [nitValue, setNitValue] = useState('');
     const [checkboxValue, setCheckboxValue] = useState(false);
     const [radioValue, setRadioValue] = useState('');
     const [textAreaValue, setTextAreaValue] = useState('');
@@ -170,8 +166,6 @@ export default function DevPage() {
                 { id: 'input-datepicker', label: 'DatePicker' },
                 { id: 'input-month', label: 'Month' },
                 { id: 'input-cpf', label: 'CPF' },
-                { id: 'input-pis', label: 'PIS' },
-                { id: 'input-nit', label: 'NIT' },
                 { id: 'input-checkbox', label: 'Checkbox' },
                 { id: 'input-radio', label: 'Radio' },
                 { id: 'input-file', label: 'File' },
@@ -744,44 +738,6 @@ export default function DevPage() {
                                             onChange={(e) => setCpfValue(e.target.value)}
                                             placeholder="000.000.000-00"
                                             required
-                                        />
-                                    </div>
-                                </ComponentDemo>
-
-                                <ComponentDemo
-                                    id="input-pis"
-                                    title="InputPIS"
-                                    description="Input formatado para número PIS."
-                                    code={`<InputPIS
-  label="PIS"
-  value={pisValue}
-  onChange={(e) => setPisValue(e.target.value)}
-/>`}
-                                >
-                                    <div className="max-w-md">
-                                        <InputPIS
-                                            label="Número PIS"
-                                            value={pisValue}
-                                            onChange={(e) => setPisValue(e.target.value)}
-                                        />
-                                    </div>
-                                </ComponentDemo>
-
-                                <ComponentDemo
-                                    id="input-nit"
-                                    title="InputNIT"
-                                    description="Input formatado para número NIT."
-                                    code={`<InputNIT
-  label="NIT"
-  value={nitValue}
-  onChange={(e) => setNitValue(e.target.value)}
-/>`}
-                                >
-                                    <div className="max-w-md">
-                                        <InputNIT
-                                            label="Número NIT"
-                                            value={nitValue}
-                                            onChange={(e) => setNitValue(e.target.value)}
                                         />
                                     </div>
                                 </ComponentDemo>
