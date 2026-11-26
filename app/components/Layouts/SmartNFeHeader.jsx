@@ -1,16 +1,16 @@
 'use client';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSun, faMoon, faChevronRight, faBars, faLightbulb, faRightFromBracket } from '@fortawesome/free-solid-svg-icons';
+import { faSun, faMoon, faChevronRight, faBars, faLightbulb } from '@fortawesome/free-solid-svg-icons';
 import { useAppContext } from '@/context/AppContext';
 import { getScreenTourByPath } from '@/config/screenTours';
 import Button from '@/components/buttons/Button';
 import PillsBadge from '@/components/buttons/PillsBadge';
+import UserMenu from './UserMenu';
 
 export default function SmartNFeHeader({ breadcrumbs = [], onMenuToggle, onOpenTour }) {
   const pathname = usePathname();
-  const router = useRouter();
   const {
     darkMode,
     toggleDarkMode,
@@ -45,16 +45,6 @@ export default function SmartNFeHeader({ breadcrumbs = [], onMenuToggle, onOpenT
         // ignore
       }
     }
-  };
-
-  const handleLogout = async () => {
-    try {
-      await fetch('/api/auth/logout', { method: 'POST' });
-    } catch {
-      // Mesmo em falha de rede o usuário deve sair da aplicação.
-    }
-    router.replace('/login');
-    router.refresh();
   };
 
   const tourTitle = activeTour?.title || activeTour?.titulo;
@@ -128,18 +118,6 @@ export default function SmartNFeHeader({ breadcrumbs = [], onMenuToggle, onOpenT
           <FontAwesomeIcon icon={faLightbulb} className="w-4 h-4" />
         </Button>
 
-        {/* Logout */}
-        <Button
-          type="button"
-          data-testid="header-logout"
-          onClick={handleLogout}
-          title="Sair"
-          aria-label="Sair da conta"
-          className="p-1.5 rounded-lg text-gray-500 hover:text-red-600 hover:bg-red-50 dark:text-slate-400 dark:hover:text-red-400 dark:hover:bg-red-950/30 transition-colors"
-        >
-          <FontAwesomeIcon icon={faRightFromBracket} className="w-4 h-4" />
-        </Button>
-
         {/* Dark mode toggle */}
         <Button
           type="button"
@@ -151,6 +129,9 @@ export default function SmartNFeHeader({ breadcrumbs = [], onMenuToggle, onOpenT
         >
           <FontAwesomeIcon icon={isDark ? faSun : faMoon} className="w-4 h-4" />
         </Button>
+
+        {/* Menu do usuário (canto superior direito) */}
+        <UserMenu />
       </div>
     </header>
   );
